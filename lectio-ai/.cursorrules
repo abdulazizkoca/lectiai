@@ -1,0 +1,480 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║          LECTIO AI — ULTRA MASTER PROMPT v4.0                   ║
+# ║   3-Modul Ekosistema: Professor | Quiz Arena | Student Hub      ║
+# ║   O'zbekiston uchun qurilgan AI Ta'lim Super-App                ║
+# ╚══════════════════════════════════════════════════════════════════╝
+
+> **Bu faylni `.cursorrules` sifatida loyiha root papkasiga qo'ying.**
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 0 — LOYIHA DNA
+# ══════════════════════════════════════════
+
+## Kim biz?
+
+**Lectio AI** — O'zbekiston va O'rta Osiyo uchun qurilgan **"super-app" ta'lim ekosistemasi.**
+
+Bir gap bilan: *"Notion + Kahoot + Duolingo + Google Classroom — O'zbek tilida, AI bilan, kamera bilan, hammasi bir joyda."*
+
+## 3 ta alohida modul — 1 ta ekosistema
+
+```
+┌─────────────────────┐  ┌─────────────────────┐  ┌─────────────────────┐
+│   📚 PROFESSOR HUB  │  │  🎮 QUIZ ARENA       │  │  🧠 STUDENT HUB     │
+│                     │  │                     │  │                     │
+│  Dars yaratish      │  │  Live Kahoot-style  │  │  Shaxsiy o'quv yo'l │
+│  Metodichka → AI    │  │  Blocked-style      │  │  AI mentor          │
+│  Kamera monitoring  │  │  Tournament         │  │  Spaced repetition  │
+│  Analytics          │  │  Duel mode          │  │  Career mapping     │
+│  Smart tools        │  │  Multiplayer        │  │  Peer learning      │
+└─────────────────────┘  └─────────────────────┘  └─────────────────────┘
+```
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 1 — TEXNIK ARXITEKTURA
+# ══════════════════════════════════════════
+
+## Stack
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      FRONTEND LAYER                          │
+│  Next.js 14 (App Router) + TypeScript strict                │
+│  Tailwind CSS + Framer Motion + Zustand + React Query       │
+│  Socket.io-client + Three.js + WebRTC (kamera)             │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ REST + WebSocket + WebRTC
+┌──────────────────────────▼──────────────────────────────────┐
+│                      BACKEND LAYER                           │
+│  Python FastAPI (async) + SQLAlchemy 2.0                    │
+│  PostgreSQL 15 + Redis 7 + Celery                           │
+│  Socket.io + Elasticsearch                                  │
+└──────────┬───────────────┬──────────────────┬───────────────┘
+           ▼               ▼                  ▼
+      Claude API      OpenCV +            MinIO/S3
+      (AI brain)      MediaPipe           (fayllar)
+                      (kamera AI)
+```
+
+## Monorepo tuzilishi
+
+```
+lectio-ai/
+├── apps/
+│   ├── professor/          # Professor Hub (Next.js)
+│   ├── quiz/               # Quiz Arena (Next.js)
+│   └── student/            # Student Hub (Next.js)
+├── packages/
+│   ├── ui/                 # Shared UI components
+│   ├── socket/             # Shared Socket.io logic
+│   └── types/              # Shared TypeScript types
+├── backend/
+│   ├── routers/
+│   ├── services/
+│   ├── models/
+│   └── ai/
+└── docker-compose.yml
+```
+
+## Database Schema (To'liq)
+
+```sql
+-- FOYDALANUVCHILAR
+CREATE TABLE users (
+  id            SERIAL PRIMARY KEY,
+  email         VARCHAR UNIQUE,
+  full_name     VARCHAR,
+  role          ENUM('professor','student','admin'),
+  telegram_id   VARCHAR,
+  avatar_url    VARCHAR,
+  xp_points     INTEGER DEFAULT 0,
+  streak_days   INTEGER DEFAULT 0,
+  level         INTEGER DEFAULT 1,
+  badges        JSONB DEFAULT '[]',
+  settings      JSONB DEFAULT '{}',
+  last_active   TIMESTAMP,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- METODICHKALAR
+CREATE TABLE materials (
+  id            SERIAL PRIMARY KEY,
+  title         VARCHAR,
+  file_url      VARCHAR,
+  file_type     VARCHAR,
+  raw_text      TEXT,
+  analysis      JSONB,
+  processed     BOOLEAN DEFAULT FALSE,
+  professor_id  INTEGER REFERENCES users(id),
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- DARSLAR
+CREATE TABLE lessons (
+  id                SERIAL PRIMARY KEY,
+  title             VARCHAR,
+  topic             VARCHAR,
+  material_id       INTEGER REFERENCES materials(id),
+  presentation_data JSONB,
+  wow_fact          TEXT,
+  summary_text      TEXT,
+  audio_url         VARCHAR,
+  duration_minutes  INTEGER,
+  professor_id      INTEGER REFERENCES users(id),
+  is_template       BOOLEAN DEFAULT FALSE,
+  use_count         INTEGER DEFAULT 0,
+  scheduled_at      TIMESTAMP,
+  created_at        TIMESTAMP DEFAULT NOW()
+);
+
+-- LIVE SESSIYALAR
+CREATE TABLE live_sessions (
+  id            SERIAL PRIMARY KEY,
+  room_code     VARCHAR(8) UNIQUE,
+  lesson_id     INTEGER REFERENCES lessons(id),
+  professor_id  INTEGER REFERENCES users(id),
+  status        ENUM('waiting','active','paused','ended'),
+  config        JSONB,     -- rejim, sozlamalar
+  started_at    TIMESTAMP,
+  ended_at      TIMESTAMP,
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- ISHTIROKCHILAR
+CREATE TABLE session_participants (
+  id          SERIAL PRIMARY KEY,
+  session_id  INTEGER REFERENCES live_sessions(id),
+  student_id  INTEGER REFERENCES users(id),
+  nickname    VARCHAR,
+  score       INTEGER DEFAULT 0,
+  team        VARCHAR,    -- jamoaviy rejim uchun
+  joined_at   TIMESTAMP DEFAULT NOW()
+);
+
+-- SAVOLLAR
+CREATE TABLE questions (
+  id            SERIAL PRIMARY KEY,
+  lesson_id     INTEGER REFERENCES lessons(id),
+  material_id   INTEGER REFERENCES materials(id),
+  question      TEXT,
+  type          ENUM('multiple_choice','true_false','short_answer','image_choice','fill_blank','ordering','matching'),
+  options       JSONB,
+  correct       VARCHAR,
+  explanation   TEXT,
+  difficulty    ENUM('easy','medium','hard'),
+  time_limit    INTEGER DEFAULT 20,
+  points        INTEGER DEFAULT 100,
+  image_url     VARCHAR,
+  tags          TEXT[],
+  created_at    TIMESTAMP DEFAULT NOW()
+);
+
+-- JAVOBLAR
+CREATE TABLE answers (
+  id            SERIAL PRIMARY KEY,
+  session_id    INTEGER REFERENCES live_sessions(id),
+  question_id   INTEGER REFERENCES questions(id),
+  student_id    INTEGER REFERENCES users(id),
+  answer        VARCHAR,
+  is_correct    BOOLEAN,
+  time_taken    INTEGER,
+  points_earned INTEGER,
+  answered_at   TIMESTAMP DEFAULT NOW()
+);
+
+-- FLASHCARDLAR (Spaced Repetition)
+CREATE TABLE flash_cards (
+  id            SERIAL PRIMARY KEY,
+  question      TEXT,
+  answer        TEXT,
+  hint          TEXT,
+  difficulty    FLOAT DEFAULT 2.5,
+  interval      INTEGER DEFAULT 1,
+  repetitions   INTEGER DEFAULT 0,
+  ease_factor   FLOAT DEFAULT 2.5,
+  next_review   TIMESTAMP DEFAULT NOW(),
+  lesson_id     INTEGER REFERENCES lessons(id),
+  student_id    INTEGER REFERENCES users(id),
+  subject       VARCHAR,
+  tags          TEXT[]
+);
+
+-- DIQQAT TAHLILI (kamera — faqat aggregate)
+CREATE TABLE attention_logs (
+  id              SERIAL PRIMARY KEY,
+  session_id      INTEGER REFERENCES live_sessions(id),
+  attention_avg   FLOAT,
+  distracted_pct  FLOAT,
+  phone_usage_pct FLOAT,
+  talking_pct     FLOAT,
+  absent_pct      FLOAT,
+  confusion_score FLOAT,
+  timestamp       TIMESTAMP DEFAULT NOW()
+  -- MUHIM: Individual ma'lumot SAQLANMAYDI — faqat umumiy foiz
+);
+
+-- O'QUVCHI PROGRESS
+CREATE TABLE student_progress (
+  id              SERIAL PRIMARY KEY,
+  student_id      INTEGER REFERENCES users(id),
+  subject         VARCHAR,
+  topic           VARCHAR,
+  mastery_level   FLOAT DEFAULT 0,   -- 0-100
+  sessions_count  INTEGER DEFAULT 0,
+  last_studied    TIMESTAMP,
+  weak_points     JSONB DEFAULT '[]',
+  strong_points   JSONB DEFAULT '[]'
+);
+
+-- ACHIEVEMENT TIZIMI
+CREATE TABLE achievements (
+  id          SERIAL PRIMARY KEY,
+  code        VARCHAR UNIQUE,
+  title       VARCHAR,
+  description TEXT,
+  icon        VARCHAR,
+  xp_reward   INTEGER,
+  condition   JSONB
+);
+
+CREATE TABLE user_achievements (
+  id             SERIAL PRIMARY KEY,
+  user_id        INTEGER REFERENCES users(id),
+  achievement_id INTEGER REFERENCES achievements(id),
+  earned_at      TIMESTAMP DEFAULT NOW()
+);
+
+-- PEER LEARNING (Student Hub)
+CREATE TABLE study_groups (
+  id          SERIAL PRIMARY KEY,
+  name        VARCHAR,
+  subject     VARCHAR,
+  creator_id  INTEGER REFERENCES users(id),
+  members     INTEGER[],
+  is_public   BOOLEAN DEFAULT TRUE,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE peer_questions (
+  id          SERIAL PRIMARY KEY,
+  asker_id    INTEGER REFERENCES users(id),
+  question    TEXT,
+  subject     VARCHAR,
+  topic       VARCHAR,
+  upvotes     INTEGER DEFAULT 0,
+  is_answered BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE peer_answers (
+  id          SERIAL PRIMARY KEY,
+  question_id INTEGER REFERENCES peer_questions(id),
+  answerer_id INTEGER REFERENCES users(id),
+  answer      TEXT,
+  upvotes     INTEGER DEFAULT 0,
+  is_accepted BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+```
+
+---
+
+# ══════════════════════════════════════════
+# MODUL 1 — PROFESSOR HUB
+# ══════════════════════════════════════════
+
+## Konsepsiya
+
+Professor uchun to'liq "super cockpit" — dars tayyorlashdan boshlab, dars paytida real-time monitoring, kamera orqali diqqat tahlili, va darsdan keyin chuqur analytics.
+
+## 1.1 Metodichka Tizimi
+
+```
+PIPELINE:
+[Fayl yuklash] → [AI Parsing] → [Tuzilish] → [Dars/Test/Karta] → [Joylashtirish]
+   PDF/DOCX         Matn         Mavzular     Avtomatik            Live session
+   PPTX/TXT        chiqarish    aniqlash      yaratish
+```
+
+## 1.2 KAMERA MONITORING TIZIMI (YANGI, ASOSIY)
+
+### Konsepsiya
+
+Professor dars paytida optik kamera (orqa kamera yoki webcam) orqali butun auditoriyani kuzatadi. AI real-time tahlil qiladi va professorga "sinf harorati" ko'rsatadi.
+
+```
+KAMERA PIPELINE:
+[Webcam/IP kamera] → [WebRTC stream] → [OpenCV + MediaPipe] → [AI tahlil] → [Dashboard]
+                                          Face detection         Diqqat holati    Real-time
+                                          Pose estimation        Telefon/gaplash   grafik
+                                          Action recognition     Konfuziya
+```
+
+## 1.3 Professor Smart Tools
+
+```
+CREATIVE TOOLS (Professor Hub da):
+
+1. 🎙️ "Dars Yozuvchisi"
+2. 🃏 "Flipped Classroom Generator"
+3. 📊 "Qiyinchilik Xaritasi"
+4. 🎯 "Maqsad Tracker"
+5. 📅 "Smart Calendar"
+6. 🤖 "AI Ko'mak"
+7. 📝 "Instant Rubric"
+8. 🎬 "Presentation Enhancer"
+9. 📱 "QR Homework"
+10. 🏆 "Class Competition"
+```
+
+---
+
+# ══════════════════════════════════════════
+# MODUL 2 — QUIZ ARENA (Kahoot+ uslubi)
+# ══════════════════════════════════════════
+
+## Konsepsiya
+
+```
+KAHOOT muammolari:         LECTIO QUIZ ARENA:
+────────────────────       ────────────────────────────
+Ingliz tili              → To'liq O'zbek tili
+Faqat 4 variant          → 8 xil savol turi
+Natijalar oddiy          → Batafsil analytics + AI tahlil
+Faqat live               → Live + Solo + Duel + Team + Tournament
+Savol yaratish sekin     → AI metodichkadan 30 soniyada
+
+YANGI REJIMLAR:
+→ "Blooket uslubi": Savol to'g'ri → o'yin puli → do'kon
+→ "Jackbox uslubi": Ijodiy javob → boshqalar ovoz beradi
+→ "Escape Room": Ketma-ket to'g'ri javoblar = yangi xona ochiladi
+```
+
+## 2.1 Rejimlar
+```
+1. LIVE CLASS
+2. SOLO PRACTICE
+3. HOMEWORK
+4. DUEL
+5. TEAM BATTLE
+6. TOURNAMENT
+7. BLITZ MODE
+8. ESCAPE ROOM
+9. DAILY CHALLENGE
+10. BOSS FIGHT
+```
+
+## 2.2 Savol Turlari (8 xil)
+```
+1. MULTIPLE_CHOICE
+2. TRUE_FALSE
+3. SHORT_ANSWER
+4. IMAGE_CHOICE
+5. FILL_BLANK
+6. ORDERING
+7. MATCHING
+8. CREATIVE
+```
+
+---
+
+# ══════════════════════════════════════════
+# MODUL 3 — STUDENT HUB (Shaxsiy O'quv Markazi)
+# ══════════════════════════════════════════
+
+## Konsepsiya
+
+O'quvchi uchun **shaxsiy AI o'quv yo'ldoshi** — nafaqat test yechish, balki o'z bilimini oshirish, zaif tomonlarini topish, va maqsadga erishish uchun to'liq ekosistema.
+
+```
+STUDENT HUB TIZIMI:
+
+📊 DASHBOARD        🧠 AI MENTOR        📚 KUTUBXONA
+Kunlik vazifalar    Savol-javob         Barcha fanlar
+Streak tracker      Tushuntirish        Konspektlar
+XP va levellar      Plan tuzish         Videolar
+
+🃏 FLASHCARDS       👥 PEER ZONE        🎯 GOALS
+Spaced repetition   Do'stlar            Maqsad qo'yish
+SM-2 algoritm       Guruhllar           Progress kuzatish
+Emoji feedback      Savol-javob forum   Milestone tizimi
+```
+
+## 3.1 Creative Student Hub Features
+
+```
+1. 🗺️ "BILIM XARITASI" (Knowledge Map)
+2. 🤖 "SHAXSIY AI USTOZ"
+3. 🎯 "MICRO-GOALS TIZIMI"
+4. 📱 "SNAP & LEARN" (Kamera bilan o'qish)
+5. 🔮 "IMTIHON BASHORATI"
+6. 🎙️ "OVOZLI JAVOB"
+7. 🏅 "ACHIEVEMENT TIZIMI"
+8. 👥 "PEER LEARNING ZONE"
+9. 📅 "SMART STUDY PLANNER"
+10. 🌊 "FLOW STATE TRACKER"
+11. 🎮 "DAILY QUEST"
+12. 🔄 "SPACED REPETITION ENGINE" (SM-2)
+```
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 4 — DIZAYN TIZIMI (TO'LIQ)
+# ══════════════════════════════════════════
+
+## Global CSS Tokens
+```css
+/* Asosiy ranglar */
+--saffron:   #F5A623;
+--lapis:     #1B4FD8;
+--jade:      #0D9373;
+--coral:     #E84855;
+--amethyst:  #7B2FBE;
+--midnight:  #0F1729;
+```
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 5 — BACKEND API (TO'LIQ RO'YXAT)
+# ══════════════════════════════════════════
+```
+AUTH / MATERIALS / LESSONS / SESSIONS / QUESTIONS / QUIZ / FLASHCARDS / STUDENT HUB / AI MENTOR / PEER LEARNING / CAMERA / ANALYTICS / WEBSOCKET
+```
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 6 — MUHIT VA ISHGA TUSHIRISH
+# ══════════════════════════════════════════
+```env
+DATABASE_URL=postgresql://lectio:password@localhost:5432/lectio_db
+REDIS_URL=redis://localhost:6379/0
+ANTHROPIC_API_KEY=sk-ant-...
+JWT_SECRET=your-super-secret-min-32-chars
+```
+
+---
+
+# ══════════════════════════════════════════
+# BLOK 7 — CURSOR GA KO'RSATMALAR
+# ══════════════════════════════════════════
+
+```
+MUHIM QOIDALAR:
+1. DIZAYN: globals.css dagi CSS variables FAQAT, Framer Motion, Dark mode.
+2. KOD SIFATI: TypeScript strict mode, Zod validation, React Query.
+3. BACKEND: Async/await, Redis, Celery, Rate limiting.
+4. KAMERA TIZIMI: Faqat aggregate statistika, WebRTC, OpenCV.
+5. REAL-TIME: Socket.io rooms, Redis adapter.
+6. MODUL AYIRISH: apps/professor, apps/quiz, apps/student.
+```
+
+---
+
+*Lectio AI — O'qituvchining kuchi, Talabaning xotirasi, O'zbekistonning kelajagi.*

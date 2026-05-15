@@ -1,0 +1,378 @@
+from socketio import AsyncServer
+import asyncio
+import json
+import random
+import string
+import time
+import os
+import redis.asyncio as redis
+from anthropic import AsyncAnthropic
+
+sio = AsyncServer(
+    async_mode='asgi',
+    cors_allowed_origins=["http://localhost:3000", "https://lectioai.uz"]
+)
+
+# Redis for horizontal scaling and state management
+REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
+try:
+    # Add timeouts for remote connection
+    redis_client = redis.from_url(
+        REDIS_URL, 
+        decode_responses=True,
+        socket_timeout=5,
+        socket_connect_timeout=5,
+        retry_on_timeout=True
+    )
+except Exception as e:
+    print(f"Failed to connect to Redis at {REDIS_URL}: {e}")
+    redis_client = None
+
+# Anthropic for AI grading
+anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+def generate_room_code() -> str:
+    # 6 characters, readable (no O/0, I/1 confusion)
+    chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    return "".join(random.choices(chars, k=6))
+
+async def get_room(room_code: str):
+    if not redis_client:
+        return None
+    data = await redis_client.get(f"quiz:room:{room_code}")
+    return json.loads(data) if data else None
+
+async def save_room(room_code: str, room_data: dict):
+    if not redis_client:
+        return
+    # Expire after 4 hours of inactivity
+    await redis_client.setex(f"quiz:room:{room_code}", 4 * 3600, json.dumps(room_data))
+
+async def delete_room(room_code: str):
+    if not redis_client:
+        return
+    await redis_client.delete(f"quiz:room:{room_code}")
+
+async def ai_grade_short_answer(correct_answer: str, student_answer: str) -> float:
+    # returns score between 0.0 and 1.0
+    prompt = f"""
+Siz o'qituvchisiz. O'quvchining qisqa javobini baholang (0.0 dan 1.0 gacha bo'lgan raqam qaytaring, faqat raqam, boshqa matn yo'q).
+To'g'ri javob: {correct_answer}
+O'quvchi javobi: {student_answer}
+"""
+    try:
+        response = await anthropic_client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=10,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        score_str = response.content[0].text.strip()
+        score = float(score_str)
+        return max(0.0, min(1.0, score))
+    except:
+        return 0.0
+
+def calculate_score(q_data: dict, time_taken_ms: int, streak: int, correctness: float = 1.0) -> int:
+    if correctness <= 0:
+        return 0
+    
+    base_points = 1000
+    time_limit_ms = q_data.get("time_limit", 30) * 1000
+    
+    # Speed bonus up to 500
+    time_ratio = max(0, 1 - (time_taken_ms / time_limit_ms))
+    speed_bonus = 500 * time_ratio
+    
+    raw_points = base_points + speed_bonus
+    
+    # Streak multiplier
+    multiplier = 1.0
+    if streak >= 5:
+        multiplier = 2.0
+    elif streak >= 3:
+        multiplier = 1.5
+        
+    return int((raw_points * multiplier) * correctness)
+
+def get_leaderboard(room: dict):
+    parts = list(room.get("participants", {}).values())
+    sorted_parts = sorted(parts, key=lambda x: x["score"], reverse=True)
+    return [
+        {
+            "rank": i + 1,
+            "name": p["name"],
+            "score": p["score"],
+            "streak": p.get("streak", 0),
+            "student_id": p.get("student_id")
+        }
+        for i, p in enumerate(sorted_parts)
+    ]
+
+# SOCKET.IO EVENTS
+
+@sio.event
+async def connect(sid, environ):
+    # JWT authentication logic can be implemented here
+    print(f"Connected: {sid}")
+
+@sio.event
+async def disconnect(sid):
+    # Find which room the user is in from redis index (simple scan for demo)
+    # In production, use a reverse mapping sid -> room_code in Redis
+    pass
+
+# PROFESSOR EVENTS
+@sio.event
+async def create_room(sid, data):
+    room_code = generate_room_code()
+    # Check uniqueness
+    while await get_room(room_code):
+        room_code = generate_room_code()
+        
+    room_data = {
+        "status": "waiting",
+        "room_code": room_code,
+        "professor_sid": sid,
+        "lesson_id": data.get("lesson_id"),
+        "questions": data.get("questions", []),
+        "settings": data.get("settings", {}),
+        "current_q_index": -1,
+        "participants": {}, # sid -> {name, score, streak, ...}
+        "answers": {}, # q_index -> {sid -> {answer, score, time_taken}}
+        "question_start_time": None
+    }
+    await save_room(room_code, room_data)
+    await sio.enter_room(sid, room_code)
+    await sio.emit("room_created", {"room_code": room_code}, to=sid)
+
+@sio.event
+async def set_phone_permission(sid, data):
+    """Professor allows/disallows phone usage"""
+    room_code = data.get("room_code")
+    if not room_code:
+        return
+        
+    room = await get_room(room_code)
+    if not room or room.get("professor_sid") != sid:
+        return
+    
+    room["phone_allowed"] = data.get("allowed", False)
+    await save_room(room_code, room)
+    
+    # Broadcast to all students in room
+    await sio.emit("phone_permission", {"allowed": data["allowed"]}, room=room_code)
+
+@sio.event
+async def start_question(sid, data):
+    room_code = data["room_code"]
+    room = await get_room(room_code)
+    if not room or room["professor_sid"] != sid:
+        return
+
+    q_idx = data["question_index"]
+    if q_idx >= len(room["questions"]):
+        return
+        
+    room["current_q_index"] = q_idx
+    room["status"] = "active"
+    room["question_start_time"] = time.time()
+    
+    if str(q_idx) not in room["answers"]:
+        room["answers"][str(q_idx)] = {}
+        
+    await save_room(room_code, room)
+    
+    q_data = room["questions"][q_idx]
+    
+    # Strip correct answer for broadcast
+    safe_q_data = {k: v for k, v in q_data.items() if k not in ["correct_answer", "explanation"]}
+    
+    await sio.emit("question_started", {
+        "question": safe_q_data,
+        "time_limit": q_data.get("time_limit", 30)
+    }, room=room_code)
+
+@sio.event
+async def end_question(sid, data):
+    room_code = data["room_code"]
+    room = await get_room(room_code)
+    if not room or room["professor_sid"] != sid:
+        return
+        
+    room["status"] = "showing_results"
+    await save_room(room_code, room)
+    
+    q_idx = room["current_q_index"]
+    q_data = room["questions"][q_idx]
+    
+    # Calculate stats
+    ans_dict = room["answers"].get(str(q_idx), {})
+    stats = {}
+    correct_count = 0
+    for a in ans_dict.values():
+        val = a["answer"]
+        stats[val] = stats.get(val, 0) + 1
+        if a["score"] > 0:
+            correct_count += 1
+            
+    await sio.emit("question_results", {
+        "correct_answer": q_data.get("correct_answer"),
+        "explanation": q_data.get("explanation"),
+        "stats": stats,
+        "correct_count": correct_count,
+        "top5_leaderboard": get_leaderboard(room)[:5]
+    }, room=room_code)
+
+@sio.event
+async def end_quiz(sid, data):
+    room_code = data["room_code"]
+    room = await get_room(room_code)
+    if not room or room["professor_sid"] != sid:
+        return
+        
+    room["status"] = "ended"
+    await save_room(room_code, room)
+    
+    leaderboard = get_leaderboard(room)
+    await sio.emit("quiz_ended", {
+        "final_leaderboard": leaderboard,
+    }, room=room_code)
+    await delete_room(room_code)
+
+
+# STUDENT EVENTS
+@sio.event
+async def join_room(sid, data):
+    room_code = data["room_code"].upper()
+    room = await get_room(room_code)
+    
+    if not room:
+        await sio.emit("error", {"message": "Room not found"}, to=sid)
+        return
+        
+    nickname = data["nickname"]
+    student_id = data.get("student_id")
+    
+    # Handle rejoining by matching student_id or nickname
+    existing_sid = None
+    for p_sid, p_data in room["participants"].items():
+        if (student_id and p_data.get("student_id") == student_id) or p_data["name"] == nickname:
+            existing_sid = p_sid
+            break
+            
+    if existing_sid and existing_sid != sid:
+        room["participants"][sid] = room["participants"].pop(existing_sid)
+    elif sid not in room["participants"]:
+        room["participants"][sid] = {
+            "name": nickname,
+            "student_id": student_id,
+            "score": 0,
+            "streak": 0,
+            "correct_answers": 0,
+            "total_time_ms": 0
+        }
+        
+    await save_room(room_code, room)
+    await sio.enter_room(sid, room_code)
+    
+    nicknames = [p["name"] for p in room["participants"].values()]
+    
+    await sio.emit("room_joined", {
+        "participant_count": len(room["participants"]),
+        "nickname_list": nicknames
+    }, room=room_code)
+    
+    await sio.emit("join_success", {"nickname": nickname}, to=sid)
+
+@sio.event
+async def submit_answer(sid, data):
+    room_code = data["room_code"]
+    room = await get_room(room_code)
+    if not room or room["status"] != "active":
+        return
+        
+    q_idx = str(room["current_q_index"])
+    if sid in room["answers"].get(q_idx, {}):
+        return # Duplicate submission
+        
+    # Set NX to prevent double submit race conditions via Redis
+    if not redis_client:
+        return True # Fallback if redis is down (allows double submits but app doesn't crash)
+        
+    nx_key = f"quiz:submit:{room_code}:{q_idx}:{sid}"
+    is_first = await redis_client.setnx(nx_key, "1")
+    if not is_first:
+        return
+        
+    await redis_client.expire(nx_key, 60) # Expire lock
+    
+    answer = data["answer"]
+    
+    # Server-side timing (anti-cheat)
+    server_time_taken_ms = int((time.time() - room["question_start_time"]) * 1000)
+    # Take the larger time to prevent client cheating (saying they took 1ms)
+    client_time_taken_ms = data.get("time_taken_ms", server_time_taken_ms)
+    time_taken_ms = max(server_time_taken_ms, client_time_taken_ms)
+    
+    q_data = room["questions"][int(q_idx)]
+    q_type = q_data.get("type", "multiple_choice")
+    correct_ans = q_data.get("correct_answer")
+    
+    correctness = 0.0
+    if q_type == "short_answer":
+        correctness = await ai_grade_short_answer(correct_ans, answer)
+    else:
+        correctness = 1.0 if str(answer).upper() == str(correct_ans).upper() else 0.0
+        
+    participant = room["participants"][sid]
+    streak = participant.get("streak", 0)
+    
+    if correctness > 0:
+        streak += 1
+        participant["correct_answers"] += 1
+    else:
+        streak = 0
+        
+    points = calculate_score(q_data, time_taken_ms, streak, correctness)
+    
+    participant["streak"] = streak
+    participant["score"] += points
+    participant["total_time_ms"] += time_taken_ms
+    
+    room["answers"][q_idx][sid] = {
+        "answer": answer,
+        "score": points,
+        "time_taken": time_taken_ms
+    }
+    
+    await save_room(room_code, room)
+    
+    # Get rank
+    leaderboard = get_leaderboard(room)
+    rank = next((i + 1 for i, p in enumerate(leaderboard) if p["name"] == participant["name"]), 0)
+    
+    await sio.emit("answer_confirmed", {
+        "is_correct": correctness > 0.5,
+        "points_earned": points,
+        "current_score": participant["score"],
+        "rank": rank,
+        "streak": streak
+    }, to=sid)
+    
+    # Update professor stats
+    await sio.emit("answer_stats", {
+        "answered_count": len(room["answers"][q_idx]),
+        "total_count": len(room["participants"])
+    }, to=room["professor_sid"])
+
+@sio.event
+async def ask_question(sid, data):
+    room_code = data["room_code"]
+    room = await get_room(room_code)
+    if not room:
+        return
+        
+    await sio.emit("student_asked", {
+        "question_text": data["text"]
+    }, to=room["professor_sid"])
