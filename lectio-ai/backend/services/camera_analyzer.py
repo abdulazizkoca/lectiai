@@ -9,12 +9,18 @@ import os
 client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 import mediapipe as mp
 try:
-    mp_face_mesh = mp.solutions.face_mesh
-    mp_pose = mp.solutions.pose
-    mp_hands = mp.solutions.hands
+    from mediapipe.python.solutions import face_mesh as mp_face_mesh
+    from mediapipe.python.solutions import pose as mp_pose
+    from mediapipe.python.solutions import hands as mp_hands
     HAS_MEDIAPIPE = True
-except AttributeError:
-    HAS_MEDIAPIPE = False
+except (ImportError, AttributeError):
+    try:
+        mp_face_mesh = mp.solutions.face_mesh
+        mp_pose = mp.solutions.pose
+        mp_hands = mp.solutions.hands
+        HAS_MEDIAPIPE = True
+    except AttributeError:
+        HAS_MEDIAPIPE = False
 
 class ClassroomAnalyzer:
     """

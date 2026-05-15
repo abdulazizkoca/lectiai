@@ -19,11 +19,19 @@ class AttentionData:
 # OpenCV va MediaPipe ni ixtiyoriy import qilamiz
 try:
     import cv2
-    import mediapipe as mp
     import numpy as np
+    import mediapipe as mp
+    try:
+        from mediapipe.python.solutions import face_mesh, face_detection
+        mp_face_mesh = face_mesh
+        mp_face_detection = face_detection
+    except ImportError:
+        mp_face_mesh = mp.solutions.face_mesh
+        mp_face_detection = mp.solutions.face_detection
+    
     # Check if critical components are actually available
-    _ = mp.solutions.face_mesh
-    _ = mp.solutions.face_detection
+    _ = mp_face_mesh.FaceMesh
+    _ = mp_face_detection.FaceDetection
     CAMERA_AVAILABLE = True
 except (ImportError, AttributeError) as e:
     CAMERA_AVAILABLE = False
@@ -138,37 +146,18 @@ class FaceRecognitionService:
 
         return None
 
-@dataclass
-class AttentionData:
-    attention_level: float      # 0.0 - 1.0
-    confusion_detected: bool
-    boredom_detected: bool
-    students_count: int
-    recommendation: Optional[str]
-
-
-# OpenCV va MediaPipe ni ixtiyoriy import qilamiz
-try:
-    import cv2
-    import mediapipe as mp
-    import numpy as np
-    _ = mp.solutions.face_mesh
-    _ = mp.solutions.face_detection
-    CAMERA_AVAILABLE = True
-except (ImportError, AttributeError):
-    CAMERA_AVAILABLE = False
 
 
 class CameraAnalyzer:
     def __init__(self):
         if CAMERA_AVAILABLE:
-            self.mp_face_mesh = mp.solutions.face_mesh
+            self.mp_face_mesh = mp_face_mesh
             self.face_mesh = self.mp_face_mesh.FaceMesh(
                 min_detection_confidence=0.5,
                 min_tracking_confidence=0.5,
                 max_num_faces=50
             )
-            self.mp_face_detection = mp.solutions.face_detection
+            self.mp_face_detection = mp_face_detection
             self.face_detection = self.mp_face_detection.FaceDetection(
                 min_detection_confidence=0.5
             )
