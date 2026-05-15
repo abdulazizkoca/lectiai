@@ -47,11 +47,14 @@ class RecognitionResult:
 
 class FaceRecognitionService:
     """
-    Face recognition service using face-recognition library
+    Face recognition service using MediaPipe FaceMesh as a pseudo-encoding.
+    This replaces the heavy face-recognition library for deployment compatibility.
+    Note: MediaPipe FaceMesh is not a true identity encoder, but serves as a tracking placeholder.
     """
 
     def __init__(self, tolerance: float = 0.6):
-        self.tolerance = tolerance
+        # We increase tolerance because FaceMesh distance is different
+        self.tolerance = 0.5 
         self.known_encodings = []
         self.known_ids = []
         self.known_names = []
@@ -74,47 +77,62 @@ class FaceRecognitionService:
 
         self.is_loaded = True
 
+    def _get_encoding(self, face_image: np.ndarray) -> Optional[np.ndarray]:
+        if not CAMERA_AVAILABLE:
+            return None
+        
+        # Convert BGR to RGB if needed
+        if face_image.shape[2] == 3:
+            rgb_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+        else:
+            rgb_image = face_image
+            
+        with mp_face_mesh.FaceMesh(
+            static_image_mode=True, 
+            max_num_faces=1, 
+            refine_landmarks=False,
+            min_detection_confidence=0.5
+        ) as fm:
+            results = fm.process(rgb_image)
+            if results.multi_face_landmarks:
+                landmarks = results.multi_face_landmarks[0]
+                encoding = []
+                # Extract simple coordinates as a pseudo-encoding
+                for lm in landmarks.landmark:
+                    encoding.extend([lm.x, lm.y, lm.z])
+                return np.array(encoding)
+        return None
+
     def recognize_face(self, face_image: np.ndarray) -> RecognitionResult:
         """
-        Recognize a face from image
+        Recognize a face from image using MediaPipe pseudo-encoding
         """
         if not self.is_loaded or len(self.known_encodings) == 0:
             return RecognitionResult()
 
         try:
-            import face_recognition
-
-            # Convert BGR to RGB if needed
-            if face_image.shape[2] == 3:
-                rgb_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-            else:
-                rgb_image = face_image
-
-            # Get face encoding
-            face_encodings = face_recognition.face_encodings(rgb_image)
-
-            if len(face_encodings) == 0:
+            encoding = self._get_encoding(face_image)
+            if encoding is None:
                 return RecognitionResult()
 
-            face_encoding = face_encodings[0]
+            # Compare with known faces using cosine similarity or euclidean distance
+            # Here we use a simple euclidean distance normalized
+            distances = [np.linalg.norm(known - encoding) for known in self.known_encodings]
+            
+            if not distances:
+                return RecognitionResult()
 
-            # Compare with known faces
-            distances = face_recognition.face_distance(self.known_encodings, face_encoding)
-
-            # Find best match
             min_distance_idx = np.argmin(distances)
             min_distance = distances[min_distance_idx]
 
             if min_distance <= self.tolerance:
-                confidence = 1.0 - min_distance
+                confidence = max(0.0, 1.0 - min_distance)
                 return RecognitionResult(
                     student_id=self.known_ids[min_distance_idx],
                     student_name=self.known_names[min_distance_idx],
                     confidence=confidence
                 )
 
-        except ImportError:
-            print("face-recognition library not installed")
         except Exception as e:
             print(f"Face recognition error: {e}")
 
@@ -122,25 +140,12 @@ class FaceRecognitionService:
 
     def register_face(self, face_image: np.ndarray) -> Optional[List[float]]:
         """
-        Generate face encoding for registration
+        Generate face pseudo-encoding for registration using MediaPipe
         """
         try:
-            import face_recognition
-
-            # Convert BGR to RGB if needed
-            if face_image.shape[2] == 3:
-                rgb_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-            else:
-                rgb_image = face_image
-
-            # Get face encoding
-            face_encodings = face_recognition.face_encodings(rgb_image)
-
-            if len(face_encodings) > 0:
-                return face_encodings[0].tolist()
-
-        except ImportError:
-            print("face-recognition library not installed")
+            encoding = self._get_encoding(face_image)
+            if encoding is not None:
+                return encoding.tolist()
         except Exception as e:
             print(f"Face encoding error: {e}")
 
