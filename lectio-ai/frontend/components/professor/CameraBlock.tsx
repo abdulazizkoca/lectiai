@@ -305,7 +305,7 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
         attention = Math.max(0, attentionRaw - 8);
       }
 
-      const getStatusWithSensitivity = (att: number) => {
+      const getStatusWithSensitivity = (att: number): FaceStatus => {
         if (att < redThreshold) return "red";
         if (att < yellowThreshold) return "yellow";
         return "green";

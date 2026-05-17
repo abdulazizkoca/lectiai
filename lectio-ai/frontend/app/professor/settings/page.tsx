@@ -841,7 +841,7 @@ export default function ProfessorSettingsPage() {
                           <p className="text-xs text-slate-400 mt-0.5">{t.securitySection.twoFactorDesc}</p>
                         </div>
                         <div className="flex items-center gap-3">
-                          <Badge color={is2FAEnabled ? "jade" : "crimson"} size="sm">
+                          <Badge color={is2FAEnabled ? "jade" : "coral"} size="sm">
                             {is2FAEnabled ? t.securitySection.active : t.securitySection.disabled}
                           </Badge>
                           <Button variant="ghost" size="sm" onClick={handle2FASetupToggle} className="border border-white/10 h-9">
