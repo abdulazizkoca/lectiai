@@ -25,9 +25,9 @@ export default function IndependentStudyPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success, error, info } = useToast();
-  const { isDark } = useTheme();
-  const { t, language } = useLanguage();
-  
+  const { isDark, toggleTheme } = useTheme();
+  const { t, language, setLanguage } = useLanguage();
+
   const bg = isDark ? "#0A0A0F" : "#F8FAFC";
   const fg = isDark ? "#fff" : "#0A0A0F";
   const surface = isDark ? "rgba(255,255,255,0.04)" : "#fff";
@@ -55,16 +55,16 @@ export default function IndependentStudyPage() {
   ];
 
   const RECENT_TOPICS = [
-    { id: 1, title: "React Hooks", subject: t("subject.programming"), subjectId: "programming", progress: 75, lastStudied: t("students.mock.3d_ago"), difficulty: t("students.perf_average"), quizScore: 82 },
-    { id: 2, title: "Diferensial tenglamalar", subject: t("subject.math"), subjectId: "math", progress: 45, lastStudied: t("students.mock.1d_ago"), difficulty: t("students.perf_excellent"), quizScore: 61 },
-    { id: 3, title: "Organik kimyo asoslari", subject: t("subject.chemistry"), subjectId: "chemistry", progress: 90, lastStudied: t("students.mock.2h_ago"), difficulty: t("students.perf_good"), quizScore: 94 },
-    { id: 4, title: "Jahon urushi tarixi", subject: t("subject.history"), subjectId: "history", progress: 60, lastStudied: t("students.mock.30m_ago"), difficulty: t("students.perf_average"), quizScore: 73 },
+    { id: 1, title: t("student.indep.recent1.title"), subject: t("subject.programming"), subjectId: "programming", progress: 75, lastStudied: t("students.mock.3d_ago"), difficulty: t("students.perf_average"), quizScore: 82 },
+    { id: 2, title: t("student.indep.recent2.title"), subject: t("subject.math"), subjectId: "math", progress: 45, lastStudied: t("students.mock.1d_ago"), difficulty: t("students.perf_excellent"), quizScore: 61 },
+    { id: 3, title: t("student.indep.recent3.title"), subject: t("subject.chemistry"), subjectId: "chemistry", progress: 90, lastStudied: t("students.mock.2h_ago"), difficulty: t("students.perf_good"), quizScore: 94 },
+    { id: 4, title: t("student.indep.recent4.title"), subject: t("subject.history"), subjectId: "history", progress: 60, lastStudied: t("students.mock.30m_ago"), difficulty: t("students.perf_average"), quizScore: 73 },
   ];
 
   const AI_RECOMMENDATIONS = [
-    { title: "React Hooksni takrorlang", reason: "Uzoq vaqt o'rganilmagan", subjectId: "programming", topic: "React Hooks", icon: "🔄", urgency: "high" },
-    { title: "Limit va hosilalar", reason: "Diferensial tenglamalar uchun asos", subjectId: "math", topic: "Limit va hosilalar", icon: "📈", urgency: "medium" },
-    { title: "Kvant mexanikasi", reason: "Fizikadagi yangi mavzu siz uchun", subjectId: "physics", topic: "Kvant mexanikasi", icon: "✨", urgency: "low" },
+    { title: t("student.indep.ai1.title"), reason: t("student.indep.ai1.reason"), subjectId: "programming", topic: "React Hooks", icon: "🔄", urgency: "high" },
+    { title: t("student.indep.ai2.title"), reason: t("student.indep.ai2.reason"), subjectId: "math", topic: "Limit va hosilalar", icon: "📈", urgency: "medium" },
+    { title: t("student.indep.ai3.title"), reason: t("student.indep.ai3.reason"), subjectId: "physics", topic: "Kvant mexanikasi", icon: "✨", urgency: "low" },
   ];
 
   const STATS = [
@@ -159,7 +159,6 @@ export default function IndependentStudyPage() {
               <div className="flex items-center rounded-lg p-1" style={{ background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)", border: `1px solid ${surfaceBorder}` }}>
                 <button onClick={() => setLanguage("uz")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'uz' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>UZ</button>
                 <button onClick={() => setLanguage("ru")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'ru' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>RU</button>
-                <button onClick={() => setLanguage("en")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'en' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>EN</button>
               </div>
               <button onClick={toggleTheme} className="w-9 h-9 rounded-lg flex items-center justify-center transition-all" aria-label="Mavzuni o'zgartirish" style={{ background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)", color: "#F5A623", border: `1px solid ${surfaceBorder}` }}>
                 {isDark ? <Sun size={15} /> : <Moon size={15} />}

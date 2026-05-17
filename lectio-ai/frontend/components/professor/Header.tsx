@@ -82,7 +82,7 @@ export function Header({ onOpenSearch, onOpenNotifications, onToggleMobileMenu }
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 text-slate-500 hover:text-[#F5A623] transition-colors bg-slate-100 dark:bg-white/5 rounded-lg border border-black/5 dark:border-white/5"
+          className="w-9 h-9 flex items-center justify-center text-[#F5A623] hover:text-[#f7b955] transition-all bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 rounded-lg border border-black/5 dark:border-white/5 shadow-sm"
           aria-label="Toggle theme"
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
