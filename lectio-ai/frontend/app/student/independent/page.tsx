@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   Search, Upload, BookOpen, Brain, FileText, Trophy,
   MessageCircle, Star, Clock, TrendingUp, ChevronRight,
-  Sparkles, ArrowLeft, BarChart3, Flame, Target
+  Sparkles, ArrowLeft, BarChart3, Flame, Target, Sun, Moon
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -14,39 +14,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Spinner } from "@/components/ui/Spinner";
 import { useToast } from "@/contexts/ToastContext";
 import { useTheme } from "@/contexts/ThemeContext";
-
-const SUBJECTS = [
-  { id: "math", name: "Matematika", icon: "📐", color: "#1B4FD8", bg: "rgba(27,79,216,0.12)", description: "Algebra, geometriya, hisob", topics: 42 },
-  { id: "physics", name: "Fizika", icon: "⚛️", color: "#8B5CF6", bg: "rgba(139,92,246,0.12)", description: "Mexanika, termodinamika, kvant", topics: 38 },
-  { id: "chemistry", name: "Kimyo", icon: "🧪", color: "#0D9373", bg: "rgba(13,147,115,0.12)", description: "Organik, noorganik, biokimyo", topics: 31 },
-  { id: "history", name: "Tarix", icon: "📚", color: "#F5A623", bg: "rgba(245,166,35,0.12)", description: "Jahon tarixi, O'zbekiston", topics: 55 },
-  { id: "biology", name: "Biologiya", icon: "🧬", color: "#10B981", bg: "rgba(16,185,129,0.12)", description: "Genetika, ekologiya, anatomiya", topics: 29 },
-  { id: "languages", name: "Tillar", icon: "🌍", color: "#E84855", bg: "rgba(232,72,85,0.12)", description: "Ingliz, rus, arab tillari", topics: 67 },
-  { id: "programming", name: "Dasturlash", icon: "💻", color: "#6366F1", bg: "rgba(99,102,241,0.12)", description: "Python, JavaScript, algoritmlar", topics: 44 },
-  { id: "literature", name: "Adabiyot", icon: "📖", color: "#EC4899", bg: "rgba(236,72,153,0.12)", description: "O'zbek, jahon adabiyoti", topics: 23 },
-  { id: "geography", name: "Geografiya", icon: "🌏", color: "#06B6D4", bg: "rgba(6,182,212,0.12)", description: "Jismoniy, iqtisodiy geografiya", topics: 19 },
-  { id: "economics", name: "Iqtisodiyot", icon: "💰", color: "#F59E0B", bg: "rgba(245,158,11,0.12)", description: "Mikro, makroiqtisodiyot", topics: 27 },
-];
-
-const RECENT_TOPICS = [
-  { id: 1, title: "React Hooks", subject: "Dasturlash", subjectId: "programming", progress: 75, lastStudied: "2 kun oldin", difficulty: "O'rtacha", quizScore: 82 },
-  { id: 2, title: "Diferensial tenglamalar", subject: "Matematika", subjectId: "math", progress: 45, lastStudied: "1 hafta oldin", difficulty: "Qiyin", quizScore: 61 },
-  { id: 3, title: "Organik kimyo asoslari", subject: "Kimyo", subjectId: "chemistry", progress: 90, lastStudied: "Kecha", difficulty: "Oson", quizScore: 94 },
-  { id: 4, title: "Jahon urushi tarixi", subject: "Tarix", subjectId: "history", progress: 60, lastStudied: "3 kun oldin", difficulty: "O'rtacha", quizScore: 73 },
-];
-
-const AI_RECOMMENDATIONS = [
-  { title: "React Hooksni takrorlang", reason: "Uzoq vaqt o'rganilmagan", subjectId: "programming", topic: "React Hooks", icon: "🔄", urgency: "high" },
-  { title: "Limit va hosilalar", reason: "Diferensial tenglamalar uchun asos", subjectId: "math", topic: "Limit va hosilalar", icon: "📈", urgency: "medium" },
-  { title: "Kvant mexanikasi", reason: "Fizikadagi yangi mavzu siz uchun", subjectId: "physics", topic: "Kvant mexanikasi", icon: "✨", urgency: "low" },
-];
-
-const STATS = [
-  { label: "Jami o'qilgan", value: "24 soat", icon: Clock, color: "#F5A623" },
-  { label: "Mavzular", value: "18 ta", icon: BookOpen, color: "#1B4FD8" },
-  { label: "O'rtacha ball", value: "87%", icon: Target, color: "#0D9373" },
-  { label: "Streak", value: "7 kun", icon: Flame, color: "#E84855" },
-];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function IndependentStudyPage() {
   const router = useRouter();
@@ -58,12 +26,53 @@ export default function IndependentStudyPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { success, error, info } = useToast();
   const { isDark } = useTheme();
+  const { t, language } = useLanguage();
   
   const bg = isDark ? "#0A0A0F" : "#F8FAFC";
   const fg = isDark ? "#fff" : "#0A0A0F";
   const surface = isDark ? "rgba(255,255,255,0.04)" : "#fff";
   const surfaceBorder = isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.05)";
   const fgMuted = isDark ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.6)";
+
+  const weekdaysMap = {
+    uz: ["D", "S", "Ch", "P", "J", "Sh", "Ya"],
+    ru: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
+    en: ["M", "T", "W", "T", "F", "S", "S"],
+  };
+  const weekdays = weekdaysMap[language] || weekdaysMap.uz;
+
+  const SUBJECTS = [
+    { id: "math", name: t("subject.math"), icon: "📐", color: "#1B4FD8", bg: "rgba(27,79,216,0.12)", description: t("subject.math.desc"), topics: 42 },
+    { id: "physics", name: t("subject.physics"), icon: "⚛️", color: "#8B5CF6", bg: "rgba(139,92,246,0.12)", description: t("subject.physics.desc"), topics: 38 },
+    { id: "chemistry", name: t("subject.chemistry"), icon: "🧪", color: "#0D9373", bg: "rgba(13,147,115,0.12)", description: t("subject.chemistry.desc"), topics: 31 },
+    { id: "history", name: t("subject.history"), icon: "📚", color: "#F5A623", bg: "rgba(245,166,35,0.12)", description: t("subject.history.desc"), topics: 55 },
+    { id: "biology", name: t("subject.biology"), icon: "🧬", color: "#10B981", bg: "rgba(16,185,129,0.12)", description: t("subject.biology.desc"), topics: 29 },
+    { id: "languages", name: t("subject.languages"), icon: "🌍", color: "#E84855", bg: "rgba(232,72,85,0.12)", description: t("subject.languages.desc"), topics: 67 },
+    { id: "programming", name: t("subject.programming"), icon: "💻", color: "#6366F1", bg: "rgba(99,102,241,0.12)", description: t("subject.programming.desc"), topics: 44 },
+    { id: "literature", name: t("subject.literature"), icon: "📖", color: "#EC4899", bg: "rgba(236,72,153,0.12)", description: t("subject.literature.desc"), topics: 23 },
+    { id: "geography", name: t("subject.geography"), icon: "🌏", color: "#06B6D4", bg: "rgba(6,182,212,0.12)", description: t("subject.geography.desc"), topics: 19 },
+    { id: "economics", name: t("subject.economics"), icon: "💰", color: "#F59E0B", bg: "rgba(245,158,11,0.12)", description: t("subject.economics.desc"), topics: 27 },
+  ];
+
+  const RECENT_TOPICS = [
+    { id: 1, title: "React Hooks", subject: t("subject.programming"), subjectId: "programming", progress: 75, lastStudied: t("students.mock.3d_ago"), difficulty: t("students.perf_average"), quizScore: 82 },
+    { id: 2, title: "Diferensial tenglamalar", subject: t("subject.math"), subjectId: "math", progress: 45, lastStudied: t("students.mock.1d_ago"), difficulty: t("students.perf_excellent"), quizScore: 61 },
+    { id: 3, title: "Organik kimyo asoslari", subject: t("subject.chemistry"), subjectId: "chemistry", progress: 90, lastStudied: t("students.mock.2h_ago"), difficulty: t("students.perf_good"), quizScore: 94 },
+    { id: 4, title: "Jahon urushi tarixi", subject: t("subject.history"), subjectId: "history", progress: 60, lastStudied: t("students.mock.30m_ago"), difficulty: t("students.perf_average"), quizScore: 73 },
+  ];
+
+  const AI_RECOMMENDATIONS = [
+    { title: "React Hooksni takrorlang", reason: "Uzoq vaqt o'rganilmagan", subjectId: "programming", topic: "React Hooks", icon: "🔄", urgency: "high" },
+    { title: "Limit va hosilalar", reason: "Diferensial tenglamalar uchun asos", subjectId: "math", topic: "Limit va hosilalar", icon: "📈", urgency: "medium" },
+    { title: "Kvant mexanikasi", reason: "Fizikadagi yangi mavzu siz uchun", subjectId: "physics", topic: "Kvant mexanikasi", icon: "✨", urgency: "low" },
+  ];
+
+  const STATS = [
+    { label: t("student.indep.stat_total_time"), value: t("student.indep.stat_total_time_val"), icon: Clock, color: "#F5A623" },
+    { label: t("student.indep.stat_topics"), value: t("student.indep.stat_topics_val"), icon: BookOpen, color: "#1B4FD8" },
+    { label: t("student.indep.stat_avg_score"), value: "87%", icon: Target, color: "#0D9373" },
+    { label: t("student.indep.stat_streak"), value: t("student.indep.stat_streak_val"), icon: Flame, color: "#E84855" },
+  ];
 
   const filteredSubjects = SUBJECTS.filter(
     (s) =>
@@ -72,28 +81,28 @@ export default function IndependentStudyPage() {
   );
 
   const handleSubjectSelect = (subject: typeof SUBJECTS[0]) => {
-    info("Mavzu tanlandi", `${subject.name} bo'yicha o'qish rejimi ochilmoqda...`);
+    info(t("student.indep.toast_subject_sel"), t("student.indep.toast_subject_desc").replace("{name}", subject.name));
     router.push(`/student/independent/learn?subject=${subject.id}&subjectName=${encodeURIComponent(subject.name)}&mode=tutor`);
   };
 
   const handleCustomTopicSubmit = () => {
     if (customTopic.trim()) {
-      success("Mavzu tanlandi", `${customTopic.trim()} bo'yicha o'qish boshlanadi`);
+      success(t("student.indep.toast_subject_sel"), t("student.indep.toast_custom_desc").replace("{name}", customTopic.trim()));
       router.push(`/student/independent/learn?topic=${encodeURIComponent(customTopic.trim())}&mode=tutor`);
     } else {
-      error("Xatolik", "Iltimos, mavzu nomini kiriting");
+      error(t("student.indep.toast_err"), t("student.indep.toast_err_desc"));
     }
   };
 
   const handleFileSelect = async (file: File) => {
     if (!["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "text/plain"].includes(file.type)) {
-      error("Noto'g'ri fayl turi", "Faqat PDF, Word yoki matn fayllarini yuklash mumkin");
+      error(t("student.indep.toast_err_file"), t("student.indep.toast_err_file_desc"));
       return;
     }
     setUploadedFile(file);
     setIsUploading(true);
     setTimeout(() => {
-      success("Fayl yuklandi", `${file.name} muvaffaqiyatli yuklandi va tahlil qilindi`);
+      success(t("student.indep.toast_file_ok"), t("student.indep.toast_file_desc").replace("{name}", file.name));
       setIsUploading(false);
       router.push(`/student/independent/learn?file=${encodeURIComponent(file.name)}&mode=tutor`);
     }, 2200);
@@ -120,9 +129,9 @@ export default function IndependentStudyPage() {
   };
 
   const getDifficultyColor = (d: string): "jade" | "saffron" | "coral" | "gray" => {
-    if (d === "Oson") return "jade";
-    if (d === "O'rtacha") return "saffron";
-    if (d === "Qiyin") return "coral";
+    if (d === t("students.perf_excellent")) return "jade";
+    if (d === t("students.perf_average")) return "saffron";
+    if (d === t("students.perf_good")) return "coral";
     return "gray";
   };
 
@@ -136,15 +145,25 @@ export default function IndependentStudyPage() {
               <BookOpen size={18} style={{ color: "#F5A623" }} />
             </div>
             <div>
-              <h1 className="text-lg font-bold" style={{ color: fg }}>Mustaqil o'qish</h1>
-              <p className="text-xs" style={{ color: fgMuted }}>Istalgan mavzuni istalgan vaqtda o'rganing</p>
+              <h1 className="text-lg font-bold" style={{ color: fg }}>{t("student.indep.title")}</h1>
+              <p className="text-xs" style={{ color: fgMuted }}>{t("student.indep.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-bold mr-2" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
               <Flame size={14} />
-              <span className="hidden sm:inline">7 kun streak</span>
+              <span className="hidden sm:inline">{t("student.indep.streak").replace("{days}", "7")}</span>
               <span className="sm:hidden">7</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center rounded-lg p-1" style={{ background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)", border: `1px solid ${surfaceBorder}` }}>
+                <button onClick={() => setLanguage("uz")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'uz' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>UZ</button>
+                <button onClick={() => setLanguage("ru")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'ru' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>RU</button>
+                <button onClick={() => setLanguage("en")} className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${language === 'en' ? 'bg-[#F5A623] text-black shadow-sm' : 'text-slate-500 hover:text-black dark:hover:text-white'}`}>EN</button>
+              </div>
+              <button onClick={toggleTheme} className="w-9 h-9 rounded-lg flex items-center justify-center transition-all" aria-label="Mavzuni o'zgartirish" style={{ background: isDark ? "rgba(255, 255, 255, 0.04)" : "rgba(0, 0, 0, 0.04)", color: "#F5A623", border: `1px solid ${surfaceBorder}` }}>
+                {isDark ? <Sun size={15} /> : <Moon size={15} />}
+              </button>
             </div>
           </div>
         </div>
@@ -180,7 +199,7 @@ export default function IndependentStudyPage() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
                 <input
                   type="text"
-                  placeholder="Fan yoki mavzu qidirish..."
+                  placeholder={t("student.indep.search_placeholder")}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full pl-12 pr-4 py-4 rounded-2xl border focus:outline-none focus:border-yellow-400/50 focus:ring-2 focus:ring-yellow-400/20 transition-all text-lg"
@@ -193,8 +212,8 @@ export default function IndependentStudyPage() {
             <div>
               <h2 className="text-xl font-bold mb-4 flex items-center gap-2" style={{ color: fg }}>
                 <BookOpen size={20} style={{ color: "#F5A623" }} />
-                Fanlarni tanlang
-                <span className="text-sm font-normal ml-1" style={{ color: fgMuted }}>({filteredSubjects.length} ta fan)</span>
+                {t("student.indep.subjects_title")}
+                <span className="text-sm font-normal ml-1" style={{ color: fgMuted }}>{t("student.indep.subjects_count").replace("{count}", filteredSubjects.length.toString())}</span>
               </h2>
               <AnimatePresence>
                 {filteredSubjects.length === 0 ? (
@@ -204,7 +223,7 @@ export default function IndependentStudyPage() {
                     className="text-center py-12 text-slate-400"
                   >
                     <Search size={40} className="mx-auto mb-3 opacity-30" />
-                    <p>"{searchTerm}" bo'yicha fan topilmadi</p>
+                    <p>{t("student.indep.subjects_not_found").replace("{term}", searchTerm)}</p>
                   </motion.div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -224,7 +243,7 @@ export default function IndependentStudyPage() {
                         <h3 className="font-bold text-base mb-1" style={{ color: subject.color }}>{subject.name}</h3>
                         <p className="text-xs mb-3" style={{ color: fgMuted }}>{subject.description}</p>
                         <div className="flex items-center justify-between">
-                          <span className="text-xs" style={{ color: fgMuted }}>{subject.topics} mavzu</span>
+                          <span className="text-xs" style={{ color: fgMuted }}>{t("student.indep.topics_count").replace("{count}", subject.topics.toString())}</span>
                           <ChevronRight size={14} className="group-hover:translate-x-1 transition-all" style={{ color: fgMuted }} />
                         </div>
                       </motion.button>
@@ -244,12 +263,12 @@ export default function IndependentStudyPage() {
             >
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2" style={{ color: fg }}>
                 <Brain size={20} style={{ color: "#1B4FD8" }} />
-                O'z mavzungizni kiriting
+                {t("student.indep.custom_topic_title")}
               </h3>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
-                  placeholder="Masalan: Sun'iy intellekt asoslari..."
+                  placeholder={t("student.indep.custom_topic_placeholder")}
                   value={customTopic}
                   onChange={(e) => setCustomTopic(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleCustomTopicSubmit()}
@@ -265,7 +284,7 @@ export default function IndependentStudyPage() {
                   style={{ background: "linear-gradient(135deg,#1B4FD8,#3B82F6)", color: "white" }}
                 >
                   <MessageCircle size={18} />
-                  O'rganish
+                  {t("student.indep.learn_btn")}
                 </motion.button>
               </div>
             </motion.div>
@@ -280,7 +299,7 @@ export default function IndependentStudyPage() {
             >
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Upload size={20} style={{ color: "#0D9373" }} />
-                Material yuklang
+                {t("student.indep.upload_title")}
               </h3>
               <div
                 onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
@@ -300,7 +319,7 @@ export default function IndependentStudyPage() {
                 {isUploading ? (
                   <div className="flex flex-col items-center gap-3">
                     <Spinner size="lg" />
-                    <p className="font-medium" style={{ color: fg }}>Fayl tahlil qilinmoqda...</p>
+                    <p className="font-medium" style={{ color: fg }}>{t("student.indep.upload_analyzing")}</p>
                     <p className="text-sm" style={{ color: fgMuted }}>{uploadedFile?.name}</p>
                   </div>
                 ) : uploadedFile ? (
@@ -311,8 +330,8 @@ export default function IndependentStudyPage() {
                 ) : (
                   <>
                     <Upload size={40} className="mx-auto mb-3" style={{ color: fgMuted }} />
-                    <p className="font-medium mb-1" style={{ color: fg }}>Faylni bu yerga tashlang yoki bosing</p>
-                    <p className="text-sm" style={{ color: fgMuted }}>PDF, Word (.doc/.docx) yoki matn (.txt) • Maks 50MB</p>
+                    <p className="font-medium mb-1" style={{ color: fg }}>{t("student.indep.upload_drag")}</p>
+                    <p className="text-sm" style={{ color: fgMuted }}>{t("student.indep.upload_formats")}</p>
                   </>
                 )}
               </div>
@@ -331,7 +350,7 @@ export default function IndependentStudyPage() {
             >
               <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: fg }}>
                 <Sparkles size={16} style={{ color: "#F5A623" }} />
-                AI tavsiyalari
+                {t("student.indep.ai_recs_title")}
               </h3>
               <div className="space-y-3">
                 {AI_RECOMMENDATIONS.map((rec, i) => (
@@ -366,7 +385,7 @@ export default function IndependentStudyPage() {
             >
               <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: fg }}>
                 <Clock size={16} style={{ color: "#1B4FD8" }} />
-                So'nggi mavzular
+                {t("student.indep.recent_topics_title")}
               </h3>
               <div className="space-y-3">
                 {RECENT_TOPICS.map((topic) => (
@@ -407,7 +426,7 @@ export default function IndependentStudyPage() {
             >
               <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: fg }}>
                 <BarChart3 size={16} style={{ color: "#0D9373" }} />
-                Haftalik faollik
+                {t("student.indep.weekly_activity_title")}
               </h3>
               <div className="flex items-end gap-1.5 h-20">
                 {[40, 70, 55, 90, 65, 80, 45].map((h, i) => (
@@ -421,7 +440,7 @@ export default function IndependentStudyPage() {
                       }}
                     />
                     <span className="text-xs text-slate-600">
-                      {["D", "S", "Ch", "P", "J", "Sh", "Ya"][i]}
+                      {weekdays[i]}
                     </span>
                   </div>
                 ))}

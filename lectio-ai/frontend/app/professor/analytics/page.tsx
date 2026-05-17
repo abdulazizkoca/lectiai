@@ -14,39 +14,41 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine,
   BarChart, Bar, Cell
 } from "recharts";
-
-// Mock Data
-const timelineData = [
-  { time: "00:00", attention: 85, event: "Dars boshlandi" },
-  { time: "10:00", attention: 90 },
-  { time: "20:00", attention: 82 },
-  { time: "30:00", attention: 65, event: "Diqqat pasaydi" },
-  { time: "35:00", attention: 88, event: "Jonli Quiz (Polling)" },
-  { time: "45:00", attention: 75 },
-  { time: "60:00", attention: 70 },
-  { time: "70:00", attention: 55, event: "Charchoq" },
-  { time: "75:00", attention: 80, event: "WOW Fakt ko'rsatildi" },
-  { time: "80:00", attention: 78 },
-];
-
-const difficultyData = [
-  { question: "Q-12: Kvant Entropiya", correct: 25, total: 100, difficulty: "hard" },
-  { question: "Q-08: Zichlik formulasi", correct: 40, total: 100, difficulty: "hard" },
-  { question: "Q-03: Kinetik energiya", correct: 65, total: 100, difficulty: "medium" },
-  { question: "Q-01: Asosiy tushunchalar", correct: 95, total: 100, difficulty: "easy" },
-];
-
-const studentsData = [
-  { id: 1, name: "Jasur Karimov", topics: [90, 85, 40, 95] },
-  { id: 2, name: "Malika Aliyeva", topics: [88, 92, 85, 90] },
-  { id: 3, name: "Aziz Tohirov", topics: [45, 60, 55, 70] },
-  { id: 4, name: "Sarvar Davlatov", topics: [95, 95, 90, 100] },
-  { id: 5, name: "Nigina Umarova", topics: [70, 75, 65, 80] },
-];
-const topics = ["Termodinamika 1", "Termodinamika 2", "Entropiya", "Kinetika"];
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function AnalyticsDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const { t } = useLanguage();
+
+  // Mock Data
+  const timelineData = [
+    { time: "00:00", attention: 85, event: t("analytics.mock.event_start") },
+    { time: "10:00", attention: 90 },
+    { time: "20:00", attention: 82 },
+    { time: "30:00", attention: 65, event: t("analytics.mock.event_drop") },
+    { time: "35:00", attention: 88, event: t("analytics.mock.event_quiz") },
+    { time: "45:00", attention: 75 },
+    { time: "60:00", attention: 70 },
+    { time: "70:00", attention: 55, event: t("analytics.mock.event_fatigue") },
+    { time: "75:00", attention: 80, event: t("analytics.mock.event_wow") },
+    { time: "80:00", attention: 78 },
+  ];
+
+  const difficultyData = [
+    { question: t("analytics.mock.q1"), correct: 25, total: 100, difficulty: "hard" },
+    { question: t("analytics.mock.q2"), correct: 40, total: 100, difficulty: "hard" },
+    { question: t("analytics.mock.q3"), correct: 65, total: 100, difficulty: "medium" },
+    { question: t("analytics.mock.q4"), correct: 95, total: 100, difficulty: "easy" },
+  ];
+
+  const studentsData = [
+    { id: 1, name: "Jasur Karimov", topics: [90, 85, 40, 95] },
+    { id: 2, name: "Malika Aliyeva", topics: [88, 92, 85, 90] },
+    { id: 3, name: "Aziz Tohirov", topics: [45, 60, 55, 70] },
+    { id: 4, name: "Sarvar Davlatov", topics: [95, 95, 90, 100] },
+    { id: 5, name: "Nigina Umarova", topics: [70, 75, 65, 80] },
+  ];
+  const topics = [t("analytics.mock.topic1"), t("analytics.mock.topic2"), t("analytics.mock.topic3"), t("analytics.mock.topic4")];
 
   const getHeatmapColor = (score: number) => {
     if (score >= 80) return "bg-[#0D9373]/20 text-[#0D9373]";
@@ -59,25 +61,25 @@ export default function AnalyticsDashboard() {
       
       {/* HEADER & FILTERS */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <h1 className="text-3xl font-display font-bold">Analitika</h1>
+        <h1 className="text-3xl font-display font-bold">{t("analytics.title")}</h1>
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="secondary" leftIcon={<CalendarIcon size={16} />}>Ushbu Hafta</Button>
-          <Button variant="secondary" leftIcon={<Filter size={16} />}>Filtrlar</Button>
-          <Button variant="primary" leftIcon={<Download size={16} />}>PDF Yuklash</Button>
+          <Button variant="secondary" leftIcon={<CalendarIcon size={16} />}>{t("analytics.this_week")}</Button>
+          <Button variant="secondary" leftIcon={<Filter size={16} />}>{t("analytics.filters")}</Button>
+          <Button variant="primary" leftIcon={<Download size={16} />}>{t("analytics.download_pdf")}</Button>
         </div>
       </div>
 
       {/* SECTION 1: OVERVIEW METRICS */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard title="Jami darslar" value="24" icon={<BookOpen size={20} />} trend="↑ 2" trendUp={true} color="lapis" />
-        <MetricCard title="O'rtacha diqqat" value="78%" icon={<Eye size={20} />} trend="↓ 3%" trendUp={false} color="jade" />
-        <MetricCard title="Test o'rtacha bali" value="82.4" icon={<Target size={20} />} trend="↑ 4.1" trendUp={true} color="saffron" />
-        <MetricCard title="Aktiv talabalar" value="156" icon={<Users size={20} />} trend="95% retention" trendUp={true} color="amethyst" />
+        <MetricCard title={t("analytics.total_lessons")} value="24" icon={<BookOpen size={20} />} trend="↑ 2" trendUp={true} color="lapis" />
+        <MetricCard title={t("analytics.avg_attention")} value="78%" icon={<Eye size={20} />} trend="↓ 3%" trendUp={false} color="jade" />
+        <MetricCard title={t("analytics.avg_quiz_score")} value="82.4" icon={<Target size={20} />} trend="↑ 4.1" trendUp={true} color="saffron" />
+        <MetricCard title={t("analytics.active_students")} value="156" icon={<Users size={20} />} trend="95% retention" trendUp={true} color="amethyst" />
       </div>
 
       {/* SECTION 2: ATTENTION TIMELINE */}
       <section>
-        <h2 className="text-xl font-display font-bold mb-6">Dars davomidagi o'rtacha diqqat (Timeline)</h2>
+        <h2 className="text-xl font-display font-bold mb-6">{t("analytics.timeline_title")}</h2>
         <Card className="h-96">
           <ResponsiveContainer width="100%" height={320} minWidth={0}>
             <LineChart data={timelineData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
@@ -88,7 +90,7 @@ export default function AnalyticsDashboard() {
                 contentStyle={{ backgroundColor: '#18181F', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff', fontWeight: 'bold' }}
                 labelStyle={{ color: '#F5A623', marginBottom: '4px' }}
               />
-              <ReferenceLine y={70} stroke="#E84855" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: 'Kritik chegara (70%)', fill: '#E84855', fontSize: 12 }} />
+              <ReferenceLine y={70} stroke="#E84855" strokeDasharray="3 3" label={{ position: 'insideTopLeft', value: t("analytics.critical_limit"), fill: '#E84855', fontSize: 12 }} />
               <Line 
                 type="monotone" 
                 dataKey="attention" 
@@ -111,13 +113,13 @@ export default function AnalyticsDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* SECTION 3: TOPIC HEATMAP */}
         <section>
-          <h2 className="text-xl font-display font-bold mb-6">Mavzular bo'yicha o'zlashtirish xaritasi</h2>
+          <h2 className="text-xl font-display font-bold mb-6">{t("analytics.heatmap_title")}</h2>
           <Card className="overflow-x-auto p-0 border-none shadow-xl border border-black/5 dark:border-white/5">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-[#FAFAF7] dark:bg-[#18181F] text-slate-500 uppercase font-bold text-xs">
                 <tr>
-                  <th className="px-6 py-4">Talaba</th>
-                  {topics.map(t => <th key={t} className="px-6 py-4">{t}</th>)}
+                  <th className="px-6 py-4">{t("analytics.student")}</th>
+                  {topics.map(topic => <th key={topic} className="px-6 py-4">{topic}</th>)}
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/5 dark:divide-white/5 bg-white dark:bg-[#0C0C14]">
@@ -140,7 +142,7 @@ export default function AnalyticsDashboard() {
 
         {/* SECTION 4: QUESTION DIFFICULTY */}
         <section>
-          <h2 className="text-xl font-display font-bold mb-6">Savollar qiyinlik tahlili</h2>
+          <h2 className="text-xl font-display font-bold mb-6">{t("analytics.difficulty_title")}</h2>
           <Card className="flex flex-col h-full">
             <div className="h-64 mb-6">
               <ResponsiveContainer width="100%" height={256} minWidth={0}>
@@ -161,8 +163,8 @@ export default function AnalyticsDashboard() {
             <div className="bg-[#18181F] p-5 rounded-xl border border-slate-800 flex items-start gap-4 mt-auto">
               <div className="bg-[#E84855]/20 p-2 rounded-lg text-[#E84855] shrink-0 mt-1"><Target size={20} /></div>
               <div>
-                <h4 className="font-bold text-[#E84855] mb-1">AI Tavsiyasi</h4>
-                <p className="text-sm text-slate-300">Bu 2 ta savol (Q-12, Q-08) juda qiyin keldi. "Kvant Entropiya" va "Zichlik formulasi"ni qayta tushuntirishingiz tavsiya etiladi.</p>
+                <h4 className="font-bold text-[#E84855] mb-1">{t("analytics.ai_recommendation")}</h4>
+                <p className="text-sm text-slate-300">{t("analytics.ai_recommendation_desc")}</p>
               </div>
             </div>
           </Card>
@@ -171,12 +173,12 @@ export default function AnalyticsDashboard() {
 
       {/* SECTION 6: TIME-OF-DAY ANALYSIS */}
       <section>
-        <h2 className="text-xl font-display font-bold mb-6">Hafta kunlari va soatlar kesimida faollik xaritasi</h2>
+        <h2 className="text-xl font-display font-bold mb-6">{t("analytics.activity_map_title")}</h2>
         <Card>
           <div className="h-48 flex items-center justify-center bg-slate-800/50 rounded-xl border border-slate-700/50 text-slate-500 font-bold">
             [ Heatmap Visualization Components: 24h x 7d Matrix ]
           </div>
-          <p className="text-center mt-4 text-[#F5A623] font-bold">💡 Sizning guruhingiz Chorshanba 10:00-12:00 oralig'ida eng yuqori diqqatni namoyon etadi.</p>
+          <p className="text-center mt-4 text-[#F5A623] font-bold">{t("analytics.activity_map_insight")}</p>
         </Card>
       </section>
 
@@ -195,7 +197,7 @@ export default function AnalyticsDashboard() {
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[#FAFAF7] dark:bg-[#0C0C14] border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col"
             >
               <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-white dark:bg-[#18181F]">
-                <h2 className="font-display font-bold text-xl">Talaba Profili</h2>
+                <h2 className="font-display font-bold text-xl">{t("analytics.student_profile")}</h2>
                 <button onClick={() => setSelectedStudent(null)} className="text-slate-500 hover:text-white p-2 bg-slate-800 rounded-full transition-colors" aria-label="Profilni yopish"><X size={20} /></button>
               </div>
               
@@ -204,21 +206,21 @@ export default function AnalyticsDashboard() {
                   <Avatar initials={selectedStudent.name.split(' ').map((n: string) => n[0]).join('')} size="xl" className="border-4 border-[#1B4FD8]" />
                   <div>
                     <h3 className="text-2xl font-bold font-display">{selectedStudent.name}</h3>
-                    <p className="text-[#F5A623] font-bold text-sm">Faol talaba • 15 kunlik Streak 🔥</p>
+                    <p className="text-[#F5A623] font-bold text-sm">{t("analytics.active_student")}</p>
                   </div>
                 </div>
 
                 <div className="bg-[#1B4FD8]/10 border border-[#1B4FD8]/20 p-5 rounded-xl flex gap-4">
                   <MessageSquare className="text-[#1B4FD8] shrink-0 mt-1" />
                   <div>
-                    <h4 className="font-bold text-[#1B4FD8] mb-1">Shaxsiy tavsiya</h4>
-                    <p className="text-sm text-slate-300 mb-3">{selectedStudent.name} "Entropiya" mavzusida biroz qiynalmoqda (40%). Qo'shimcha materiallar yuborish tavsiya etiladi.</p>
-                    <Button variant="primary" size="sm">Telegram orqali xabar yozish</Button>
+                    <h4 className="font-bold text-[#1B4FD8] mb-1">{t("analytics.personal_recommendation")}</h4>
+                    <p className="text-sm text-slate-300 mb-3">{t("analytics.personal_recommendation_desc").replace("{name}", selectedStudent.name)}</p>
+                    <Button variant="primary" size="sm">{t("analytics.telegram_msg")}</Button>
                   </div>
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-slate-600 dark:text-slate-300 uppercase text-xs tracking-wider mb-4">O'zlashtirish tafsiloti</h4>
+                  <h4 className="font-bold text-slate-600 dark:text-slate-300 uppercase text-xs tracking-wider mb-4">{t("analytics.mastery_details")}</h4>
                   <div className="space-y-3">
                     {selectedStudent.topics.map((score: number, idx: number) => (
                       <div key={idx} className="bg-slate-800 p-4 rounded-xl flex items-center justify-between border border-slate-700">

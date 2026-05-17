@@ -6,9 +6,11 @@ import { ProfessorPoll } from "@/components/polling/LivePoll";
 import AttentionGauge from "@/components/analytics/AttentionGauge";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function LiveSession() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [lessonId] = useState("lesson_demo");
   const [attention] = useState({ attention: 0.72, confusion: false, boredom: false, students: 45, recommendation: null as string | null });
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
@@ -27,7 +29,7 @@ export default function LiveSession() {
   };
 
   const handleEndLesson = () => {
-    addToast({ title: "Dars yakunlandi", description: "Analitika va natijalar tayyorlanmoqda...", type: "info" });
+    addToast({ title: t("live.ended_title"), description: t("live.ended_desc"), type: "info" });
     setTimeout(() => router.push("/professor/analytics"), 1500);
   };
 
@@ -43,11 +45,11 @@ export default function LiveSession() {
               <span className="font-bold gradient-text">Lectio AI</span>
             </Link>
             <span className="text-slate-600">/</span>
-            <span className="text-sm text-slate-400">Jonli Dars</span>
+            <span className="text-sm text-slate-400">{t("live.title")}</span>
           </div>
           <div className="flex items-center gap-2 text-sm text-emerald-400">
             <span className="live-dot" />
-            JONLI • {formatTime(elapsedSeconds)}
+            {t("live.status_live")} • {formatTime(elapsedSeconds)}
           </div>
         </div>
       </nav>
@@ -57,11 +59,11 @@ export default function LiveSession() {
           {/* Main Content — 2 cols */}
           <div className="lg:col-span-2 space-y-6">
             <div className="glass-card p-6 slide-up">
-              <h2 className="text-xl font-bold mb-4">📖 Dars: Algoritmlar va Ma&apos;lumotlar Tuzilmasi</h2>
+              <h2 className="text-xl font-bold mb-4">📖 {t("live.lesson_title")}</h2>
               <div className="bg-gradient-to-br from-indigo-500/10 to-cyan-500/10 rounded-xl p-8 text-center min-h-[300px] flex flex-col items-center justify-center">
                 <div className="text-5xl mb-4">🎬</div>
-                <p className="text-slate-400">Prezentatsiya shu yerda ko&apos;rsatiladi</p>
-                <p className="text-xs text-slate-500 mt-2">SlideViewer komponenti bilan ishlaydi</p>
+                <p className="text-slate-400">{t("live.presentation_placeholder")}</p>
+                <p className="text-xs text-slate-500 mt-2">{t("live.presentation_sub")}</p>
               </div>
             </div>
             <ProfessorPoll lessonId={lessonId} />
@@ -77,26 +79,26 @@ export default function LiveSession() {
               recommendation={attention.recommendation}
             />
             <div className="glass-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Xona ma&apos;lumotlari</h3>
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{t("live.room_info")}</h3>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-slate-400">Xona ID</span><span className="font-mono text-xs bg-white/5 px-2 py-1 rounded">{lessonId}</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Talabalar</span><span>45 ta ulangan</span></div>
-                <div className="flex justify-between"><span className="text-slate-400">Vaqt</span><span className="font-mono">{formatTime(elapsedSeconds)}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t("live.room_id")}</span><span className="font-mono text-xs bg-white/5 px-2 py-1 rounded">{lessonId}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t("live.students")}</span><span>45 {t("live.students_connected")}</span></div>
+                <div className="flex justify-between"><span className="text-slate-400">{t("live.time")}</span><span className="font-mono">{formatTime(elapsedSeconds)}</span></div>
               </div>
             </div>
             <div className="glass-card p-5 space-y-3">
-              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Tezkor harakatlar</h3>
+              <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{t("live.quick_actions")}</h3>
               <button
-                onClick={() => { addToast({ title: "🎯 Quiz savoli", description: "Barcha talabalar ekraniga savol yuborildi!", type: "success" }); }}
+                onClick={() => { addToast({ title: `🎯 ${t("live.quiz_sent_title")}`, description: t("live.quiz_sent_desc"), type: "success" }); }}
                 className="btn-secondary w-full text-sm"
               >
-                🎯 Test savoli berish
+                🎯 {t("live.send_quiz")}
               </button>
               <button
                 onClick={handleEndLesson}
                 className="w-full p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium hover:bg-red-500/20 transition"
               >
-                ⏹ Darsni tugatish
+                ⏹ {t("live.end_lesson")}
               </button>
             </div>
           </div>

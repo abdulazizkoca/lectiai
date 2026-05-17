@@ -9,9 +9,11 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function ProfessorLessonsPage() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
   const { toasts, addToast, removeToast } = useToast();
@@ -19,42 +21,42 @@ export default function ProfessorLessonsPage() {
   const mockLessons = [
     {
       id: 1,
-      title: "Ma'lumotlar bazasi asoslari",
-      topic: "SQL va relational ma'lumotlar bazalari",
+      title: t("mock.lesson1.title"),
+      topic: t("mock.lesson1.topic"),
       students: 45,
       duration: 90,
       status: "active",
-      nextSession: "Tomorrow 14:00",
+      nextSession: t("mock.lesson1.time"),
       progress: 75,
     },
     {
       id: 2,
-      title: "Dasturiy ta'minot muhandisligi",
-      topic: "Agile metodologiyalar va SCRUM",
+      title: t("mock.lesson2.title"),
+      topic: t("mock.lesson2.topic"),
       students: 32,
       duration: 120,
       status: "preparing",
-      nextSession: "Friday 10:00",
+      nextSession: t("mock.lesson2.time"),
       progress: 45,
     },
     {
       id: 3,
-      title: "Web dasturlash",
-      topic: "React va Next.js asoslari",
+      title: t("mock.lesson3.title"),
+      topic: t("mock.lesson3.topic"),
       students: 28,
       duration: 60,
       status: "completed",
-      nextSession: "Tugatilgan",
+      nextSession: t("lessons.status_completed"),
       progress: 100,
     },
     {
       id: 4,
-      title: "Algoritm va ma'lumotlar tuzilmasi",
-      topic: "Sort, search va graph algoritmlar",
+      title: t("mock.lesson4.title"),
+      topic: t("mock.lesson4.topic"),
       students: 38,
       duration: 90,
       status: "active",
-      nextSession: "Monday 09:00",
+      nextSession: t("mock.lesson4.time"),
       progress: 60,
     },
   ];
@@ -69,8 +71,8 @@ export default function ProfessorLessonsPage() {
 
   const handleManageLesson = (lesson: typeof mockLessons[0]) => {
     addToast({
-      title: `${lesson.title} — Boshqaruv`,
-      description: "Dars boshqaruv paneli tez orada ishga tushadi.",
+      title: `${lesson.title} — ${t("lessons.manage")}`,
+      description: t("lessons.manage_panel"),
       type: "info",
     });
   };
@@ -82,15 +84,15 @@ export default function ProfessorLessonsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Mening darslarim</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Barcha darslaringizni boshqaring</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{t("lessons.title")}</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{t("lessons.subtitle")}</p>
         </div>
         <Button
           variant="primary"
           leftIcon={<Plus size={16} />}
           onClick={() => router.push("/professor/create-lesson")}
         >
-          Yangi dars yaratish
+          {t("lesson.create")}
         </Button>
       </div>
 
@@ -99,7 +101,7 @@ export default function ProfessorLessonsPage() {
         <div className="flex-1 max-w-md">
           <Input
             label=""
-            placeholder="Darslarni qidirish..."
+            placeholder={t("lessons.search")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             leftIcon={<Search size={18} />}
@@ -116,10 +118,10 @@ export default function ProfessorLessonsPage() {
                   : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/20"
               }`}
             >
-              {filter === "all" && "Barchasi"}
-              {filter === "active" && "Faol"}
-              {filter === "preparing" && "Tayyorlanmoqda"}
-              {filter === "completed" && "Tugatilgan"}
+              {filter === "all" && t("lessons.filter_all")}
+              {filter === "active" && t("lessons.filter_active")}
+              {filter === "preparing" && t("lessons.filter_preparing")}
+              {filter === "completed" && t("lessons.filter_completed")}
             </button>
           ))}
         </div>
@@ -137,9 +139,9 @@ export default function ProfessorLessonsPage() {
                 color={lesson.status === "active" ? "jade" : lesson.status === "preparing" ? "saffron" : "gray"}
                 size="sm"
               >
-                {lesson.status === "active" && "Faol"}
-                {lesson.status === "preparing" && "Tayyorlanmoqda"}
-                {lesson.status === "completed" && "Tugatilgan"}
+                {lesson.status === "active" && t("lessons.status_active")}
+                {lesson.status === "preparing" && t("lessons.status_preparing")}
+                {lesson.status === "completed" && t("lessons.status_completed")}
               </Badge>
             </div>
 
@@ -150,11 +152,11 @@ export default function ProfessorLessonsPage() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Users size={14} />
-                  {lesson.students} talaba
+                  {lesson.students} {t("lessons.students")}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
                   <Clock size={14} />
-                  {lesson.duration} daqiqa
+                  {lesson.duration} {t("lessons.minutes")}
                 </span>
               </div>
 
@@ -167,7 +169,7 @@ export default function ProfessorLessonsPage() {
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-500 dark:text-slate-400">Progress</span>
+                  <span className="text-slate-500 dark:text-slate-400">{t("lessons.progress")}</span>
                   <span className="text-slate-900 dark:text-white font-medium">{lesson.progress}%</span>
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2">
@@ -186,7 +188,7 @@ export default function ProfessorLessonsPage() {
                 className="flex-1"
                 onClick={() => handleManageLesson(lesson)}
               >
-                Boshqarish
+                {t("lessons.manage")}
               </Button>
               {lesson.status !== "completed" && (
                 <Button
@@ -195,7 +197,7 @@ export default function ProfessorLessonsPage() {
                   leftIcon={<Play size={14} />}
                   onClick={() => router.push("/professor/live")}
                 >
-                  Boshlash
+                  {t("lesson.start")}
                 </Button>
               )}
             </div>
@@ -206,16 +208,16 @@ export default function ProfessorLessonsPage() {
       {filteredLessons.length === 0 && (
         <div className="text-center py-12">
           <BookOpen size={48} className="text-slate-300 dark:text-slate-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">Darslar topilmadi</h3>
+          <h3 className="text-lg font-medium text-slate-900 dark:text-white mb-2">{t("lessons.not_found_title")}</h3>
           <p className="text-slate-500 dark:text-slate-400 mb-4">
-            {searchTerm ? `"${searchTerm}" bo'yicha natijalar yo'q` : "Hali darslar yaratilmagan"}
+            {searchTerm ? t("lessons.not_found_search").replace("{query}", searchTerm) : t("lessons.not_found_empty")}
           </p>
           <Button
             variant="primary"
             leftIcon={<Plus size={16} />}
             onClick={() => router.push("/professor/create-lesson")}
           >
-            Yangi dars yaratish
+            {t("lesson.create")}
           </Button>
         </div>
       )}

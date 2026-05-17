@@ -8,6 +8,8 @@ interface AttentionGaugeProps {
   recommendation: string | null;
 }
 
+import { useLanguage } from "@/contexts/LanguageContext";
+
 export default function AttentionGauge({
   attention,
   confusion,
@@ -36,24 +38,26 @@ export default function AttentionGauge({
     return "😴";
   };
 
+  const { t } = useLanguage();
+
   const getRecommendationUI = () => {
     switch (recommendation) {
       case "polling":
         return {
           icon: "📊",
-          text: "So'rovnoma o'tkazing!",
+          text: t("gauge.polling"),
           color: "bg-indigo-500/20 border-indigo-500/30 text-indigo-300",
         };
       case "wow_fact":
         return {
           icon: "🤯",
-          text: "WOW fakt ko'rsating!",
+          text: t("gauge.wow_fact"),
           color: "bg-purple-500/20 border-purple-500/30 text-purple-300",
         };
       case "interaction":
         return {
           icon: "💬",
-          text: "Talabalardan so'rang!",
+          text: t("gauge.interaction"),
           color: "bg-cyan-500/20 border-cyan-500/30 text-cyan-300",
         };
       default:
@@ -67,11 +71,11 @@ export default function AttentionGauge({
     <div className="glass-card p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-          Diqqat Darajasi
+          {t("gauge.title")}
         </h3>
         <div className="flex items-center gap-2 text-sm">
           <span className="live-dot" />
-          <span className="text-slate-400">{students} talaba</span>
+          <span className="text-slate-400">{students} {t("gauge.students")}</span>
         </div>
       </div>
 
@@ -112,17 +116,17 @@ export default function AttentionGauge({
       <div className="flex gap-3 justify-center">
         {confusion && (
           <span className="text-xs px-3 py-1.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/20">
-            😕 Chalkashlik
+            😕 {t("gauge.confusion")}
           </span>
         )}
         {boredom && (
           <span className="text-xs px-3 py-1.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/20">
-            😴 Zerikish
+            😴 {t("gauge.boredom")}
           </span>
         )}
         {!confusion && !boredom && percentage >= 60 && (
           <span className="text-xs px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-            ✨ Yaxshi holat
+            ✨ {t("gauge.good")}
           </span>
         )}
       </div>

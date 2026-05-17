@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { LectioWebSocket } from "@/lib/websocket";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PollData {
   question: string;
@@ -11,6 +12,7 @@ interface PollData {
 
 export function ProfessorPoll({ lessonId }: { lessonId: string }) {
   const wsRef = useRef<LectioWebSocket | null>(null);
+  const { t } = useLanguage();
   const [poll, setPoll] = useState<PollData | null>(null);
   const [question, setQuestion] = useState("");
   const [options, setOptions] = useState(["", "", "", ""]);
@@ -50,12 +52,12 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
       {!poll && (
         <div className="glass-card p-6 space-y-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <span className="text-2xl">📊</span> Yangi So&apos;rovnoma
+            <span className="text-2xl">📊</span> {t("poll.new")}
           </h3>
           <input
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
-            placeholder="Savol yozing..."
+            placeholder={t("poll.placeholder")}
             className="input-field"
             id="poll-question-input"
           />
@@ -69,14 +71,14 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
                   newOpts[i] = e.target.value;
                   setOptions(newOpts);
                 }}
-                placeholder={`${i + 1}-variant`}
+                placeholder={`${i + 1}-${t("poll.option")}`}
                 className="input-field"
                 id={`poll-option-${i}`}
               />
             ))}
           </div>
           <button onClick={startPoll} className="btn-primary w-full" id="start-poll-btn">
-            🚀 So&apos;rovnomani Boshlash
+            🚀 {t("poll.start")}
           </button>
         </div>
       )}
@@ -88,7 +90,7 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
             <h4 className="text-lg font-semibold">{poll.question}</h4>
             <div className="flex items-center gap-2 text-sm text-emerald-400">
               <span className="live-dot" />
-              JONLI
+              {t("poll.live")}
             </div>
           </div>
 
@@ -102,7 +104,7 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
                   <div className="flex justify-between text-sm">
                     <span className="font-medium">{option}</span>
                     <span className="text-slate-400">
-                      {count} ovoz ({pct}%)
+                      {count} {t("poll.votes")} ({pct}%)
                     </span>
                   </div>
                   <div className="h-3 bg-white/5 rounded-full overflow-hidden">
@@ -118,10 +120,10 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
 
           <div className="flex items-center justify-between pt-2 border-t border-white/10">
             <p className="text-sm text-slate-400">
-              Jami: <span className="text-white font-semibold">{poll.total_votes}</span> talaba
+              {t("poll.total")} <span className="text-white font-semibold">{poll.total_votes}</span> {t("poll.students")}
             </p>
             <button onClick={endPoll} className="btn-secondary text-sm" id="end-poll-btn">
-              Yakunlash
+              {t("poll.end")}
             </button>
           </div>
         </div>
@@ -132,6 +134,7 @@ export function ProfessorPoll({ lessonId }: { lessonId: string }) {
 
 export function StudentPoll({ lessonId }: { lessonId: string }) {
   const wsRef = useRef<LectioWebSocket | null>(null);
+  const { t } = useLanguage();
   const [poll, setPoll] = useState<PollData | null>(null);
   const [voted, setVoted] = useState(false);
 
@@ -162,7 +165,7 @@ export function StudentPoll({ lessonId }: { lessonId: string }) {
     return (
       <div className="glass-card p-8 text-center">
         <div className="text-4xl mb-3 animate-bounce">📡</div>
-        <p className="text-slate-400">So&apos;rovnoma boshlanishini kuting...</p>
+        <p className="text-slate-400">{t("poll.wait")}</p>
       </div>
     );
 
@@ -216,7 +219,7 @@ export function StudentPoll({ lessonId }: { lessonId: string }) {
 
       {voted && (
         <p className="text-center text-emerald-400 font-medium slide-up">
-          ✓ Ovozingiz qabul qilindi!
+          {t("poll.voted")}
         </p>
       )}
     </div>
