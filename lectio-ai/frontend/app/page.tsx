@@ -13,6 +13,7 @@ import {
   Sun,
   Zap,
 } from "lucide-react";
+import Logo from "@/components/Logo";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Language, useLanguage } from "@/contexts/LanguageContext";
 
@@ -39,12 +40,12 @@ function HomeNav() {
       <motion.div 
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex items-center gap-2 cursor-pointer group"
+        className="flex items-center gap-2.5 cursor-pointer group"
       >
-        <div className="relative">
-          <Sparkles size={22} className="text-[#F5A623] relative z-10" />
-          <div className="absolute inset-0 bg-[#F5A623] blur-md opacity-40 group-hover:opacity-80 transition-opacity" />
-        </div>
+        <Logo
+          size={36}
+          className="transition-transform duration-300 group-hover:scale-110"
+        />
         <span className="font-bold text-xl tracking-tight" style={{ color: isDark ? "#fff" : "#0A0A0F" }}>
           Lectio <span className="text-[#F5A623]">AI</span>
         </span>

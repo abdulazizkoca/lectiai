@@ -23,7 +23,14 @@ export const metadata: Metadata = {
     "O'zbekiston universitetlari uchun AI-asosidagi ta'lim platformasi. Metodichka, dars va testlar - hammasi AI bilan.",
   keywords: ["ta'lim", "AI", "quiz", "universitet", "O'zbekiston", "Lectio", "online dars"],
   authors: [{ name: "Lectio AI Team" }],
-  icons: { icon: "/favicon.ico" },
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/logo.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/logo.svg",
+    apple: "/logo.svg",
+  },
   openGraph: {
     title: "Lectio AI",
     description: "O'zbekiston universitetlari uchun AI ta'lim platformasi",

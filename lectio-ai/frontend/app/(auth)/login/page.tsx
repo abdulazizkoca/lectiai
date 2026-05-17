@@ -3,7 +3,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Sparkles, Eye, EyeOff, ArrowRight, Sun, Moon } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Sun, Moon } from "lucide-react";
+import Logo from "@/components/Logo";
 import { authAPI } from "@/lib/api";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -80,10 +81,11 @@ export default function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-8"
         >
-          <Link href="/" className="inline-flex items-center gap-2 mb-5">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20">
-              L
-            </div>
+          <Link href="/" className="inline-flex items-center gap-2.5 mb-5 group">
+            <Logo
+              size={40}
+              className="transition-transform duration-300 group-hover:scale-110"
+            />
             <span className="text-2xl font-bold" style={{ color: fg }}>Lectio <span className="text-[#F5A623]">AI</span></span>
           </Link>
           <h1 className="text-3xl font-bold mb-2" style={{ color: fg }}>
