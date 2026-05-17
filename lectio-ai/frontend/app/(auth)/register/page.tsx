@@ -69,7 +69,9 @@ export default function RegisterPage() {
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 slide-up">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <span className="text-3xl">🎓</span>
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20">
+              L
+            </div>
             <span className="text-2xl font-bold gradient-text">Lectio AI</span>
           </Link>
           <h1 className="text-2xl font-bold">Platformaga qo&apos;shiling 🚀</h1>

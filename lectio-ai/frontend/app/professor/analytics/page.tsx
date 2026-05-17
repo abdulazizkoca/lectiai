@@ -195,15 +195,15 @@ export default function AnalyticsDashboard() {
               className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[#FAFAF7] dark:bg-[#0C0C14] border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col"
             >
               <div className="p-6 border-b border-black/5 dark:border-white/5 flex items-center justify-between bg-white dark:bg-[#18181F]">
-                <h3 className="font-display font-bold text-xl">Talaba Profili</h3>
-                <button onClick={() => setSelectedStudent(null)} className="text-slate-500 hover:text-white p-2 bg-slate-800 rounded-full transition-colors"><X size={20} /></button>
+                <h2 className="font-display font-bold text-xl">Talaba Profili</h2>
+                <button onClick={() => setSelectedStudent(null)} className="text-slate-500 hover:text-white p-2 bg-slate-800 rounded-full transition-colors" aria-label="Profilni yopish"><X size={20} /></button>
               </div>
               
               <div className="p-6 flex-1 overflow-y-auto custom-scrollbar space-y-8">
                 <div className="flex items-center gap-4">
                   <Avatar initials={selectedStudent.name.split(' ').map((n: string) => n[0]).join('')} size="xl" className="border-4 border-[#1B4FD8]" />
                   <div>
-                    <h2 className="text-2xl font-bold font-display">{selectedStudent.name}</h2>
+                    <h3 className="text-2xl font-bold font-display">{selectedStudent.name}</h3>
                     <p className="text-[#F5A623] font-bold text-sm">Faol talaba • 15 kunlik Streak 🔥</p>
                   </div>
                 </div>
@@ -218,7 +218,7 @@ export default function AnalyticsDashboard() {
                 </div>
 
                 <div>
-                  <h4 className="font-bold text-slate-400 uppercase text-xs tracking-wider mb-4">O'zlashtirish tafsiloti</h4>
+                  <h4 className="font-bold text-slate-600 dark:text-slate-300 uppercase text-xs tracking-wider mb-4">O'zlashtirish tafsiloti</h4>
                   <div className="space-y-3">
                     {selectedStudent.topics.map((score: number, idx: number) => (
                       <div key={idx} className="bg-slate-800 p-4 rounded-xl flex items-center justify-between border border-slate-700">
@@ -257,8 +257,8 @@ function MetricCard({ title, value, icon, trend, trendUp, color }: any) {
         </div>
       </div>
       <div>
-        <h3 className="text-3xl font-mono font-bold mb-1">{value}</h3>
-        <p className="text-slate-500 text-sm font-bold uppercase tracking-wider">{title}</p>
+        <h3 className="text-xl md:text-3xl font-mono font-bold mb-1">{value}</h3>
+        <p className="text-slate-600 dark:text-slate-300 text-sm font-bold uppercase tracking-wider">{title}</p>
       </div>
     </Card>
   );

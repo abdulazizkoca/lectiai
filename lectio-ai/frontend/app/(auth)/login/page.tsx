@@ -58,10 +58,10 @@ export default function LoginPage() {
     >
       {/* Ambient orbs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-15%] right-[-10%] w-96 h-96 rounded-full opacity-[0.07]"
-          style={{ background: "#F5A623", filter: "blur(80px)" }} />
-        <div className="absolute bottom-[-10%] left-[-10%] w-80 h-80 rounded-full opacity-[0.05]"
-          style={{ background: "#1B4FD8", filter: "blur(80px)" }} />
+        <div className="absolute top-[-15%] right-[-10%] w-64 md:w-96 h-64 md:h-96 rounded-full opacity-[0.05] md:opacity-[0.07] blur-[40px] md:blur-[80px]"
+          style={{ background: "#F5A623" }} />
+        <div className="absolute bottom-[-10%] left-[-10%] w-48 md:w-80 h-48 md:h-80 rounded-full opacity-[0.03] md:opacity-[0.05] blur-[40px] md:blur-[80px]"
+          style={{ background: "#1B4FD8" }} />
       </div>
 
       {/* Theme toggle */}
@@ -81,7 +81,9 @@ export default function LoginPage() {
           className="text-center mb-8"
         >
           <Link href="/" className="inline-flex items-center gap-2 mb-5">
-            <Sparkles size={22} className="text-[#F5A623]" />
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20">
+              L
+            </div>
             <span className="text-2xl font-bold" style={{ color: fg }}>Lectio <span className="text-[#F5A623]">AI</span></span>
           </Link>
           <h1 className="text-3xl font-bold mb-2" style={{ color: fg }}>

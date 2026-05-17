@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Bell, Plus, Sun, Moon, Globe } from "lucide-react";
+import { Search, Bell, Plus, Sun, Moon, Globe, Menu } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -11,9 +11,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 interface HeaderProps {
   onOpenSearch: () => void;
   onOpenNotifications: () => void;
+  onToggleMobileMenu?: () => void;
 }
 
-export function Header({ onOpenSearch, onOpenNotifications }: HeaderProps) {
+export function Header({ onOpenSearch, onOpenNotifications, onToggleMobileMenu }: HeaderProps) {
   const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
   const { language, setLanguage } = useLanguage();
@@ -38,7 +39,14 @@ export function Header({ onOpenSearch, onOpenNotifications }: HeaderProps) {
     <header className="h-16 shrink-0 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-b border-black/5 dark:border-white/5 flex items-center justify-between px-6 z-30">
       
       {/* Search Input trigger */}
-      <div className="flex-1 max-w-xl">
+      <div className="flex-1 flex items-center gap-2 max-w-xl">
+        <button 
+          onClick={onToggleMobileMenu} 
+          className="md:hidden p-2 text-slate-500 hover:text-black dark:hover:text-white transition-colors bg-slate-100 dark:bg-white/5 rounded-xl border border-transparent focus:border-[#F5A623] focus:outline-none"
+          aria-label="Menyuni ochish"
+        >
+          <Menu size={20} />
+        </button>
         <button 
           onClick={onOpenSearch}
           className="w-full flex items-center gap-3 px-4 py-2 bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500 rounded-xl transition-colors border border-transparent focus:border-[#F5A623] focus:outline-none"
@@ -85,6 +93,7 @@ export function Header({ onOpenSearch, onOpenNotifications }: HeaderProps) {
         <button 
           onClick={onOpenNotifications}
           className="relative p-2 text-slate-500 hover:text-black dark:hover:text-white transition-colors"
+          aria-label="Bildirishnomalar"
         >
           <Bell size={20} />
           <span className="absolute top-1.5 right-2 w-2 h-2 bg-[#E84855] rounded-full border-2 border-white dark:border-[#18181F]" />

@@ -10,49 +10,112 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-export function Sidebar() {
+const dict = {
+  uz: {
+    dashboard: "Dashboard",
+    myLessons: "Mening darslarim",
+    materials: "Materiallar",
+    createLesson: "Dars yaratish",
+    liveQuiz: "Jonli Quiz",
+    analytics: "Analitika",
+    students: "Talabalar",
+    settings: "Sozlamalar",
+    mainMenu: "Asosiy menyu",
+    management: "Boshqaruv",
+    goPremium: "Premiumga o'tish",
+    basicPlan: "Asosiy reja",
+    hideMenu: "Yon menyuni yashirish yoki ko'rsatish"
+  },
+  ru: {
+    dashboard: "Дашборд",
+    myLessons: "Мои уроки",
+    materials: "Материалы",
+    createLesson: "Создать урок",
+    liveQuiz: "Живой Quiz",
+    analytics: "Аналитика",
+    students: "Студенты",
+    settings: "Настройки",
+    mainMenu: "Главное меню",
+    management: "Управление",
+    goPremium: "Перейти на Premium",
+    basicPlan: "Базовый план",
+    hideMenu: "Скрыть или показать боковое меню"
+  },
+  en: {
+    dashboard: "Dashboard",
+    myLessons: "My Lessons",
+    materials: "Materials",
+    createLesson: "Create Lesson",
+    liveQuiz: "Live Quiz",
+    analytics: "Analytics",
+    students: "Students",
+    settings: "Settings",
+    mainMenu: "Main Menu",
+    management: "Management",
+    goPremium: "Go Premium",
+    basicPlan: "Basic Plan",
+    hideMenu: "Hide or show sidebar"
+  }
+};
+
+export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolean, onCloseMobile?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const { language } = useLanguage();
+  const langKey = (language === "uz" || language === "ru" || language === "en") ? language : "uz";
+  const t = dict[langKey];
 
   const navItems = [
-    { name: "Dashboard", href: "/professor/dashboard", icon: <Home size={20} /> },
-    { name: "Mening darslarim", href: "/professor/lessons", icon: <BookOpen size={20} />, badge: "12" },
-    { name: "Materiallar", href: "/professor/materials", icon: <FolderOpen size={20} /> },
-    { name: "Dars yaratish", href: "/professor/create-lesson", icon: <PlusCircle size={20} className="text-[#F5A623]" />, highlight: true },
-    { name: "Jonli Quiz", href: "/professor/live", icon: <Radio size={20} />, live: true },
-    { name: "Analitika", href: "/professor/analytics", icon: <BarChart2 size={20} /> },
-    { name: "Talabalar", href: "/professor/students", icon: <Users size={20} /> },
-    { name: "Sozlamalar", href: "/professor/settings", icon: <Settings size={20} /> },
+    { name: t.dashboard, href: "/professor/dashboard", icon: <Home size={20} /> },
+    { name: t.myLessons, href: "/professor/lessons", icon: <BookOpen size={20} />, badge: "12" },
+    { name: t.materials, href: "/professor/materials", icon: <FolderOpen size={20} /> },
+    { name: t.createLesson, href: "/professor/create-lesson", icon: <PlusCircle size={20} className="text-[#F5A623]" />, highlight: true },
+    { name: t.liveQuiz, href: "/professor/live", icon: <Radio size={20} />, live: true },
+    { name: t.analytics, href: "/professor/analytics", icon: <BarChart2 size={20} /> },
+    { name: t.students, href: "/professor/students", icon: <Users size={20} /> },
+    { name: t.settings, href: "/professor/settings", icon: <Settings size={20} /> },
   ];
 
   return (
-    <motion.aside 
-      animate={{ width: collapsed ? 80 : 260 }}
-      className="h-screen shrink-0 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-r border-black/5 dark:border-white/5 flex flex-col relative transition-all duration-300 z-40"
-    >
+    <>
+      {/* Mobile Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
+          onClick={onCloseMobile}
+        />
+      )}
+      <motion.aside 
+        animate={{ width: collapsed ? 80 : 260 }}
+        className={`h-screen shrink-0 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-r border-black/5 dark:border-white/5 flex flex-col transition-all duration-300 z-[70] absolute md:relative ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+      >
       <button 
         onClick={() => setCollapsed(!collapsed)}
         className="absolute -right-3 top-8 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#F5A623] hover:text-black transition-colors z-50"
+        aria-label={t.hideMenu}
       >
         {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
       </button>
 
       <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6'} shrink-0`}>
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20">
-          L
-        </div>
-        {!collapsed && <span className="ml-3 font-display font-bold text-xl tracking-wide text-white">Lectio AI</span>}
+        <Link href="/" className="flex items-center">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20 cursor-pointer hover:scale-105 transition-transform">
+            L
+          </div>
+          {!collapsed && <span className="ml-3 font-display font-bold text-xl tracking-wide text-white hover:text-[#F5A623] transition-colors">Lectio AI</span>}
+        </Link>
       </div>
 
       <nav className="flex-1 py-4 flex flex-col gap-1 px-3 overflow-y-auto custom-scrollbar">
-        {!collapsed && <div className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-2">Asosiy menyu</div>}
+        {!collapsed && <div className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-2">{t.mainMenu}</div>}
         
         {navItems.map((item, idx) => {
           if (idx === 5 && !collapsed) return (
             <React.Fragment key={item.name}>
               <div className="h-px bg-slate-800 my-4 mx-3" />
-              <div className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Boshqaruv</div>
+              <div className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.management}</div>
               <NavItem item={item} collapsed={collapsed} isActive={pathname === item.href} />
             </React.Fragment>
           );
@@ -63,7 +126,7 @@ export function Sidebar() {
           <div className="h-px bg-slate-800 my-4 mx-3" />
           <Link href="/professor/upgrade" className={`flex items-center px-3 py-3 rounded-xl transition-colors hover:bg-[#7B2FBE]/10 text-slate-300 hover:text-[#7B2FBE] ${collapsed ? 'justify-center' : ''}`}>
             <Crown size={20} className="shrink-0 text-[#7B2FBE]" />
-            {!collapsed && <span className="ml-3 font-bold text-sm">Premiumga o'tish</span>}
+            {!collapsed && <span className="ml-3 font-bold text-sm">{t.goPremium}</span>}
           </Link>
         </div>
       </nav>
@@ -74,12 +137,13 @@ export function Sidebar() {
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-white truncate group-hover:text-[#F5A623] transition-colors">Prof. J. Doe</p>
-              <p className="text-xs text-slate-500 truncate">Asosiy reja</p>
+              <p className="text-xs text-slate-500 truncate">{t.basicPlan}</p>
             </div>
           )}
         </Link>
       </div>
     </motion.aside>
+    </>
   );
 }
 

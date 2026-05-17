@@ -18,7 +18,7 @@ interface SlideViewerProps {
 export default function SlideViewer({ slides, wowFact }: SlideViewerProps) {
   const [current, setCurrent] = useState(0);
   const [showNotes, setShowNotes] = useState(false);
-  const [showWow, setShowWow] = useState(!!wowFact);
+  const [showWow, setShowWow] = useState(false);
 
   const slide = slides[current];
   const progress = ((current + 1) / slides.length) * 100;

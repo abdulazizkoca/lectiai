@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Zap, Camera, Flame, Trophy, Clock, Sun, Moon, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
@@ -46,7 +47,7 @@ const MAIN_CARDS = [
 export default function StudentDashboardPage() {
   const router = useRouter();
   const { isDark, toggleTheme } = useTheme();
-  const { language } = useLanguage();
+  const { language, setLanguage } = useLanguage();
   const lang = language as "uz" | "ru" | "en";
 
   const bg = isDark ? "#0A0A0F" : "#F8FAFC";
@@ -59,29 +60,49 @@ export default function StudentDashboardPage() {
     <div className="min-h-screen flex flex-col" style={{ background: bg }}>
       {/* Top bar */}
       <header
-        className="flex items-center justify-between px-6 py-4 sticky top-0 z-40"
+        className="flex items-center justify-between px-4 md:px-6 py-4 sticky top-0 z-40"
         style={{ background: isDark ? "rgba(10,10,15,0.9)" : "rgba(248,250,252,0.9)", backdropFilter: "blur(16px)", borderBottom: `1px solid ${surfaceBorder}` }}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold tracking-widest uppercase" style={{ color: fgMuted }}>O'quvchi</span>
-          <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
-            <Flame size={10} className="inline mr-1" />7 kun
-          </span>
+        <div className="flex items-center gap-3">
+          <Link href="/">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20 cursor-pointer hover:scale-105 transition-transform">
+              L
+            </div>
+          </Link>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-bold tracking-widest uppercase hidden sm:inline" style={{ color: fgMuted }}>
+              {lang === "uz" ? "O'quvchi" : lang === "ru" ? "Студент" : "Student"}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
+              <Flame size={10} className="inline mr-1" />
+              {lang === "uz" ? "7 kun" : lang === "ru" ? "7 дней" : "7 days"}
+            </span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
+          <div className="flex items-center rounded-lg p-1" style={{ background: surface, border: `1px solid ${surfaceBorder}` }}>
+            {['uz', 'ru'].map((l) => (
+              <button
+                key={l}
+                onClick={() => setLanguage(l as any)}
+                className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
+                  language === l 
+                    ? 'bg-[#F5A623] text-black shadow-sm' 
+                    : 'text-slate-500 hover:text-black dark:hover:text-white'
+                }`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={toggleTheme}
             className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
             style={{ background: surface, color: isDark ? "#F5A623" : "#1B4FD8", border: `1px solid ${surfaceBorder}` }}
+            aria-label="Mavzuni o'zgartirish"
           >
             {isDark ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
-          <button
-            onClick={() => router.push("/")}
-            className="text-xs px-3 py-1.5 rounded-lg transition-all font-medium"
-            style={{ background: surface, color: fgMuted, border: `1px solid ${surfaceBorder}` }}
-          >
-            ← Bosh sahifa
           </button>
         </div>
       </header>
@@ -96,7 +117,7 @@ export default function StudentDashboardPage() {
         >
           {/* Greeting */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-2" style={{ color: fg }}>
+            <h1 className="text-3xl md:text-5xl font-bold mb-2 md:mb-3" style={{ color: fg }}>
               {lang === "uz" && "Xush kelibsiz! 👋"}
               {lang === "ru" && "Добро пожаловать! 👋"}
               {lang === "en" && "Welcome! 👋"}
@@ -109,7 +130,7 @@ export default function StudentDashboardPage() {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
             {[
               { label: { uz: "O'rganilgan", ru: "Пройдено", en: "Studied" }, value: "18", unit: { uz: " mavzu", ru: " тем", en: " topics" }, Icon: BookOpen, color: "#1B4FD8" },
               { label: { uz: "O'rtacha ball", ru: "Средний балл", en: "Avg score" }, value: "87", unit: "%", Icon: Trophy, color: "#F5A623" },
@@ -180,7 +201,7 @@ export default function StudentDashboardPage() {
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
             onClick={() => router.push("/student/study")}
-            className="w-full flex items-center justify-between px-6 py-4 rounded-2xl transition-all text-left group"
+            className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 px-5 md:px-6 py-4 rounded-2xl transition-all text-left group"
             style={{ background: surface, border: `1px solid ${surfaceBorder}` }}
             whileHover={{ borderColor: "rgba(245,166,35,0.3)", backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" }}
           >

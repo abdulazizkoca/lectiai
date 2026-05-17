@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/Card";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
 import { Sparkles, Play, ArrowLeft, BookOpen, Clock, Hash } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function CreateLesson() {
   const router = useRouter();
@@ -17,12 +18,112 @@ export default function CreateLesson() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<Record<string, any> | null>(null);
   const { toasts, addToast, removeToast } = useToast();
+  const { language } = useLanguage();
+
+  const dict = {
+    uz: {
+      pageTitle: "AI bilan Dars Yaratish",
+      pageSubtitle: "Mavzuni kiriting — AI hamma narsani yaratadi",
+      errTitleReq: "Dars nomini kiriting",
+      errTitleLen: "Dars nomi kamida 3 ta belgidan iborat bo'lishi kerak",
+      errTopicReq: "Mavzuni kiriting",
+      errTopicLen: "Mavzu kamida 3 ta belgidan iborat bo'lishi kerak",
+      successTitle: "Dars yaratildi!",
+      successDesc: "AI muvaffaqiyatli dars tayyorladi",
+      demoTitle: "Demo rejimida yaratildi",
+      demoDesc: "Backend ulangan emas — namuna ma'lumotlar ko'rsatilmoqda",
+      lessonName: "Dars nomi",
+      lessonNamePl: "Masalan: Algoritmlar va ma'lumotlar tuzilmasi",
+      topic: "Mavzu",
+      topicPl: "Masalan: Binary Search algoritmining ishlash prinsipi",
+      duration: "Davomiylik:",
+      minutes: "daqiqa",
+      minText: "daq",
+      btnLoading: "AI yaratmoqda...",
+      btnCreate: "AI bilan Yaratish",
+      tipTitle: "💡 Maslahat",
+      tipText: "Mavzuni qanchalik aniq yozsangiz, AI shunchalik yaxshi natija beradi. Masalan: \"Binary Search\" o'rniga \"Binary Search algoritmining O(log n) murakkabligi\" yozing.",
+      resultTitle: "✅ Dars Yaratildi!",
+      btnCreateAgain: "Yana yaratish",
+      wowFact: "🤯 WOW Fakt",
+      summary: "📋 Xulosa",
+      slides: "Slaydlar",
+      count: "ta",
+      btnStartLive: "Jonli Dars Boshlash",
+      btnMyLessons: "Darslarim"
+    },
+    ru: {
+      pageTitle: "Создание урока с AI",
+      pageSubtitle: "Введите тему — AI создаст всё остальное",
+      errTitleReq: "Введите название урока",
+      errTitleLen: "Название урока должно содержать минимум 3 символа",
+      errTopicReq: "Введите тему",
+      errTopicLen: "Тема должна содержать минимум 3 символа",
+      successTitle: "Урок создан!",
+      successDesc: "AI успешно подготовил урок",
+      demoTitle: "Создано в демо-режиме",
+      demoDesc: "Бэкенд не подключен — показаны примерные данные",
+      lessonName: "Название урока",
+      lessonNamePl: "Например: Алгоритмы и структуры данных",
+      topic: "Тема",
+      topicPl: "Например: Принцип работы бинарного поиска",
+      duration: "Длительность:",
+      minutes: "минут",
+      minText: "мин",
+      btnLoading: "AI создает...",
+      btnCreate: "Создать с AI",
+      tipTitle: "💡 Совет",
+      tipText: "Чем точнее вы опишете тему, тем лучше будет результат. Например: вместо «Бинарный поиск» напишите «Сложность O(log n) бинарного поиска».",
+      resultTitle: "✅ Урок создан!",
+      btnCreateAgain: "Создать еще",
+      wowFact: "🤯 WOW Факт",
+      summary: "📋 Резюме",
+      slides: "Слайды",
+      count: "шт",
+      btnStartLive: "Начать живой урок",
+      btnMyLessons: "Мои уроки"
+    },
+    en: {
+      pageTitle: "Create Lesson with AI",
+      pageSubtitle: "Enter a topic — AI will generate everything",
+      errTitleReq: "Enter lesson title",
+      errTitleLen: "Lesson title must be at least 3 characters",
+      errTopicReq: "Enter topic",
+      errTopicLen: "Topic must be at least 3 characters",
+      successTitle: "Lesson created!",
+      successDesc: "AI successfully generated the lesson",
+      demoTitle: "Created in demo mode",
+      demoDesc: "Backend is not connected — showing mock data",
+      lessonName: "Lesson Title",
+      lessonNamePl: "e.g., Algorithms and Data Structures",
+      topic: "Topic",
+      topicPl: "e.g., How Binary Search works",
+      duration: "Duration:",
+      minutes: "minutes",
+      minText: "min",
+      btnLoading: "AI is generating...",
+      btnCreate: "Create with AI",
+      tipTitle: "💡 Tip",
+      tipText: "The more specific your topic, the better the AI result. For example: instead of 'Binary Search', write 'O(log n) complexity of Binary Search'.",
+      resultTitle: "✅ Lesson Created!",
+      btnCreateAgain: "Create again",
+      wowFact: "🤯 WOW Fact",
+      summary: "📋 Summary",
+      slides: "Slides",
+      count: "pcs",
+      btnStartLive: "Start Live Lesson",
+      btnMyLessons: "My Lessons"
+    }
+  };
+
+  const langKey = (language === "uz" || language === "ru" || language === "en") ? language : "uz";
+  const t = dict[langKey];
 
   const handleCreate = async () => {
-    if (!title.trim()) { setError("Dars nomini kiriting"); return; }
-    if (title.trim().length < 3) { setError("Dars nomi kamida 3 ta belgidan iborat bo'lishi kerak"); return; }
-    if (!topic.trim()) { setError("Mavzuni kiriting"); return; }
-    if (topic.trim().length < 3) { setError("Mavzu kamida 3 ta belgidan iborat bo'lishi kerak"); return; }
+    if (!title.trim()) { setError(t.errTitleReq); return; }
+    if (title.trim().length < 3) { setError(t.errTitleLen); return; }
+    if (!topic.trim()) { setError(t.errTopicReq); return; }
+    if (topic.trim().length < 3) { setError(t.errTopicLen); return; }
 
     setLoading(true);
     setError("");
@@ -34,7 +135,7 @@ export default function CreateLesson() {
         token || ""
       );
       setResult(data.presentation_data || data);
-      addToast({ title: "Dars yaratildi!", description: "AI muvaffaqiyatli dars tayyorladi", type: "success" });
+      addToast({ title: t.successTitle, description: t.successDesc, type: "success" });
     } catch {
       // Fallback to mock data if API fails
       setResult({
@@ -47,7 +148,7 @@ export default function CreateLesson() {
         ],
         summary: `Bugungi darsda ${topic} mavzusini o'rgandik. Asosiy tushunchalar, amaliy misollar va mustahkamlash mashqlari bilan tanishdik.`,
       });
-      addToast({ title: "Demo rejimida yaratildi", description: "Backend ulangan emas — namuna ma'lumotlar ko'rsatilmoqda", type: "warning" });
+      addToast({ title: t.demoTitle, description: t.demoDesc, type: "warning" });
     } finally {
       setLoading(false);
     }
@@ -64,9 +165,9 @@ export default function CreateLesson() {
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Sparkles size={24} className="text-[#F5A623]" />
-            AI bilan Dars Yaratish
+            {t.pageTitle}
           </h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Mavzuni kiriting — AI hamma narsani yaratadi</p>
+          <p className="text-slate-500 dark:text-slate-400 mt-1">{t.pageSubtitle}</p>
         </div>
       </div>
 
@@ -82,12 +183,12 @@ export default function CreateLesson() {
             <div className="space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                  <BookOpen size={16} className="text-[#F5A623]" /> Dars nomi
+                  <BookOpen size={16} className="text-[#F5A623]" /> {t.lessonName}
                 </label>
                 <input
                   value={title}
                   onChange={(e) => { setTitle(e.target.value); setError(""); }}
-                  placeholder="Masalan: Algoritmlar va ma'lumotlar tuzilmasi"
+                  placeholder={t.lessonNamePl}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:border-transparent transition"
                   id="lesson-title-input"
                   disabled={loading}
@@ -96,12 +197,12 @@ export default function CreateLesson() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
-                  <Hash size={16} className="text-[#1B4FD8]" /> Mavzu
+                  <Hash size={16} className="text-[#1B4FD8]" /> {t.topic}
                 </label>
                 <input
                   value={topic}
                   onChange={(e) => { setTopic(e.target.value); setError(""); }}
-                  placeholder="Masalan: Binary Search algoritmining ishlash prinsipi"
+                  placeholder={t.topicPl}
                   className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F5A623] focus:border-transparent transition"
                   id="lesson-topic-input"
                   disabled={loading}
@@ -110,7 +211,7 @@ export default function CreateLesson() {
 
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                  <Clock size={16} className="text-[#0D9373]" /> Davomiylik: <span className="text-[#F5A623] font-bold">{duration} daqiqa</span>
+                  <Clock size={16} className="text-[#0D9373]" /> {t.duration} <span className="text-[#F5A623] font-bold"> {duration} {t.minutes}</span>
                 </label>
                 <input
                   type="range"
@@ -123,8 +224,8 @@ export default function CreateLesson() {
                   disabled={loading}
                 />
                 <div className="flex justify-between text-xs text-slate-400 mt-1">
-                  <span>15 daq</span>
-                  <span>90 daq</span>
+                  <span>15 {t.minText}</span>
+                  <span>90 {t.minText}</span>
                 </div>
               </div>
 
@@ -137,38 +238,38 @@ export default function CreateLesson() {
                 leftIcon={loading ? undefined : <Sparkles size={20} />}
                 id="generate-lesson-btn"
               >
-                {loading ? "AI yaratmoqda..." : "AI bilan Yaratish"}
+                {loading ? t.btnLoading : t.btnCreate}
               </Button>
             </div>
           </Card>
 
           {/* Tips */}
           <Card className="p-4 border-l-4 border-[#1B4FD8]">
-            <p className="text-sm font-bold text-[#1B4FD8] mb-1">💡 Maslahat</p>
-            <p className="text-sm text-slate-600 dark:text-slate-400">Mavzuni qanchalik aniq yozsangiz, AI shunchalik yaxshi natija beradi. Masalan: "Binary Search" o'rniga "Binary Search algoritmining O(log n) murakkabligi" yozing.</p>
+            <p className="text-sm font-bold text-[#1B4FD8] mb-1">{t.tipTitle}</p>
+            <p className="text-sm text-slate-600 dark:text-slate-400">{t.tipText}</p>
           </Card>
         </div>
       ) : (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              ✅ Dars Yaratildi!
+              {t.resultTitle}
             </h2>
             <Button variant="secondary" onClick={() => setResult(null)} leftIcon={<Sparkles size={16} />}>
-              Yana yaratish
+              {t.btnCreateAgain}
             </Button>
           </div>
 
           {/* WOW Fact */}
           <Card className="p-5 border-l-4 border-amber-500/50 bg-amber-500/5">
-            <div className="text-amber-400 font-semibold mb-1 flex items-center gap-2">🤯 WOW Fakt</div>
+            <div className="text-amber-400 font-semibold mb-1 flex items-center gap-2">{t.wowFact}</div>
             <p className="text-slate-700 dark:text-slate-300">{String(result.wow_fact || "")}</p>
           </Card>
 
           {/* Summary */}
           {result.summary && (
             <Card className="p-5 border-l-4 border-[#0D9373]/50 bg-[#0D9373]/5">
-              <div className="text-[#0D9373] font-semibold mb-1">📋 Xulosa</div>
+              <div className="text-[#0D9373] font-semibold mb-1">{t.summary}</div>
               <p className="text-slate-700 dark:text-slate-300 text-sm">{String(result.summary || "")}</p>
             </Card>
           )}
@@ -177,7 +278,7 @@ export default function CreateLesson() {
           <div>
             <h3 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
               <BookOpen size={18} className="text-[#F5A623]" />
-              Slaydlar ({slides?.length || 0} ta)
+              {t.slides} ({slides?.length || 0} {t.count})
             </h3>
             <div className="space-y-3">
               {slides?.map((s, i) => (
@@ -204,14 +305,14 @@ export default function CreateLesson() {
               leftIcon={<Play size={16} />}
               onClick={() => router.push("/professor/live")}
             >
-              Jonli Dars Boshlash
+              {t.btnStartLive}
             </Button>
             <Button
               variant="secondary"
               className="flex-1"
               onClick={() => router.push("/professor/lessons")}
             >
-              Darslarim
+              {t.btnMyLessons}
             </Button>
           </div>
         </div>

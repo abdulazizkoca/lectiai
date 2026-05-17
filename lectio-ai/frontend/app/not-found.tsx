@@ -6,6 +6,16 @@ import { Home, ArrowLeft, Search } from "lucide-react";
 
 export default function NotFoundPage() {
   const router = useRouter();
+  
+  const dict = {
+    uz: { title: "Sahifa topilmadi", msg: "Siz qidirayotgan sahifa mavjud emas yoki ko'chirilgan bo'lishi mumkin.", btn: "Bosh sahifaga" },
+    ru: { title: "Страница не найдена", msg: "Страница, которую вы ищете, не существует или была перемещена.", btn: "На главную" },
+    en: { title: "Page not found", msg: "The page you are looking for does not exist or may have been moved.", btn: "Go home" }
+  };
+  
+  // Safe fallback
+  const langKey = typeof window !== 'undefined' ? (localStorage.getItem("lectio-language") as "uz" | "ru" | "en") || "uz" : "uz";
+  const t = dict[langKey] || dict.uz;
 
   return (
     <div
@@ -35,9 +45,9 @@ export default function NotFoundPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold mb-3">Sahifa topilmadi</h1>
+        <h1 className="text-3xl font-bold mb-3">{t.title}</h1>
         <p className="text-slate-400 mb-8">
-          Siz qidirayotgan sahifa mavjud emas yoki ko'chirilgan bo'lishi mumkin.
+          {t.msg}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -48,7 +58,7 @@ export default function NotFoundPage() {
             className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-black transition-all"
             style={{ background: "linear-gradient(135deg,#F5A623,#e8941a)" }}
           >
-            <Home size={18} /> Bosh sahifaga
+            <Home size={18} /> {t.btn}
           </motion.button>
         </div>
       </motion.div>

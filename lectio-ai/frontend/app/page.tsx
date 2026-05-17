@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   ArrowRight,
   BookOpen,
@@ -52,7 +53,7 @@ function HomeNav() {
       <motion.div 
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
-        className="flex items-center gap-3"
+        className="flex items-center gap-2 sm:gap-3"
       >
         <div
           className="flex items-center gap-1 rounded-xl p-1 shadow-sm"
@@ -162,42 +163,49 @@ export default function HomePage() {
 
       {/* Cinematic Ambient Background with Image */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Abstract Tech/Education Background Image */}
+        {/* Abstract Tech/Education Background Image using next/image for optimization */}
         <div 
           className="absolute inset-0 transition-opacity duration-1000"
           style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1920&q=80')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
             opacity: isDark ? 0.4 : 0.15,
             mixBlendMode: isDark ? "screen" : "multiply",
           }}
-        />
+        >
+          <Image 
+            src="https://images.unsplash.com/photo-1550684848-fac1c5b4e853"
+            alt="Education Background"
+            fill
+            priority
+            quality={85}
+            className="object-cover"
+            sizes="100vw"
+          />
+        </div>
         
         {/* Overlay to ensure text remains readable */}
         <div className="absolute inset-0" style={{ background: isDark ? "linear-gradient(to bottom, rgba(5,5,8,0.3), #050508)" : "linear-gradient(to bottom, rgba(248,250,252,0.5), #F8FAFC)" }} />
 
-        {/* Floating Gradient Orbs */}
+        {/* Floating Gradient Orbs - Optimized for mobile by reducing blur and size on small screens */}
         <div
-          className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full opacity-[0.07]"
-          style={{ background: "#F5A623", filter: "blur(120px)", animation: "float 20s ease-in-out infinite" }}
+          className="absolute top-[-10%] right-[-5%] w-[300px] md:w-[600px] h-[300px] md:h-[600px] rounded-full opacity-[0.05] md:opacity-[0.07] blur-[60px] md:blur-[120px]"
+          style={{ background: "#F5A623", animation: "float 20s ease-in-out infinite" }}
         />
         <div
-          className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full opacity-[0.05]"
-          style={{ background: "#1B4FD8", filter: "blur(120px)", animation: "float 25s ease-in-out infinite reverse" }}
+          className="absolute bottom-[-15%] left-[-10%] w-[250px] md:w-[500px] h-[250px] md:h-[500px] rounded-full opacity-[0.04] md:opacity-[0.05] blur-[60px] md:blur-[120px]"
+          style={{ background: "#1B4FD8", animation: "float 25s ease-in-out infinite reverse" }}
         />
         <div
-          className="absolute top-[35%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-[0.04]"
-          style={{ background: "#0D9373", filter: "blur(100px)", animation: "float 22s ease-in-out infinite 2s" }}
+          className="hidden md:block absolute top-[35%] left-[50%] -translate-x-1/2 w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px]"
+          style={{ background: "#0D9373", animation: "float 22s ease-in-out infinite 2s" }}
         />
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-6 pt-32 pb-24 relative z-10 w-full mx-auto gap-32">
+      <div className="flex-1 flex flex-col items-center px-4 md:px-6 pt-24 md:pt-32 pb-16 md:pb-24 relative z-10 w-full mx-auto gap-16 md:gap-32">
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="text-center relative"
+          className="text-center relative px-2 md:px-0"
         >
           {/* Glassy badge */}
           <motion.div
@@ -216,14 +224,14 @@ export default function HomePage() {
           </motion.div>
 
           <h1
-            className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 tracking-tight relative"
+            className="text-5xl md:text-7xl lg:text-8xl font-black mb-4 md:mb-6 tracking-tight relative"
             style={{ color: isDark ? "#fff" : "#0A0A0F", lineHeight: 1.05 }}
           >
             Lectio <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5A623] to-[#FFD166] drop-shadow-lg">AI</span>
           </h1>
           
           <p
-            className="text-lg md:text-xl lg:text-2xl max-w-2xl mx-auto font-medium leading-relaxed relative"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl max-w-2xl mx-auto font-medium leading-relaxed relative"
             style={{ color: isDark ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.7)" }}
           >
             {lang === "uz" &&
@@ -244,11 +252,9 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + i * 0.1, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               onClick={() => router.push(card.route)}
-              className={`relative cursor-pointer rounded-[1.75rem] overflow-hidden group ${card.featured ? 'md:-translate-y-3 lg:-translate-y-5' : ''}`}
+              className={`relative cursor-pointer rounded-[1.5rem] md:rounded-[1.75rem] overflow-hidden group p-6 md:p-7 lg:p-8 min-h-[260px] md:min-h-[290px] ${card.featured ? 'md:min-h-[310px] md:-translate-y-3 lg:-translate-y-5' : ''}`}
               style={{
                 background: card.gradient,
-                padding: "32px 28px",
-                minHeight: card.featured ? 310 : 290,
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",

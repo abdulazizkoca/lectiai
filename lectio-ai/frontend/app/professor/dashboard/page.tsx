@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -14,6 +15,132 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
+const dict = {
+  uz: {
+    panelTitle: "PROFESSOR PANELI",
+    panelSubtitle: "Bugungi dars va talabalar holati",
+    confirmEnd: "Rostdan ham darsni yakunlamoqchimisiz?",
+    endSession: "Darsni Yakunlash",
+    startSession: "Dars Boshlash",
+    camTracking: "Kamera kuzatuvi",
+    quickActions: "Tezkor amallar",
+    startPolling: "Polling boshlash",
+    takeBreak: "Tanaffus",
+    liveLesson: "Jonli Dars",
+    codeLabel: "Kod:",
+    attentionText: "Diqqat: {att}% — {status}",
+    statusGood: "Yaxshi",
+    statusMedium: "O'rta",
+    statusPoor: "Past",
+    aiRecTitle: "✨ AI Tavsiya",
+    aiRecDesc: "O'quvchilarning 30% chalg'imoqda. Kichik \"Quiz\" o'tkazish yoki mavzuni hayotiy misol bilan tushuntirish tavsiya etiladi.",
+    prepTitle: "Dars Tayyorlash",
+    newLesson: "Yangi Dars Yaratish",
+    newLessonDesc: "AI yordamida slaydlar, testlar va materiallar generatsiyasi",
+    materials: "Materiallar",
+    materialsDesc: "Yuklangan metodichkalar va PDF hujjatlar bazasi",
+    stats: "Statistika",
+    statsDesc: "O'tgan darslar analitikasi va talabalar faolligi",
+    actionStart: "Boshlash",
+    actionView: "Ko'rish",
+    actionAnalytics: "Analitika",
+    recentLessons: "So'nggi tayyorlangan darslar",
+    kvantPhysics: "Kvant fizikasi asoslari",
+    dataStructures: "Ma'lumotlar tuzilmasi: Daraxtlar",
+    today: "Bugun",
+    yesterday: "Kecha",
+    hours: "soat",
+    pollingToastTitle: "Polling boshlash",
+    pollingToastDesc: "Real vaqtda so'rovnoma tez orada mavjud bo'ladi",
+    wowToastTitle: "WOW Fakt",
+    wowToastDesc: "Talabalar ekraniga qiziqarli fakt yuborilmoqda...",
+    breakToastTitle: "Tanaffus",
+    breakToastDesc: "Talabalar 5 daqiqa tanaffus olishadi"
+  },
+  ru: {
+    panelTitle: "ПАНЕЛЬ ПРОФЕССОРА",
+    panelSubtitle: "Сегодняшний урок и состояние студентов",
+    confirmEnd: "Вы действительно хотите завершить урок?",
+    endSession: "Завершить урок",
+    startSession: "Начать урок",
+    camTracking: "Камера наблюдения",
+    quickActions: "Быстрые действия",
+    startPolling: "Начать опрос",
+    takeBreak: "Перерыв",
+    liveLesson: "Живой Урок",
+    codeLabel: "Код:",
+    attentionText: "Внимание: {att}% — {status}",
+    statusGood: "Хорошо",
+    statusMedium: "Средне",
+    statusPoor: "Низко",
+    aiRecTitle: "✨ Рекомендация AI",
+    aiRecDesc: "30% студентов отвлекаются. Рекомендуется провести мини-опрос (Quiz) или объяснить тему на жизненном примере.",
+    prepTitle: "Подготовка к уроку",
+    newLesson: "Создать новый урок",
+    newLessonDesc: "Генерация слайдов, тестов и материалов с помощью AI",
+    materials: "Материалы",
+    materialsDesc: "База загруженных методичек и PDF документов",
+    stats: "Статистика",
+    statsDesc: "Аналитика прошлых уроков и активность студентов",
+    actionStart: "Начать",
+    actionView: "Просмотреть",
+    actionAnalytics: "Аналитика",
+    recentLessons: "Последние подготовленные уроки",
+    kvantPhysics: "Основы квантовой физики",
+    dataStructures: "Структуры данных: Деревья",
+    today: "Сегодня",
+    yesterday: "Вчера",
+    hours: "ч.",
+    pollingToastTitle: "Начать опрос",
+    pollingToastDesc: "Опросы в реальном времени появятся в ближайшее время",
+    wowToastTitle: "WOW Факт",
+    wowToastDesc: "Интересный факт отправляется на экраны студентов...",
+    breakToastTitle: "Перерыв",
+    breakToastDesc: "Студенты берут перерыв на 5 минут"
+  },
+  en: {
+    panelTitle: "PROFESSOR PORTAL",
+    panelSubtitle: "Today's lesson and student statuses",
+    confirmEnd: "Are you sure you want to end the lesson?",
+    endSession: "End Lesson",
+    startSession: "Start Lesson",
+    camTracking: "Camera Monitoring",
+    quickActions: "Quick Actions",
+    startPolling: "Start Polling",
+    takeBreak: "Take Break",
+    liveLesson: "Live Lesson",
+    codeLabel: "Code:",
+    attentionText: "Attention: {att}% — {status}",
+    statusGood: "Good",
+    statusMedium: "Medium",
+    statusPoor: "Poor",
+    aiRecTitle: "✨ AI Recommendation",
+    aiRecDesc: "30% of students are distracted. We recommend launching a quick Quiz or using a real-world example to re-engage.",
+    prepTitle: "Lesson Preparation",
+    newLesson: "Create New Lesson",
+    newLessonDesc: "Generate slides, quizzes and class materials using AI",
+    materials: "Materials",
+    materialsDesc: "Database of uploaded manuals and PDF documents",
+    stats: "Statistics",
+    statsDesc: "Analytics of past lessons and student engagement",
+    actionStart: "Start",
+    actionView: "View",
+    actionAnalytics: "Analytics",
+    recentLessons: "Recently Prepared Lessons",
+    kvantPhysics: "Fundamentals of Quantum Physics",
+    dataStructures: "Data Structures: Trees",
+    today: "Today",
+    yesterday: "Yesterday",
+    hours: "hours",
+    pollingToastTitle: "Start Polling",
+    pollingToastDesc: "Real-time polling will be available shortly",
+    wowToastTitle: "WOW Fact",
+    wowToastDesc: "Sending an interesting fact to student screens...",
+    breakToastTitle: "Break Time",
+    breakToastDesc: "Students will take a 5-minute break"
+  }
+};
+
 export default function ProfessorDashboardPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const router = useRouter();
@@ -23,11 +150,14 @@ export default function ProfessorDashboardPage() {
   const { toasts, addToast, removeToast } = useToast();
   const { language } = useLanguage();
 
+  const langKey = (language === "uz" || language === "ru" || language === "en") ? language : "uz";
+  const t = dict[langKey];
+
   const handleQuickAction = (action: string) => {
     const actions: Record<string, { title: string; description: string }> = {
-      polling: { title: "Polling boshlash", description: "Real vaqtda so'rovnoma tez orada mavjud bo'ladi" },
-      wow: { title: "WOW Fakt", description: "Talabalar ekraniga qiziqarli fakt yuborilmoqda..." },
-      break: { title: "Tanaffus", description: "Talabalar 5 daqiqa tanaffus olishadi" },
+      polling: { title: t.pollingToastTitle, description: t.pollingToastDesc },
+      wow: { title: t.wowToastTitle, description: t.wowToastDesc },
+      break: { title: t.breakToastTitle, description: t.breakToastDesc },
     };
     const a = actions[action];
     if (a) addToast({ title: a.title, description: a.description, type: "info" });
@@ -38,30 +168,28 @@ export default function ProfessorDashboardPage() {
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
-      <header className="flex items-center justify-between mb-8 pb-4 border-b border-white/10">
-        <div>
-          <h1 className="text-2xl font-bold font-display tracking-wide">
-            {language === 'uz' ? 'PROFESSOR PANELI' : 'ПАНЕЛЬ ПРОФЕССОРА'}
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-white/10">
+        <div className="w-full sm:w-auto">
+          <h1 className="text-xl sm:text-2xl font-bold font-display tracking-wide uppercase">
+            {t.panelTitle}
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            {language === 'uz' ? 'Bugungi dars va talabalar holati' : 'Сегодняшний урок и состояние студентов'}
+            {t.panelSubtitle}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
           <Button
             variant={isSessionActive ? "ghost" : "primary"}
             onClick={() => {
               if (isSessionActive) {
-                if (window.confirm(language === 'uz' ? "Rostdan ham darsni yakunlamoqchimisiz?" : "Вы действительно хотите завершить урок?")) setIsSessionActive(false);
+                if (window.confirm(t.confirmEnd)) setIsSessionActive(false);
               } else {
                 setIsSessionActive(true);
               }
             }}
-            className={isSessionActive ? "text-red-400 border border-red-500/30 hover:bg-red-500/10" : "bg-[#1B4FD8] text-white"}
+            className={`w-full sm:w-auto ${isSessionActive ? "text-red-400 border border-red-500/30 hover:bg-red-500/10" : ""}`}
           >
-            {isSessionActive 
-              ? (language === 'uz' ? "Darsni Yakunlash" : "Завершить урок") 
-              : (language === 'uz' ? "Dars Boshlash" : "Начать урок")}
+            {isSessionActive ? t.endSession : t.startSession}
           </Button>
         </div>
       </header>
@@ -70,17 +198,16 @@ export default function ProfessorDashboardPage() {
       <div className="flex flex-col lg:flex-row gap-8 flex-1">
 
         {/* LEFT PANEL */}
-        <div className="w-full lg:w-[400px] shrink-0 space-y-6">
-          <h2 className="text-xl font-bold font-display text-gray-200">Kamera kuzatuvi</h2>
+        <div className="w-full lg:w-[600px] xl:w-[720px] 2xl:w-[820px] shrink-0 space-y-6">
+          <h2 className="text-xl font-bold font-display text-gray-200">{t.camTracking}</h2>
           <CameraBlock sessionId={isSessionActive ? sessionId : null} />
 
           {isSessionActive && (
             <div className="p-4 bg-gray-900 rounded-xl border border-white/10 mt-4">
-              <h3 className="text-sm font-bold text-gray-300 mb-2">Tezkor amallar</h3>
+              <h3 className="text-sm font-bold text-gray-300 mb-2">{t.quickActions}</h3>
               <div className="grid grid-cols-2 gap-2">
-                <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("polling")}>Polling boshlash</Button>
-                <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs text-[#F5A623]" onClick={() => handleQuickAction("wow")}>WOW Fakt</Button>
-                <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("break")}>Tanaffus</Button>
+                <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("polling")}>{t.startPolling}</Button>
+                <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("break")}>{t.takeBreak}</Button>
               </div>
             </div>
           )}
@@ -90,17 +217,17 @@ export default function ProfessorDashboardPage() {
         <div className="flex-1 bg-gray-900/50 rounded-3xl border border-white/5 p-6 md:p-8">
           {isSessionActive ? (
             <div className="h-full flex flex-col">
-              <div className="flex justify-between items-center mb-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-2xl font-bold font-display flex items-center gap-3">
                   <span className="relative flex h-3 w-3">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
                   </span>
-                  Jonli Dars
+                  {t.liveLesson}
                 </h2>
                 <div className="flex items-center gap-4">
                   <PhonePermissionToggle />
-                  <div className="text-sm text-gray-400">Kod: <span className="font-mono text-white bg-white/10 px-2 py-1 rounded">{roomCode}</span></div>
+                  <div className="text-sm text-gray-400">{t.codeLabel} <span className="font-mono text-white bg-white/10 px-2 py-1 rounded">{roomCode}</span></div>
                 </div>
               </div>
 
@@ -119,7 +246,15 @@ export default function ProfessorDashboardPage() {
                     transition={{ delay: i * 0.1 }}
                     key={s.name}
                     className="p-4 rounded-xl border border-white/5 bg-black/40 flex justify-between items-center group cursor-pointer hover:bg-black/60 transition"
-                    onClick={() => addToast({ title: s.name, description: `Diqqat: ${s.attention}% — ${s.attention >= 70 ? "Yaxshi" : s.attention >= 40 ? "O'rta" : "Past"}`, type: s.attention >= 70 ? "success" : s.attention >= 40 ? "warning" : "error" })}
+                    onClick={() => {
+                      const statusStr = s.attention >= 70 ? t.statusGood : s.attention >= 40 ? t.statusMedium : t.statusPoor;
+                      const formattedToast = t.attentionText.replace("{att}", String(s.attention)).replace("{status}", statusStr);
+                      addToast({ 
+                        title: s.name, 
+                        description: formattedToast, 
+                        type: s.attention >= 70 ? "success" : s.attention >= 40 ? "warning" : "error" 
+                      });
+                    }}
                   >
                     <span className="font-medium">{s.name}</span>
                     <div className="flex items-center gap-2 text-xs">
@@ -131,15 +266,15 @@ export default function ProfessorDashboardPage() {
               </div>
 
               <div className="mt-auto p-4 bg-gradient-to-r from-indigo-900/40 to-purple-900/40 rounded-xl border border-indigo-500/20">
-                <h4 className="font-bold text-indigo-300 mb-1 flex items-center gap-2">✨ AI Tavsiya</h4>
-                <p className="text-sm text-indigo-100/80">O'quvchilarning 30% chalg'imoqda. Kichik "Quiz" o'tkazish yoki mavzuni hayotiy misol bilan tushuntirish tavsiya etiladi.</p>
+                <h4 className="font-bold text-indigo-300 mb-1 flex items-center gap-2">{t.aiRecTitle}</h4>
+                <p className="text-sm text-indigo-100/80">{t.aiRecDesc}</p>
               </div>
 
               <SessionQRWidget roomCode={roomCode} role="professor" />
             </div>
           ) : (
             <div className="space-y-8">
-              <h2 className="text-2xl font-bold font-display">Dars Tayyorlash</h2>
+              <h2 className="text-2xl font-bold font-display">{t.prepTitle}</h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <Card variant="default" className="bg-black/40 border-white/5 hover:border-white/20 transition cursor-pointer group" onClick={() => router.push("/professor/create-lesson")}>
@@ -148,11 +283,11 @@ export default function ProfessorDashboardPage() {
                       <Plus size={28} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">Yangi Dars Yaratish</h3>
-                      <p className="text-sm text-gray-500 mt-1">AI yordamida slaydlar, testlar va materiallar generatsiyasi</p>
+                      <h3 className="font-bold text-lg">{t.newLesson}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{t.newLessonDesc}</p>
                     </div>
                     <div className="flex items-center gap-1 text-[#1B4FD8] text-sm font-bold">
-                      Boshlash <ArrowRight size={14} />
+                      {t.actionStart} <ArrowRight size={14} />
                     </div>
                   </div>
                 </Card>
@@ -163,11 +298,11 @@ export default function ProfessorDashboardPage() {
                       <FileText size={28} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">Materiallar</h3>
-                      <p className="text-sm text-gray-500 mt-1">Yuklangan metodichkalar va PDF hujjatlar bazasi</p>
+                      <h3 className="font-bold text-lg">{t.materials}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{t.materialsDesc}</p>
                     </div>
                     <div className="flex items-center gap-1 text-[#0D9373] text-sm font-bold">
-                      Ko'rish <ArrowRight size={14} />
+                      {t.actionView} <ArrowRight size={14} />
                     </div>
                   </div>
                 </Card>
@@ -178,24 +313,24 @@ export default function ProfessorDashboardPage() {
                       <BarChart2 size={28} />
                     </div>
                     <div>
-                      <h3 className="font-bold text-lg">Statistika</h3>
-                      <p className="text-sm text-gray-500 mt-1">O'tgan darslar analitikasi va talabalar faolligi</p>
+                      <h3 className="font-bold text-lg">{t.stats}</h3>
+                      <p className="text-sm text-gray-500 mt-1">{t.statsDesc}</p>
                     </div>
                     <div className="flex items-center gap-1 text-[#F5A623] text-sm font-bold">
-                      Analitika <ArrowRight size={14} />
+                      {t.actionAnalytics} <ArrowRight size={14} />
                     </div>
                   </div>
                 </Card>
               </div>
 
               <div>
-                <h3 className="text-lg font-bold mb-4 border-b border-white/10 pb-2">So'nggi tayyorlangan darslar</h3>
+                <h3 className="text-lg font-bold mb-4 border-b border-white/10 pb-2">{t.recentLessons}</h3>
                 <div className="space-y-3">
                   {[
-                    { title: "Kvant fizikasi asoslari", date: "Bugun, 10:00", duration: "1.5 soat", id: "lesson-1" },
-                    { title: "Ma'lumotlar tuzilmasi: Daraxtlar", date: "Kecha, 14:30", duration: "1 soat", id: "lesson-2" },
+                    { title: t.kvantPhysics, date: `${t.today}, 10:00`, duration: `1.5 ${t.hours}`, id: "lesson-1" },
+                    { title: t.dataStructures, date: `${t.yesterday}, 14:30`, duration: `1 ${t.hours}`, id: "lesson-2" },
                   ].map((lesson, i) => (
-                    <div key={i} className="flex justify-between items-center p-4 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 transition">
+                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 transition">
                       <div className="flex items-center gap-4">
                         <div className="p-2 bg-gray-800 rounded-lg"><BookOpen size={20} className="text-gray-400" /></div>
                         <div>
@@ -210,7 +345,7 @@ export default function ProfessorDashboardPage() {
                         leftIcon={<Play size={14} />}
                         onClick={() => setIsSessionActive(true)}
                       >
-                        Boshlash
+                        {t.actionStart}
                       </Button>
                     </div>
                   ))}

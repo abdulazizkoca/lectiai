@@ -155,6 +155,26 @@ function drawHud(ctx: CanvasRenderingContext2D, fps: number, stats: ClassroomSta
   ctx.restore();
 }
 
+function drawAttentionWarning(ctx: CanvasRenderingContext2D) {
+  const pulse = Math.sin(Date.now() / 180) * 0.4 + 0.6; // elegant blinking pulse
+  ctx.save();
+  // Glow effect on screen margins
+  ctx.strokeStyle = `rgba(239, 68, 68, ${0.15 + pulse * 0.15})`;
+  ctx.lineWidth = 14;
+  ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  
+  // Warning Box in upper right corner
+  ctx.fillStyle = `rgba(239, 68, 68, ${0.75 + pulse * 0.15})`;
+  ctx.fillRect(CANVAS_WIDTH - 348, 18, 330, 68);
+  ctx.fillStyle = "#ffffff";
+  ctx.font = '800 14px "Inter", system-ui, sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText("⚠️ DIQQAT JUDA PAST", CANVAS_WIDTH - 348 + 165, 46);
+  ctx.font = '500 11px "Inter", system-ui, sans-serif';
+  ctx.fillText("TALABALAR FAOLIYATIDAN CHALG'IMOQDA", CANVAS_WIDTH - 348 + 165, 66);
+  ctx.restore();
+}
+
 export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sessionId: string | null }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -171,6 +191,35 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
   const [isOn, setIsOn] = useState(false);
   const [stats, setStats] = useState<ClassroomStats>(emptyStats);
   const [fpsDisplay, setFpsDisplay] = useState(0);
+
+  const [aiSettings, setAiSettings] = useState({
+    aiSensitivity: "medium",
+    phoneTracking: true,
+    lowAttentionAlert: true,
+    distractionTimeout: 5
+  });
+
+  const aiSettingsRef = useRef(aiSettings);
+  useEffect(() => {
+    aiSettingsRef.current = aiSettings;
+  }, [aiSettings]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("lectio_professor_settings");
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          setAiSettings({
+            aiSensitivity: parsed.aiSensitivity || "medium",
+            phoneTracking: parsed.phoneTracking !== undefined ? parsed.phoneTracking : true,
+            lowAttentionAlert: parsed.lowAttentionAlert !== undefined ? parsed.lowAttentionAlert : true,
+            distractionTimeout: parsed.distractionTimeout !== undefined ? parsed.distractionTimeout : 5
+          });
+        } catch (e) {}
+      }
+    }
+  }, [isOn]);
 
   const publishStats = useCallback((next: ClassroomStats) => {
     statsRef.current = next;
@@ -214,12 +263,28 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
     sortFaces(liveFaces).forEach((face) => drawFaceBox(ctx, face));
     drawHud(ctx, fp.value, statsRef.current);
 
+    if (aiSettingsRef.current.lowAttentionAlert && statsRef.current.avgAttention < 50 && statsRef.current.students > 0) {
+      drawAttentionWarning(ctx);
+    }
+
     rafRef.current = requestAnimationFrame(renderLoop);
   }, []);
 
   const onResults = useCallback((results: any) => {
     const now = performance.now();
     const detections: any[] = (results?.detections ?? []).slice(0, MAX_CLASS_FACES);
+    
+    const sensitivity = aiSettingsRef.current.aiSensitivity;
+    let redThreshold = 45;
+    let yellowThreshold = 70;
+    if (sensitivity === "low") {
+      redThreshold = 35;
+      yellowThreshold = 60;
+    } else if (sensitivity === "high") {
+      redThreshold = 55;
+      yellowThreshold = 78;
+    }
+
     const mapped = detections.map((detection, index) => {
       const bb = detection.boundingBox;
       const conf = detection.score?.[0] ?? 0.9;
@@ -231,13 +296,27 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
         w: bb.width * CANVAS_WIDTH,
         h: bb.height * CANVAS_HEIGHT,
       };
-      const attention = estimateAttention(conf, box);
+      
+      const attentionRaw = estimateAttention(conf, box);
+      let attention = attentionRaw;
+      if (sensitivity === "low") {
+        attention = Math.min(100, attentionRaw + 8);
+      } else if (sensitivity === "high") {
+        attention = Math.max(0, attentionRaw - 8);
+      }
+
+      const getStatusWithSensitivity = (att: number) => {
+        if (att < redThreshold) return "red";
+        if (att < yellowThreshold) return "yellow";
+        return "green";
+      };
+
       return {
         id: index + 1,
         ...box,
         conf,
         attention,
-        status: getStatus(attention),
+        status: getStatusWithSensitivity(attention),
         lastSeen: now,
       };
     });
@@ -327,9 +406,19 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
 
   const deactivate = useCallback(() => {
     cancelAnimationFrame(rafRef.current);
-    camRef.current?.stop?.();
-    detRef.current?.close?.();
-    (videoRef.current?.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+    if (camRef.current) {
+      try { camRef.current.stop?.(); } catch (e) {}
+      camRef.current = null;
+    }
+    if (detRef.current) {
+      try { detRef.current.close?.(); } catch (e) {}
+      detRef.current = null;
+    }
+    if (videoRef.current?.srcObject) {
+      try {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
+      } catch (e) {}
+    }
     facesRef.current = [];
     statsRef.current = emptyStats;
     setStats(emptyStats);
@@ -338,21 +427,31 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
 
   useEffect(() => () => {
     cancelAnimationFrame(rafRef.current);
-    camRef.current?.stop?.();
-    detRef.current?.close?.();
-    (videoRef.current?.srcObject as MediaStream | null)?.getTracks().forEach((track) => track.stop());
+    if (camRef.current) {
+      try { camRef.current.stop?.(); } catch (e) {}
+      camRef.current = null;
+    }
+    if (detRef.current) {
+      try { detRef.current.close?.(); } catch (e) {}
+      detRef.current = null;
+    }
+    if (videoRef.current?.srcObject) {
+      try {
+        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
+      } catch (e) {}
+    }
   }, []);
 
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-700 bg-[#070b12] text-slate-100">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 bg-[#0d1320] px-4 py-3">
+    <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-xl text-slate-100 shadow-xl shadow-black/20">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-white/5 px-5 py-4">
         <div>
-          <h3 className="text-sm font-bold text-white">Professor kamera</h3>
-          <p className="text-xs text-slate-400">{sessionId ? `Sessiya: ${sessionId}` : "Har bir o'quvchi yuzini kvadrat bilan belgilaydi"}</p>
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Diqqat Kuzatuvi</h3>
+          <p className="text-xs text-slate-400">{sessionId ? `Jonli sessiya faol: ${sessionId}` : "Dars davomida talabalar faolligini kameradan nazorat qilish"}</p>
         </div>
         <button
           onClick={isOn ? deactivate : activate}
-          className={`inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-bold transition ${isOn ? "bg-[#ef4444] text-white hover:bg-[#dc2626]" : "bg-[#12d6b2] text-[#041014] hover:bg-[#31e6c7]"}`}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition active:scale-95 ${isOn ? "bg-[#E84855]/20 text-[#E84855] border border-[#E84855]/30 hover:bg-[#E84855] hover:text-white" : "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-lg shadow-[#F5A623]/20"}`}
         >
           {isOn ? <CameraOff size={16} /> : <Camera size={16} />}
           {isOn ? "O'chirish" : "Kamerani yoqish"}
@@ -364,31 +463,33 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
         <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block h-full w-full" />
 
         {!isOn && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#070b12]/95 text-center">
-            <Camera size={46} className="text-[#12d6b2]" />
-            <div>
-              <p className="text-lg font-bold text-white">Kamera tayyor</p>
-              <p className="mt-1 text-sm text-slate-400">Yoqilgandan keyin yuzlar darhol kvadrat ichida belgilanadi</p>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/95 text-center p-6">
+            <div className="w-16 h-16 rounded-2xl bg-[#F5A623]/10 flex items-center justify-center text-[#F5A623] mb-2 border border-[#F5A623]/20">
+              <Camera size={32} />
             </div>
-            <button onClick={activate} className="inline-flex items-center gap-2 rounded-md bg-[#12d6b2] px-5 py-3 text-sm font-bold text-[#041014]">
-              <Camera size={18} />
-              Boshlash
+            <div>
+              <p className="text-lg font-bold text-white font-display">Kamera Tizimi Tayyor</p>
+              <p className="mt-1 text-xs text-slate-400 max-w-xs mx-auto">Kamerani yoqish orqali AI yuz detektori va diqqat darajasini tahlil qilishni boshlang</p>
+            </div>
+            <button onClick={activate} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#F5A623] to-[#e8941a] px-6 py-3 text-sm font-bold text-black shadow-lg shadow-[#F5A623]/20 hover:scale-105 active:scale-95 transition-all">
+              <Camera size={16} />
+              Kamerani Yoqish
             </button>
           </div>
         )}
 
         {isOn && stats.students === 0 && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-[#0d1320]/90 px-4 py-2 text-sm font-semibold text-[#f5a623]">
-            Yuzlar qidirilmoqda...
+            Talabalar qidirilmoqda...
           </div>
         )}
       </div>
 
-      <div className="grid gap-px bg-slate-800 md:grid-cols-4">
+      <div className="grid gap-px bg-white/10 md:grid-cols-4">
         <StatCard icon={<Users size={18} />} label="O'quvchilar" value={String(stats.students)} hint={`${MAX_CLASS_FACES} tagacha yuz`} />
         <StatCard icon={<Gauge size={18} />} label="Diqqat" value={`${stats.avgAttention}%`} hint={`${stats.engaged} yaxshi, ${stats.softWarn} o'rta, ${stats.distracted} past`} />
         <StatCard icon={<Activity size={18} />} label="Tezlik" value={`${fpsDisplay || "--"} FPS`} hint={`detect ${stats.latency}ms`} />
-        <StatCard icon={<Camera size={18} />} label="Yuz info" value={stats.conf} hint={`x:${stats.x} y:${stats.y} w:${stats.w} h:${stats.h}`} />
+        <StatCard icon={<Camera size={18} />} label="Detektor" value={stats.students > 0 ? "Faol" : "Kutilmoqda"} hint={stats.students > 0 ? `Ishonch: ${stats.conf}` : "AI talabalarni qidirmoqda"} />
       </div>
     </section>
   );
@@ -396,13 +497,13 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
 
 function StatCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
   return (
-    <div className="bg-[#0d1320] p-4">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
-        <span className="text-[#12d6b2]">{icon}</span>
+    <div className="bg-slate-950/40 p-5 backdrop-blur-md">
+      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-300">
+        <span className="text-[#F5A623]">{icon}</span>
         {label}
       </div>
       <div className="text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs text-slate-500">{hint}</div>
+      <div className="mt-1 text-xs text-slate-300">{hint}</div>
     </div>
   );
 }

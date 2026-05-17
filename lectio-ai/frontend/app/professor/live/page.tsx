@@ -87,12 +87,6 @@ export default function LiveSession() {
             <div className="glass-card p-5 space-y-3">
               <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Tezkor harakatlar</h3>
               <button
-                onClick={() => addToast({ title: "🤯 WOW Fakt", description: "Al-Xorazmiy algebra fanining asoschisi — 'algoritm' so'zi uning nomidan!", type: "info" })}
-                className="btn-secondary w-full text-sm"
-              >
-                🤯 WOW Fakt ko&apos;rsatish
-              </button>
-              <button
                 onClick={() => { addToast({ title: "🎯 Quiz savoli", description: "Barcha talabalar ekraniga savol yuborildi!", type: "success" }); }}
                 className="btn-secondary w-full text-sm"
               >

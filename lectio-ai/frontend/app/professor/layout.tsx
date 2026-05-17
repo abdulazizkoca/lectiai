@@ -9,6 +9,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 export default function ProfessorLayout({ children }: { children: React.ReactNode }) {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isDark } = useTheme();
 
   return (
@@ -36,11 +37,12 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
         />
       </div>
 
-      <Sidebar />
-      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+      <Sidebar isMobileOpen={isMobileMenuOpen} onCloseMobile={() => setIsMobileMenuOpen(false)} />
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10 w-full">
         <Header 
           onOpenSearch={() => setIsSearchOpen(true)} 
           onOpenNotifications={() => setIsNotificationsOpen(true)} 
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
         <main className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="min-h-full">

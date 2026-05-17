@@ -2,16 +2,9 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 type Stage = "idle" | "uploading" | "analyzing" | "done";
-
-const STEPS = [
-  { id: 1, text: "Fayl o'qilmoqda..." },
-  { id: 2, text: "Mavzular aniqlanmoqda..." },
-  { id: 3, text: "Asosiy tushunchalar ajratilmoqda..." },
-  { id: 4, text: "Dars rejasi tuzilmoqda..." },
-  { id: 5, text: "Test savollari yaratilmoqda..." },
-];
 
 const MOCK_RESULT = {
   title: "Algoritmlar va Ma'lumotlar Tuzilmasi",
@@ -35,6 +28,91 @@ export default function MaterialsPage() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [result, setResult] = useState<typeof MOCK_RESULT | null>(null);
   const [dragActive, setDragActive] = useState(false);
+  const { language } = useLanguage();
+
+  const dict = {
+    uz: {
+      steps: [
+        "Fayl o'qilmoqda...",
+        "Mavzular aniqlanmoqda...",
+        "Asosiy tushunchalar ajratilmoqda...",
+        "Dars rejasi tuzilmoqda...",
+        "Test savollari yaratilmoqda..."
+      ],
+      back: "Dashboard",
+      title: "Metodichka",
+      titleSpan: "Yuklash",
+      subtitle: "PDF, Word, PowerPoint yuklang — AI tahlil qiladi va dars yaratadi",
+      dropTitle: "Metodichkani shu yerga tashlang",
+      dropDesc: "PDF, Word, PowerPoint, TXT — 50MB gacha",
+      browse: "Fayl tanlash",
+      analyzed: "Metodichka tahlil qilindi!",
+      subject: "Fan",
+      level: "Daraja",
+      lessons: "Darslar",
+      count: "ta",
+      topics: "📋 Mavzular",
+      facts: "💡 Qiziqarli faktlar",
+      createLesson: "✨ Dars Yaratish",
+      createQuiz: "🎮 Test Yaratish",
+      uploadMore: "+ Boshqa metodichka yuklash"
+    },
+    ru: {
+      steps: [
+        "Чтение файла...",
+        "Определение тем...",
+        "Выделение ключевых концепций...",
+        "Составление плана урока...",
+        "Создание вопросов для теста..."
+      ],
+      back: "Дашборд",
+      title: "Загрузка",
+      titleSpan: "Методички",
+      subtitle: "Загрузите PDF, Word, PowerPoint — AI проанализирует и создаст урок",
+      dropTitle: "Бросьте методичку сюда",
+      dropDesc: "PDF, Word, PowerPoint, TXT — до 50MB",
+      browse: "Выбрать файл",
+      analyzed: "Методичка проанализирована!",
+      subject: "Предмет",
+      level: "Уровень",
+      lessons: "Уроки",
+      count: "шт",
+      topics: "📋 Темы",
+      facts: "💡 Интересные факты",
+      createLesson: "✨ Создать Урок",
+      createQuiz: "🎮 Создать Тест",
+      uploadMore: "+ Загрузить другую методичку"
+    },
+    en: {
+      steps: [
+        "Reading file...",
+        "Identifying topics...",
+        "Extracting key concepts...",
+        "Drafting lesson plan...",
+        "Generating quiz questions..."
+      ],
+      back: "Dashboard",
+      title: "Upload",
+      titleSpan: "Manual",
+      subtitle: "Upload PDF, Word, PowerPoint — AI will analyze and create a lesson",
+      dropTitle: "Drop manual here",
+      dropDesc: "PDF, Word, PowerPoint, TXT — up to 50MB",
+      browse: "Browse files",
+      analyzed: "Manual analyzed successfully!",
+      subject: "Subject",
+      level: "Level",
+      lessons: "Lessons",
+      count: "pcs",
+      topics: "📋 Topics",
+      facts: "💡 Interesting Facts",
+      createLesson: "✨ Create Lesson",
+      createQuiz: "🎮 Create Quiz",
+      uploadMore: "+ Upload another manual"
+    }
+  };
+
+  const langKey = (language === "uz" || language === "ru" || language === "en") ? language : "uz";
+  const t = dict[langKey];
 
   const processFile = useCallback((file: File) => {
     setFileName(file.name);
@@ -85,7 +163,7 @@ export default function MaterialsPage() {
             <span style={{ fontSize: "0.75rem", background: "rgba(245,166,35,0.2)", color: "var(--saffron)", padding: "2px 8px", borderRadius: 999 }}>Professor</span>
           </Link>
           <Link href="/professor/dashboard" className="btn-secondary" style={{ fontSize: "0.875rem", padding: "8px 16px", textDecoration: "none" }}>
-            ← Dashboard
+            ← {t.back}
           </Link>
         </div>
       </nav>
@@ -94,10 +172,10 @@ export default function MaterialsPage() {
       <main style={{ maxWidth: 800, margin: "0 auto", padding: "48px 24px", position: "relative", zIndex: 10 }}>
         <div className="slide-up">
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: "2rem", marginBottom: 8 }}>
-            📄 Metodichka <span className="gradient-text">Yuklash</span>
+            📄 {t.title} <span className="gradient-text">{t.titleSpan}</span>
           </h1>
           <p style={{ color: "var(--muted)", marginBottom: 32 }}>
-            PDF, Word, PowerPoint yuklang — AI tahlil qiladi va dars yaratadi
+            {t.subtitle}
           </p>
         </div>
 
@@ -110,10 +188,10 @@ export default function MaterialsPage() {
               onDragLeave={() => setDragActive(false)}
               onDrop={handleDrop}>
               <div style={{ fontSize: "3rem", marginBottom: 8 }}>📤</div>
-              <h3>Metodichkani shu yerga tashlang</h3>
-              <p>PDF, Word, PowerPoint, TXT — 50MB gacha</p>
+              <h3>{t.dropTitle}</h3>
+              <p>{t.dropDesc}</p>
               <label className="browse-btn" style={{ display: "inline-block", marginTop: 16 }}>
-                Fayl tanlash
+                {t.browse}
                 <input type="file" accept=".pdf,.docx,.pptx,.txt" onChange={handleFileInput} style={{ display: "none" }} />
               </label>
             </motion.div>
@@ -131,13 +209,16 @@ export default function MaterialsPage() {
                 <motion.div className="progress-fill" initial={{ width: "0%" }} animate={{ width: `${progress}%` }} />
               </div>
               <div style={{ marginTop: 20 }}>
-                {STEPS.map((step, i) => (
-                  <motion.div key={step.id} className={`step-item ${completedSteps.includes(step.id) ? "done" : ""}`}
-                    initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}>
-                    <span style={{ fontSize: "1rem" }}>{completedSteps.includes(step.id) ? "✅" : "⏳"}</span>
-                    <span>{step.text}</span>
-                  </motion.div>
-                ))}
+                {t.steps.map((stepText, i) => {
+                  const id = i + 1;
+                  return (
+                    <motion.div key={id} className={`step-item ${completedSteps.includes(id) ? "done" : ""}`}
+                      initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}>
+                      <span style={{ fontSize: "1rem" }}>{completedSteps.includes(id) ? "✅" : "⏳"}</span>
+                      <span>{stepText}</span>
+                    </motion.div>
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -149,16 +230,16 @@ export default function MaterialsPage() {
               <div className="glass-card" style={{ padding: 32, textAlign: "center", marginBottom: 24 }}>
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   style={{ fontSize: "3rem", marginBottom: 12 }}>✅</motion.div>
-                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem" }}>Metodichka tahlil qilindi!</h2>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.5rem" }}>{t.analyzed}</h2>
                 <p style={{ color: "var(--muted)", marginTop: 4 }}>{result.title}</p>
               </div>
 
               {/* Info grid */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
                 {[
-                  { label: "Fan", value: result.subject, icon: "📚" },
-                  { label: "Daraja", value: result.level, icon: "🎓" },
-                  { label: "Darslar", value: `${result.lessons_suggested} ta`, icon: "📖" },
+                  { label: t.subject, value: result.subject, icon: "📚" },
+                  { label: t.level, value: result.level, icon: "🎓" },
+                  { label: t.lessons, value: `${result.lessons_suggested} ${t.count}`, icon: "📖" },
                 ].map((item) => (
                   <div key={item.label} className="glass-card" style={{ padding: 16, textAlign: "center" }}>
                     <div style={{ fontSize: "1.5rem", marginBottom: 4 }}>{item.icon}</div>
@@ -170,7 +251,7 @@ export default function MaterialsPage() {
 
               {/* Topics */}
               <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
-                <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 16 }}>📋 Mavzular</h3>
+                <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 16 }}>{t.topics}</h3>
                 {result.topics.map((topic, i) => (
                   <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
                     style={{ padding: "12px 16px", background: "rgba(255,255,255,0.03)", borderRadius: "var(--radius-md)", marginBottom: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -189,7 +270,7 @@ export default function MaterialsPage() {
 
               {/* WOW Facts */}
               <div className="glass-card" style={{ padding: 24, marginBottom: 24 }}>
-                <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 12 }}>💡 Qiziqarli faktlar</h3>
+                <h3 style={{ fontFamily: "var(--font-display)", marginBottom: 12 }}>{t.facts}</h3>
                 {result.wow_facts.map((fact, i) => (
                   <div key={i} style={{ padding: "8px 12px", color: "var(--saffron)", fontSize: "0.9rem", marginBottom: 4 }}>
                     ⚡ {fact}
@@ -200,16 +281,16 @@ export default function MaterialsPage() {
               {/* Actions */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <Link href="/professor/create-lesson" className="join-btn" style={{ textAlign: "center", textDecoration: "none" }}>
-                  ✨ Dars Yaratish
+                  {t.createLesson}
                 </Link>
                 <Link href="/professor/quiz" className="btn-secondary" style={{ textAlign: "center", textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  🎮 Test Yaratish
+                  {t.createQuiz}
                 </Link>
               </div>
 
               <button onClick={() => { setStage("idle"); setResult(null); }}
                 style={{ width: "100%", marginTop: 12, padding: 12, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "var(--radius-md)", color: "var(--muted)", cursor: "pointer" }}>
-                + Boshqa metodichka yuklash
+                {t.uploadMore}
               </button>
             </motion.div>
           )}
