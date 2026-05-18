@@ -1,7 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 import os
+import logging
 from dotenv import load_dotenv
+
+logger = logging.getLogger("lectio.database")
 
 load_dotenv()
 
@@ -37,8 +40,7 @@ try:
     engine = create_engine(DATABASE_URL, **engine_kwargs)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 except Exception as e:
-    print(f"Failed to create database engine: {e}")
-    # We don't raise here to allow the app to potentially show a health check error instead of crashing immediately
+    logger.critical(f"Failed to create database engine: {e}")
     engine = None
     SessionLocal = None
 
@@ -54,7 +56,7 @@ def get_db():
         yield db
     except Exception as e:
         db.rollback()
-        print(f"Database transaction error: {e}")
+        logger.error(f"Database transaction error: {e}")
         raise
     finally:
         db.close()

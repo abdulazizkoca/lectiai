@@ -26,10 +26,9 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     # Sinxron engine bo'lgani uchun to'g'ridan-to'g'ri chaqiramiz
     Base.metadata.create_all(bind=engine)
-    logger.info("Lectio AI backend started successfully")
+    logger.info("Lectio AI backend v2.0 started successfully — http://localhost:8000")
     yield
-    logger.info("Lectio AI backend shutting down")
-    logger.info("Lectio AI backend shutting down")
+    logger.info("Lectio AI backend shutting down cleanly")
 
 app = FastAPI(
     title="Lectio AI API",

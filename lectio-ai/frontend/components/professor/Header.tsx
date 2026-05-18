@@ -64,10 +64,10 @@ export function Header({ onOpenSearch, onOpenNotifications, onToggleMobileMenu }
       <div className="flex items-center gap-2 sm:gap-4 ml-6">
         {/* Language Switcher */}
         <div className="flex items-center bg-slate-100 dark:bg-white/5 rounded-lg p-1 border border-black/5 dark:border-white/5">
-          {['uz', 'ru'].map((lang) => (
+          {(['uz', 'ru', 'en'] as const).map((lang) => (
             <button
               key={lang}
-              onClick={() => setLanguage(lang as any)}
+              onClick={() => setLanguage(lang)}
               className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${
                 language === lang 
                   ? 'bg-[#F5A623] text-black shadow-sm' 

@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Badge } from "@/components/ui/Badge";
+import Logo from "@/components/Logo";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const dict = {
@@ -100,11 +101,16 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
       </button>
 
       <div className={`h-20 flex items-center ${collapsed ? 'justify-center' : 'px-6'} shrink-0`}>
-        <Link href="/" className="flex items-center">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-display font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20 cursor-pointer hover:scale-105 transition-transform">
-            L
-          </div>
-          {!collapsed && <span className="ml-3 font-display font-bold text-xl tracking-wide text-white hover:text-[#F5A623] transition-colors">Lectio AI</span>}
+        <Link href="/" className="flex items-center gap-3 group">
+          <Logo
+            size={34}
+            className="shrink-0 transition-transform duration-300 group-hover:scale-110"
+          />
+          {!collapsed && (
+            <span className="font-display font-bold text-xl tracking-wide text-white group-hover:text-[#F5A623] transition-colors">
+              Lectio AI
+            </span>
+          )}
         </Link>
       </div>
 

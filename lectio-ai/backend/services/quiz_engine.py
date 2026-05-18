@@ -7,6 +7,10 @@ import time
 import os
 import redis.asyncio as redis
 from anthropic import AsyncAnthropic
+import cv2
+import numpy as np
+import base64
+from services.camera_service import camera
 
 sio = AsyncServer(
     async_mode='asgi',
@@ -376,3 +380,45 @@ async def ask_question(sid, data):
     await sio.emit("student_asked", {
         "question_text": data["text"]
     }, to=room["professor_sid"])
+
+@sio.event
+async def camera_frame(sid, data):
+    room_code = data.get("room_code")
+    frame_b64 = data.get("frame")
+    student_id = data.get("student_id")
+    nickname = data.get("nickname")
+    
+    if not room_code or not frame_b64:
+        return
+        
+    room = await get_room(room_code)
+    if not room:
+        return
+        
+    try:
+        # Decode base64 frame
+        if "," in frame_b64:
+            frame_b64 = frame_b64.split(",")[1]
+            
+        frame_bytes = base64.b64decode(frame_b64)
+        nparr = np.frombuffer(frame_bytes, np.uint8)
+        frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+        
+        if frame is None:
+            return
+            
+        # Analyze frame for attention
+        attention_data = camera.analyze_frame(frame)
+        
+        # Emit to professor
+        await sio.emit("student_attention", {
+            "student_id": student_id,
+            "nickname": nickname,
+            "attention": attention_data.attention_level * 100,
+            "boredom": attention_data.boredom_detected,
+            "confusion": attention_data.confusion_detected
+        }, to=room["professor_sid"])
+        
+    except Exception as e:
+        print(f"Error processing camera frame: {e}")
+

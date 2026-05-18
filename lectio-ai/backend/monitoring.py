@@ -85,13 +85,16 @@ async def metrics_middleware(request: Request, call_next):
             endpoint=request.url.path
         ).observe(duration)
         
+        # Safe client IP extraction — request.client can be None in some ASGI setups
+        client_ip = request.client.host if request.client else "unknown"
+        
         logger.info(
             "api_request",
             method=request.method,
             path=request.url.path,
             duration_ms=round(duration * 1000, 2),
             status=response.status_code,
-            client_ip=request.client.host
+            client_ip=client_ip
         )
         
     return response

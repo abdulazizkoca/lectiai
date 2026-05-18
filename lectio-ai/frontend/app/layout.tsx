@@ -25,11 +25,12 @@ export const metadata: Metadata = {
   authors: [{ name: "Lectio AI Team" }],
   icons: {
     icon: [
-      { url: "/favicon.ico" },
-      { url: "/logo.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml" },  // Primary — modern browsers
+      { url: "/logo.svg", type: "image/svg+xml" },  // Fallback SVG
+      { url: "/favicon.ico", sizes: "any" },         // Legacy fallback
     ],
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
+    shortcut: "/icon.svg",
+    apple:    "/icon.svg",
   },
   openGraph: {
     title: "Lectio AI",
@@ -41,11 +42,12 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A0A0F" },
+    { media: "(prefers-color-scheme: light)", color: "#F5A623" },
+    { media: "(prefers-color-scheme: dark)",  color: "#0A0A0F"  },
   ],
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
