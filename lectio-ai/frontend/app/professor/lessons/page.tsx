@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen, Plus, Search, Filter, Calendar, Users, Clock, Play } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -16,7 +16,12 @@ export default function ProfessorLessonsPage() {
   const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [savedLessons, setSavedLessons] = useState<any[]>([]);
   const { toasts, addToast, removeToast } = useToast();
+
+  useEffect(() => {
+    setSavedLessons(JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]"));
+  }, []);
 
   const mockLessons = [
     {
@@ -61,7 +66,21 @@ export default function ProfessorLessonsPage() {
     },
   ];
 
-  const filteredLessons = mockLessons.filter((lesson) => {
+  const allLessons = [
+    ...savedLessons.map((lesson) => ({
+      id: lesson.id,
+      title: lesson.title,
+      topic: lesson.topic,
+      students: 0,
+      duration: lesson.duration,
+      status: lesson.status || "preparing",
+      nextSession: new Date(lesson.createdAt).toLocaleDateString(),
+      progress: lesson.progress || 0,
+    })),
+    ...mockLessons,
+  ];
+
+  const filteredLessons = allLessons.filter((lesson) => {
     const matchesSearch =
       lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       lesson.topic.toLowerCase().includes(searchTerm.toLowerCase());

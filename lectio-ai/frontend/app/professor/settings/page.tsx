@@ -903,7 +903,6 @@ export default function ProfessorSettingsPage() {
                         {[
                           { code: "uz", label: "O'zbekcha", native: "O'zbek", flag: "🇺🇿" },
                           { code: "ru", label: "Русский", native: "Русский", flag: "🇷🇺" },
-                          { code: "en", label: "English", native: "English", flag: "🇬🇧" },
                         ].map((lang) => (
                           <button
                             key={lang.code}

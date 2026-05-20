@@ -1,18 +1,16 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CameraBlock } from "@/components/professor/CameraBlock";
 import { PhonePermissionToggle } from "@/components/professor/PhonePermissionToggle";
 import { SessionQRWidget } from "@/components/shared/SessionQRWidget";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { FileText, Plus, Play, Users, BookOpen, BarChart2, ArrowRight, Sun, Moon } from "lucide-react";
+import { FileText, Plus, Play, BookOpen, BarChart2, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
-import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 const dict = {
@@ -144,7 +142,6 @@ const dict = {
 export default function ProfessorDashboardPage() {
   const [isSessionActive, setIsSessionActive] = useState(false);
   const router = useRouter();
-  const { isDark, toggleTheme } = useTheme();
   const roomCode = "LECTIO-2026";
   const sessionId = "session_123";
   const { toasts, addToast, removeToast } = useToast();
@@ -164,21 +161,22 @@ export default function ProfessorDashboardPage() {
   };
 
   return (
-    <div className="min-h-full bg-transparent text-white p-6 md:p-8 flex flex-col relative z-10">
+    <div className="min-h-full bg-transparent text-white p-4 md:p-6 xl:p-8 flex flex-col relative z-10">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
-      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-white/10">
+      <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-white/20">
         <div className="w-full sm:w-auto">
-          <h1 className="text-xl sm:text-2xl font-bold font-display tracking-wide uppercase">
+          <h1 className="text-xl sm:text-2xl font-bold font-display tracking-wide">
             {t.panelTitle}
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
+          <p className="text-slate-300 text-sm sm:text-base mt-1">
             {t.panelSubtitle}
           </p>
         </div>
-        <div className="flex items-center gap-3 w-full sm:w-auto mt-2 sm:mt-0">
+        <div className="flex items-center gap-3 w-full sm:w-auto mt-1 sm:mt-0">
           <Button
+            size="sm"
             variant={isSessionActive ? "ghost" : "primary"}
             onClick={() => {
               if (isSessionActive) {
@@ -187,7 +185,7 @@ export default function ProfessorDashboardPage() {
                 setIsSessionActive(true);
               }
             }}
-            className={`w-full sm:w-auto ${isSessionActive ? "text-red-400 border border-red-500/30 hover:bg-red-500/10" : ""}`}
+            className={`max-w-xs sm:max-w-none ${isSessionActive ? "text-red-400 border border-red-500/30 hover:bg-red-500/10" : ""}`}
           >
             {isSessionActive ? t.endSession : t.startSession}
           </Button>
@@ -195,28 +193,26 @@ export default function ProfessorDashboardPage() {
       </header>
 
       {/* Main Layout */}
-      <div className="flex flex-col lg:flex-row gap-8 flex-1">
+      <div className="flex flex-col gap-5 xl:gap-6 flex-1">
 
-        {/* LEFT PANEL */}
-        <div className="w-full lg:w-[600px] xl:w-[720px] 2xl:w-[820px] shrink-0 space-y-6">
-          <h2 className="text-xl font-bold font-display text-gray-200">{t.camTracking}</h2>
-          <CameraBlock sessionId={isSessionActive ? sessionId : null} />
-
-          {isSessionActive && (
-            <div className="p-4 bg-gray-900 rounded-xl border border-white/10 mt-4">
-              <h3 className="text-sm font-bold text-gray-300 mb-2">{t.quickActions}</h3>
-              <div className="grid grid-cols-2 gap-2">
+        {/* CAMERA PANEL */}
+        <section className="min-w-0 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <h2 className="text-xl font-bold font-display text-gray-200">{t.camTracking}</h2>
+            {isSessionActive && (
+              <div className="grid grid-cols-2 gap-2 sm:w-auto">
                 <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("polling")}>{t.startPolling}</Button>
                 <Button size="sm" variant="ghost" className="bg-white/5 hover:bg-white/10 text-xs" onClick={() => handleQuickAction("break")}>{t.takeBreak}</Button>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+          <CameraBlock sessionId={isSessionActive ? sessionId : null} />
+        </section>
 
-        {/* RIGHT PANEL */}
-        <div className="flex-1 bg-gray-900/50 rounded-3xl border border-white/5 p-6 md:p-8">
+        {/* CONTENT PANEL */}
+        <section className="min-w-0 bg-gray-900/50 rounded-2xl border border-white/15 p-4 md:p-6 xl:p-7">
           {isSessionActive ? (
-            <div className="h-full flex flex-col">
+            <div className="flex flex-col">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                 <h2 className="text-2xl font-bold font-display flex items-center gap-3">
                   <span className="relative flex h-3 w-3">
@@ -231,7 +227,7 @@ export default function ProfessorDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4 mb-6">
                 {[
                   { name: "Jasur", status: "green", attention: 95 },
                   { name: "Sardor", status: "yellow", attention: 55 },
@@ -245,7 +241,7 @@ export default function ProfessorDashboardPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: i * 0.1 }}
                     key={s.name}
-                    className="p-4 rounded-xl border border-white/5 bg-black/40 flex justify-between items-center group cursor-pointer hover:bg-black/60 transition"
+                    className="p-4 rounded-xl border border-white/15 bg-black/40 flex justify-between items-center group cursor-pointer hover:bg-black/60 transition"
                     onClick={() => {
                       const statusStr = s.attention >= 70 ? t.statusGood : s.attention >= 40 ? t.statusMedium : t.statusPoor;
                       const formattedToast = t.attentionText.replace("{att}", String(s.attention)).replace("{status}", statusStr);
@@ -273,11 +269,11 @@ export default function ProfessorDashboardPage() {
               <SessionQRWidget roomCode={roomCode} role="professor" />
             </div>
           ) : (
-            <div className="space-y-8">
+            <div className="space-y-6">
               <h2 className="text-2xl font-bold font-display">{t.prepTitle}</h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <Card variant="default" className="bg-black/40 border-white/5 hover:border-white/20 transition cursor-pointer group" onClick={() => router.push("/professor/create-lesson")}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-3 gap-4">
+                <Card variant="default" className="bg-black/40 border-white/15 hover:border-white/25 transition cursor-pointer group" onClick={() => router.push("/professor/create-lesson")}>
                   <div className="p-4 flex flex-col items-center text-center gap-4 py-8">
                     <div className="w-14 h-14 rounded-2xl bg-[#1B4FD8]/20 flex items-center justify-center text-[#1B4FD8] group-hover:scale-110 transition">
                       <Plus size={28} />
@@ -292,7 +288,7 @@ export default function ProfessorDashboardPage() {
                   </div>
                 </Card>
 
-                <Card variant="default" className="bg-black/40 border-white/5 hover:border-white/20 transition cursor-pointer group" onClick={() => router.push("/professor/materials")}>
+                <Card variant="default" className="bg-black/40 border-white/15 hover:border-white/25 transition cursor-pointer group" onClick={() => router.push("/professor/materials")}>
                   <div className="p-4 flex flex-col items-center text-center gap-4 py-8">
                     <div className="w-14 h-14 rounded-2xl bg-[#0D9373]/20 flex items-center justify-center text-[#0D9373] group-hover:scale-110 transition">
                       <FileText size={28} />
@@ -307,7 +303,7 @@ export default function ProfessorDashboardPage() {
                   </div>
                 </Card>
 
-                <Card variant="default" className="bg-black/40 border-white/5 hover:border-white/20 transition cursor-pointer group" onClick={() => router.push("/professor/analytics")}>
+                <Card variant="default" className="bg-black/40 border-white/15 hover:border-white/25 transition cursor-pointer group" onClick={() => router.push("/professor/analytics")}>
                   <div className="p-4 flex flex-col items-center text-center gap-4 py-8">
                     <div className="w-14 h-14 rounded-2xl bg-[#F5A623]/20 flex items-center justify-center text-[#F5A623] group-hover:scale-110 transition">
                       <BarChart2 size={28} />
@@ -324,13 +320,13 @@ export default function ProfessorDashboardPage() {
               </div>
 
               <div>
-                <h3 className="text-lg font-bold mb-4 border-b border-white/10 pb-2">{t.recentLessons}</h3>
+                <h3 className="text-lg font-bold mb-4 border-b border-white/20 pb-2">{t.recentLessons}</h3>
                 <div className="space-y-3">
                   {[
                     { title: t.kvantPhysics, date: `${t.today}, 10:00`, duration: `1.5 ${t.hours}`, id: "lesson-1" },
                     { title: t.dataStructures, date: `${t.yesterday}, 14:30`, duration: `1 ${t.hours}`, id: "lesson-2" },
                   ].map((lesson, i) => (
-                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-black/20 border border-white/5 hover:bg-black/40 transition">
+                    <div key={i} className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 p-4 rounded-xl bg-black/20 border border-white/15 hover:bg-black/40 transition">
                       <div className="flex items-center gap-4">
                         <div className="p-2 bg-gray-800 rounded-lg"><BookOpen size={20} className="text-gray-400" /></div>
                         <div>
@@ -353,7 +349,7 @@ export default function ProfessorDashboardPage() {
               </div>
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );

@@ -1,5 +1,11 @@
-// Public fallback worker for pages that load the camera worker directly.
-importScripts("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js");
+// Optional FaceLandmarker worker. CameraBlock keeps a stable FaceDetection fallback,
+// so CDN/model load failures must be reported through INIT_FAIL instead of crashing.
+let importError = "";
+try {
+  importScripts("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/vision_bundle.js");
+} catch (err) {
+  importError = err && err.message ? err.message : "vision_bundle.js failed to load";
+}
 
 const { FaceLandmarker, FilesetResolver } = self;
 const MAX_CLASS_FACES = 32;
@@ -72,6 +78,14 @@ const getBoundingBox = (landmarks) => {
   ];
 };
 
+const getKeyLandmarks = (landmarks) => {
+  const indices = [1, 10, 33, 61, 127, 145, 152, 159, 199, 263, 291, 356, 374, 386, 468, 473];
+  return indices
+    .map((index) => landmarks[index])
+    .filter(Boolean)
+    .map((point) => [Number(clamp(point.x, 0, 1).toFixed(4)), Number(clamp(point.y, 0, 1).toFixed(4))]);
+};
+
 const calculateAttention = (landmarks, trackId) => {
   const state = getFaceState(trackId);
   const metrics = getRawMetrics(landmarks);
@@ -106,6 +120,9 @@ const getStatus = (score) => {
 self.onmessage = async (e) => {
   if (e.data.type === "INIT") {
     try {
+      if (importError || !FaceLandmarker || !FilesetResolver) {
+        throw new Error(importError || "MediaPipe Tasks Vision is unavailable");
+      }
       const filesetResolver = await FilesetResolver.forVisionTasks(
         "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
       );
@@ -153,6 +170,7 @@ self.onmessage = async (e) => {
         attention_score: attention.score,
         status: getStatus(attention.score),
         bbox,
+        key_landmarks: getKeyLandmarks(landmarks),
         position: [Number((bbox[0] + bbox[2] / 2).toFixed(4)), Number((bbox[1] + bbox[3] / 2).toFixed(4))],
         eye_openness: Number(attention.metrics.eyeOpenness.toFixed(4)),
         gaze_direction: attention.metrics.gaze,

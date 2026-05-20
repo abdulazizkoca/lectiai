@@ -1,15 +1,15 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Activity, Camera, CameraOff, Gauge, Users } from "lucide-react";
+import { Activity, Camera, CameraOff, Eye, Gauge, Users } from "lucide-react";
 
 const CANVAS_WIDTH = 1280;
 const CANVAS_HEIGHT = 720;
 const DETECT_WIDTH = 640;
 const DETECT_HEIGHT = 480;
 const MAX_CLASS_FACES = 32;
-const DETECT_INTERVAL_MS = 85;
-const FACE_HOLD_MS = 650;
+const DETECT_INTERVAL_MS = 75;
+const FACE_HOLD_MS = 720;
 
 type FaceStatus = "green" | "yellow" | "red";
 
@@ -33,11 +33,13 @@ interface ClassroomStats {
   distracted: number;
   dets: number;
   latency: number;
+  fps: number;
   x: string;
   y: string;
   w: string;
   h: string;
   conf: string;
+  model: string;
 }
 
 const emptyStats: ClassroomStats = {
@@ -48,20 +50,16 @@ const emptyStats: ClassroomStats = {
   distracted: 0,
   dets: 0,
   latency: 0,
+  fps: 0,
   x: "---",
   y: "---",
   w: "---",
   h: "---",
   conf: "---",
+  model: "Kutilyapti",
 };
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-const getStatus = (attention: number): FaceStatus => {
-  if (attention < 45) return "red";
-  if (attention < 70) return "yellow";
-  return "green";
-};
 
 const statusColor = (status: FaceStatus) => {
   if (status === "green") return "#22c55e";
@@ -89,12 +87,12 @@ const sortFaces = (faces: FaceBox[]) =>
 
 function drawFaceBox(ctx: CanvasRenderingContext2D, face: FaceBox) {
   const color = statusColor(face.status);
-  const pad = Math.max(10, Math.min(20, face.w * 0.12));
+  const pad = Math.max(10, Math.min(24, face.w * 0.13));
   const x = clamp(face.x - pad, 0, CANVAS_WIDTH - 2);
   const y = clamp(face.y - pad, 0, CANVAS_HEIGHT - 2);
   const w = clamp(face.w + pad * 2, 2, CANVAS_WIDTH - x);
   const h = clamp(face.h + pad * 2, 2, CANVAS_HEIGHT - y);
-  const corner = Math.max(22, Math.min(42, w * 0.2));
+  const corner = Math.max(24, Math.min(50, w * 0.2));
 
   ctx.save();
   ctx.fillStyle = `${color}1f`;
@@ -102,15 +100,15 @@ function drawFaceBox(ctx: CanvasRenderingContext2D, face: FaceBox) {
 
   ctx.strokeStyle = color;
   ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.38;
-  ctx.setLineDash([7, 5]);
+  ctx.globalAlpha = 0.4;
+  ctx.setLineDash([8, 5]);
   ctx.strokeRect(x, y, w, h);
   ctx.setLineDash([]);
   ctx.globalAlpha = 1;
 
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 4;
   ctx.shadowColor = color;
-  ctx.shadowBlur = 12;
+  ctx.shadowBlur = 14;
   [
     [x, y, 1, 1],
     [x + w, y, -1, 1],
@@ -125,53 +123,67 @@ function drawFaceBox(ctx: CanvasRenderingContext2D, face: FaceBox) {
   });
   ctx.shadowBlur = 0;
 
-  ctx.fillStyle = "rgba(2, 6, 23, 0.78)";
-  ctx.fillRect(x, Math.max(0, y - 36), Math.max(154, w), 32);
+  const centerX = x + w / 2;
+  const centerY = y + h / 2;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(centerX - 12, centerY);
+  ctx.lineTo(centerX + 12, centerY);
+  ctx.moveTo(centerX, centerY - 12);
+  ctx.lineTo(centerX, centerY + 12);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  const labelWidth = Math.max(210, w);
+  ctx.fillStyle = "rgba(2, 6, 23, 0.82)";
+  ctx.fillRect(x, Math.max(0, y - 40), labelWidth, 34);
   ctx.fillStyle = color;
-  ctx.font = '700 16px "Inter", system-ui, sans-serif';
-  ctx.fillText(`TARGET ${String(face.id).padStart(2, "0")}`, x + 8, Math.max(22, y - 14));
+  ctx.font = '800 15px "Inter", system-ui, sans-serif';
+  ctx.fillText(`TALABA ${String(face.id).padStart(2, "0")}`, x + 10, Math.max(24, y - 17));
   ctx.textAlign = "right";
-  ctx.fillText(`${Math.round(face.conf * 100)}%`, x + Math.max(146, w) - 8, Math.max(22, y - 14));
+  ctx.fillText(`${Math.round(face.attention)}%`, x + labelWidth - 10, Math.max(24, y - 17));
   ctx.textAlign = "left";
 
-  ctx.fillStyle = "rgba(2, 6, 23, 0.78)";
-  ctx.fillRect(x, y + h + 6, w, 20);
-  ctx.fillStyle = color;
-  ctx.font = '600 12px "Inter", system-ui, sans-serif';
-  ctx.fillText(`x:${Math.round(face.x)} y:${Math.round(face.y)} w:${Math.round(face.w)} h:${Math.round(face.h)}`, x + 8, y + h + 21);
+  ctx.fillStyle = "rgba(2, 6, 23, 0.82)";
+  ctx.fillRect(x, y + h + 8, labelWidth, 24);
+  ctx.fillStyle = "#e2e8f0";
+  ctx.font = '700 12px "Inter", system-ui, sans-serif';
+  ctx.fillText(`conf ${Math.round(face.conf * 100)}% | x ${Math.round(face.x)} y ${Math.round(face.y)} w ${Math.round(face.w)} h ${Math.round(face.h)}`, x + 10, y + h + 25);
   ctx.restore();
 }
 
-function drawHud(ctx: CanvasRenderingContext2D, fps: number, stats: ClassroomStats) {
+function drawHud(ctx: CanvasRenderingContext2D, stats: ClassroomStats) {
   ctx.save();
   ctx.fillStyle = "rgba(2, 6, 23, 0.76)";
-  ctx.fillRect(18, 18, 410, 68);
+  ctx.fillRect(18, 18, 500, 88);
   ctx.fillStyle = "#f8fafc";
-  ctx.font = '800 22px "Inter", system-ui, sans-serif';
-  ctx.fillText(`${stats.students} o'quvchi aniqlandi`, 34, 47);
+  ctx.font = '800 23px "Inter", system-ui, sans-serif';
+  ctx.fillText(`${stats.students} yuz | ${stats.avgAttention}% o'rtacha diqqat`, 34, 50);
   ctx.fillStyle = "#cbd5e1";
-  ctx.font = '600 15px "Inter", system-ui, sans-serif';
-  ctx.fillText(`Diqqat: ${stats.avgAttention}%  |  FPS: ${fps || "--"}  |  Detect: ${stats.latency}ms`, 34, 73);
+  ctx.font = '600 14px "Inter", system-ui, sans-serif';
+  ctx.fillText(`FPS ${stats.fps || "--"} | Detect ${stats.latency}ms | ${stats.model}`, 34, 76);
+  ctx.fillStyle = "#f5a623";
+  ctx.fillText(`Faol: ${stats.engaged} | Kuzatuv: ${stats.softWarn} | Chalg'igan: ${stats.distracted}`, 34, 98);
   ctx.restore();
 }
 
-function drawAttentionWarning(ctx: CanvasRenderingContext2D) {
-  const pulse = Math.sin(Date.now() / 180) * 0.4 + 0.6; // elegant blinking pulse
+function drawAttentionWarning(ctx: CanvasRenderingContext2D, stats: ClassroomStats) {
+  if (stats.students === 0 || stats.avgAttention >= 50) return;
+  const pulse = Math.sin(Date.now() / 180) * 0.35 + 0.65;
   ctx.save();
-  // Glow effect on screen margins
-  ctx.strokeStyle = `rgba(239, 68, 68, ${0.15 + pulse * 0.15})`;
+  ctx.strokeStyle = `rgba(239, 68, 68, ${0.16 + pulse * 0.16})`;
   ctx.lineWidth = 14;
   ctx.strokeRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-  
-  // Warning Box in upper right corner
-  ctx.fillStyle = `rgba(239, 68, 68, ${0.75 + pulse * 0.15})`;
-  ctx.fillRect(CANVAS_WIDTH - 348, 18, 330, 68);
+  ctx.fillStyle = `rgba(239, 68, 68, ${0.78 + pulse * 0.12})`;
+  ctx.fillRect(CANVAS_WIDTH - 360, 18, 342, 74);
   ctx.fillStyle = "#ffffff";
-  ctx.font = '800 14px "Inter", system-ui, sans-serif';
+  ctx.font = '900 14px "Inter", system-ui, sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText("⚠️ DIQQAT JUDA PAST", CANVAS_WIDTH - 348 + 165, 46);
-  ctx.font = '500 11px "Inter", system-ui, sans-serif';
-  ctx.fillText("TALABALAR FAOLIYATIDAN CHALG'IMOQDA", CANVAS_WIDTH - 348 + 165, 66);
+  ctx.fillText("DIQQAT PAST", CANVAS_WIDTH - 189, 48);
+  ctx.font = '600 12px "Inter", system-ui, sans-serif';
+  ctx.fillText(`${stats.distracted} talaba chalg'igan`, CANVAS_WIDTH - 189, 70);
   ctx.restore();
 }
 
@@ -187,16 +199,17 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
   const lastDetectRef = useRef(0);
   const detectingRef = useRef(false);
   const uiTickRef = useRef(0);
+  const isOnRef = useRef(false);
 
   const [isOn, setIsOn] = useState(false);
+  const [error, setError] = useState("");
   const [stats, setStats] = useState<ClassroomStats>(emptyStats);
-  const [fpsDisplay, setFpsDisplay] = useState(0);
 
   const [aiSettings, setAiSettings] = useState({
     aiSensitivity: "medium",
     phoneTracking: true,
     lowAttentionAlert: true,
-    distractionTimeout: 5
+    distractionTimeout: 5,
   });
 
   const aiSettingsRef = useRef(aiSettings);
@@ -205,26 +218,24 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
   }, [aiSettings]);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("lectio_professor_settings");
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          setAiSettings({
-            aiSensitivity: parsed.aiSensitivity || "medium",
-            phoneTracking: parsed.phoneTracking !== undefined ? parsed.phoneTracking : true,
-            lowAttentionAlert: parsed.lowAttentionAlert !== undefined ? parsed.lowAttentionAlert : true,
-            distractionTimeout: parsed.distractionTimeout !== undefined ? parsed.distractionTimeout : 5
-          });
-        } catch (e) {}
-      }
-    }
+    if (typeof window === "undefined") return;
+    const saved = localStorage.getItem("lectio_professor_settings");
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      setAiSettings({
+        aiSensitivity: parsed.aiSensitivity || "medium",
+        phoneTracking: parsed.phoneTracking !== undefined ? parsed.phoneTracking : true,
+        lowAttentionAlert: parsed.lowAttentionAlert !== undefined ? parsed.lowAttentionAlert : true,
+        distractionTimeout: parsed.distractionTimeout !== undefined ? parsed.distractionTimeout : 5,
+      });
+    } catch {}
   }, [isOn]);
 
   const publishStats = useCallback((next: ClassroomStats) => {
     statsRef.current = next;
     const now = performance.now();
-    if (now - uiTickRef.current > 220) {
+    if (now - uiTickRef.current > 180) {
       uiTickRef.current = now;
       setStats(next);
     }
@@ -247,7 +258,7 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
       fp.value = Math.round((fp.frames * 1000) / (now - fp.last));
       fp.frames = 0;
       fp.last = now;
-      setFpsDisplay(fp.value);
+      statsRef.current = { ...statsRef.current, fps: fp.value };
     }
 
     ctx.save();
@@ -255,16 +266,16 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
     ctx.scale(-1, 1);
     ctx.drawImage(video, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
     ctx.restore();
-    ctx.fillStyle = "rgba(2, 6, 23, 0.12)";
+    ctx.fillStyle = "rgba(2, 6, 23, 0.10)";
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     const liveFaces = facesRef.current.filter((face) => performance.now() - face.lastSeen < FACE_HOLD_MS);
     facesRef.current = liveFaces;
     sortFaces(liveFaces).forEach((face) => drawFaceBox(ctx, face));
-    drawHud(ctx, fp.value, statsRef.current);
+    drawHud(ctx, statsRef.current);
 
-    if (aiSettingsRef.current.lowAttentionAlert && statsRef.current.avgAttention < 50 && statsRef.current.students > 0) {
-      drawAttentionWarning(ctx);
+    if (aiSettingsRef.current.lowAttentionAlert) {
+      drawAttentionWarning(ctx, statsRef.current);
     }
 
     rafRef.current = requestAnimationFrame(renderLoop);
@@ -273,50 +284,37 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
   const onResults = useCallback((results: any) => {
     const now = performance.now();
     const detections: any[] = (results?.detections ?? []).slice(0, MAX_CLASS_FACES);
-    
     const sensitivity = aiSettingsRef.current.aiSensitivity;
-    let redThreshold = 45;
-    let yellowThreshold = 70;
-    if (sensitivity === "low") {
-      redThreshold = 35;
-      yellowThreshold = 60;
-    } else if (sensitivity === "high") {
-      redThreshold = 55;
-      yellowThreshold = 78;
-    }
+    const redThreshold = sensitivity === "high" ? 55 : sensitivity === "low" ? 35 : 45;
+    const yellowThreshold = sensitivity === "high" ? 78 : sensitivity === "low" ? 60 : 70;
 
     const mapped = detections.map((detection, index) => {
       const bb = detection.boundingBox;
       const conf = detection.score?.[0] ?? 0.9;
       const rawX = bb.xCenter - bb.width / 2;
-      const mirroredX = 1 - rawX - bb.width;
+      const mirroredBoxX = 1 - rawX - bb.width;
       const box = {
-        x: mirroredX * CANVAS_WIDTH,
+        x: mirroredBoxX * CANVAS_WIDTH,
         y: (bb.yCenter - bb.height / 2) * CANVAS_HEIGHT,
         w: bb.width * CANVAS_WIDTH,
         h: bb.height * CANVAS_HEIGHT,
       };
-      
-      const attentionRaw = estimateAttention(conf, box);
-      let attention = attentionRaw;
-      if (sensitivity === "low") {
-        attention = Math.min(100, attentionRaw + 8);
-      } else if (sensitivity === "high") {
-        attention = Math.max(0, attentionRaw - 8);
-      }
 
-      const getStatusWithSensitivity = (att: number): FaceStatus => {
-        if (att < redThreshold) return "red";
-        if (att < yellowThreshold) return "yellow";
-        return "green";
-      };
+      const rawAttention = estimateAttention(conf, box);
+      const attention = sensitivity === "low"
+        ? Math.min(100, rawAttention + 8)
+        : sensitivity === "high"
+          ? Math.max(0, rawAttention - 8)
+          : rawAttention;
+
+      const status: FaceStatus = attention < redThreshold ? "red" : attention < yellowThreshold ? "yellow" : "green";
 
       return {
         id: index + 1,
         ...box,
         conf,
         attention,
-        status: getStatusWithSensitivity(attention),
+        status,
         lastSeen: now,
       };
     });
@@ -324,6 +322,7 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
     const sorted = sortFaces(mapped).map((face, index) => ({ ...face, id: index + 1 }));
     facesRef.current = sorted;
     const avgAttention = sorted.length ? Math.round(sorted.reduce((sum, face) => sum + face.attention, 0) / sorted.length) : 0;
+    const first = sorted[0];
 
     publishStats({
       students: sorted.length,
@@ -333,29 +332,66 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
       distracted: sorted.filter((face) => face.status === "red").length,
       dets: statsRef.current.dets + 1,
       latency: statsRef.current.latency,
-      x: sorted[0] ? String(Math.round(sorted[0].x)) : "---",
-      y: sorted[0] ? String(Math.round(sorted[0].y)) : "---",
-      w: sorted[0] ? String(Math.round(sorted[0].w)) : "---",
-      h: sorted[0] ? String(Math.round(sorted[0].h)) : "---",
-      conf: sorted[0] ? `${Math.round(sorted[0].conf * 100)}%` : "---",
+      fps: statsRef.current.fps,
+      x: first ? String(Math.round(first.x)) : "---",
+      y: first ? String(Math.round(first.y)) : "---",
+      w: first ? String(Math.round(first.w)) : "---",
+      h: first ? String(Math.round(first.h)) : "---",
+      conf: first ? `${Math.round(first.conf * 100)}%` : "---",
+      model: "FaceDetection fallback",
     });
   }, [publishStats]);
 
-  const loadScripts = useCallback(async () => {
+  const loadLegacyScripts = useCallback(async () => {
     if ((window as any).FaceDetection && (window as any).Camera) return;
     const load = (src: string) => new Promise<void>((resolve, reject) => {
       const script = document.createElement("script");
       script.src = src;
       script.async = true;
       script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      script.onerror = () => reject(new Error(`Script yuklanmadi: ${src}`));
       document.body.appendChild(script);
     });
+
     await load("https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/face_detection.js");
     await load("https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js");
   }, []);
 
+  const startLegacyDetector = useCallback(async () => {
+    await loadLegacyScripts();
+    if (!videoRef.current || !isOnRef.current) return;
+
+    const FaceDetection = (window as any).FaceDetection;
+    detRef.current = new FaceDetection({
+      locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
+    });
+    detRef.current.setOptions({ model: "short", minDetectionConfidence: 0.3 });
+    detRef.current.onResults(onResults);
+
+    camRef.current = new (window as any).Camera(videoRef.current, {
+      onFrame: async () => {
+        const now = performance.now();
+        if (!detRef.current || !videoRef.current || detectingRef.current || now - lastDetectRef.current < DETECT_INTERVAL_MS) return;
+        detectingRef.current = true;
+        lastDetectRef.current = now;
+        const t0 = performance.now();
+        try {
+          await detRef.current.send({ image: videoRef.current });
+          statsRef.current = { ...statsRef.current, latency: Math.round(performance.now() - t0) };
+        } finally {
+          detectingRef.current = false;
+        }
+      },
+      width: DETECT_WIDTH,
+      height: DETECT_HEIGHT,
+    });
+
+    camRef.current.start();
+    publishStats({ ...statsRef.current, model: "FaceDetection fallback", label: "Detektor faol" } as ClassroomStats);
+  }, [loadLegacyScripts, onResults, publishStats]);
+
   const activate = useCallback(async () => {
+    setError("");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -371,87 +407,55 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
       videoRef.current.srcObject = stream;
       await videoRef.current.play();
 
+      isOnRef.current = true;
       setIsOn(true);
+      publishStats({ ...emptyStats, model: "FaceDetection yuklanmoqda" });
       rafRef.current = requestAnimationFrame(renderLoop);
-      await loadScripts();
-
-      const FaceDetection = (window as any).FaceDetection;
-      detRef.current = new FaceDetection({ locateFile: (file: string) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}` });
-      detRef.current.setOptions({ model: "short", minDetectionConfidence: 0.3 });
-      detRef.current.onResults(onResults);
-
-      camRef.current = new (window as any).Camera(videoRef.current, {
-        onFrame: async () => {
-          const now = performance.now();
-          if (!detRef.current || !videoRef.current || detectingRef.current || now - lastDetectRef.current < DETECT_INTERVAL_MS) return;
-          detectingRef.current = true;
-          lastDetectRef.current = now;
-          const t0 = performance.now();
-          try {
-            await detRef.current.send({ image: videoRef.current });
-            statsRef.current = { ...statsRef.current, latency: Math.round(performance.now() - t0) };
-          } finally {
-            detectingRef.current = false;
-          }
-        },
-        width: DETECT_WIDTH,
-        height: DETECT_HEIGHT,
-      });
-
-      camRef.current.start();
-    } catch (error) {
-      console.error("Camera activation failed", error);
+      await startLegacyDetector();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Kamerani yoqib bo'lmadi");
+      console.error("Camera activation failed", err);
     }
-  }, [loadScripts, onResults, renderLoop]);
+  }, [publishStats, renderLoop, startLegacyDetector]);
 
   const deactivate = useCallback(() => {
+    isOnRef.current = false;
     cancelAnimationFrame(rafRef.current);
     if (camRef.current) {
-      try { camRef.current.stop?.(); } catch (e) {}
+      try { camRef.current.stop?.(); } catch {}
       camRef.current = null;
     }
     if (detRef.current) {
-      try { detRef.current.close?.(); } catch (e) {}
+      try { detRef.current.close?.(); } catch {}
       detRef.current = null;
     }
     if (videoRef.current?.srcObject) {
       try {
         (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
-      } catch (e) {}
+      } catch {}
+      videoRef.current.srcObject = null;
     }
     facesRef.current = [];
     statsRef.current = emptyStats;
     setStats(emptyStats);
+    setError("");
     setIsOn(false);
   }, []);
 
-  useEffect(() => () => {
-    cancelAnimationFrame(rafRef.current);
-    if (camRef.current) {
-      try { camRef.current.stop?.(); } catch (e) {}
-      camRef.current = null;
-    }
-    if (detRef.current) {
-      try { detRef.current.close?.(); } catch (e) {}
-      detRef.current = null;
-    }
-    if (videoRef.current?.srcObject) {
-      try {
-        (videoRef.current.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
-      } catch (e) {}
-    }
-  }, []);
+  useEffect(() => () => deactivate(), [deactivate]);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900/50 backdrop-blur-xl text-slate-100 shadow-xl shadow-black/20">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-white/5 px-5 py-4">
+    <section className="overflow-hidden rounded-2xl border border-white/15 bg-slate-900/50 backdrop-blur-md text-slate-100 shadow-xl shadow-black/20">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 bg-white/5 px-5 py-4">
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Diqqat Kuzatuvi</h3>
-          <p className="text-xs text-slate-400">{sessionId ? `Jonli sessiya faol: ${sessionId}` : "Dars davomida talabalar faolligini kameradan nazorat qilish"}</p>
+          <p className="text-xs text-slate-400">
+            {sessionId ? `Jonli sessiya faol: ${sessionId}` : "Barqaror FaceDetection pipeline: yuz, ishonch, joylashuv va diqqat tahlili"}
+          </p>
         </div>
         <button
           onClick={isOn ? deactivate : activate}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition active:scale-95 ${isOn ? "bg-[#E84855]/20 text-[#E84855] border border-[#E84855]/30 hover:bg-[#E84855] hover:text-white" : "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-lg shadow-[#F5A623]/20"}`}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition active:scale-95 ${isOn ? "bg-[#E84855]/20 text-[#E84855] border border-[#E84855]/30 hover:bg-[#E84855] hover:text-white" : "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-[0_2px_10px_rgba(245,166,35,0.18)]"}`}
         >
           {isOn ? <CameraOff size={16} /> : <Camera size={16} />}
           {isOn ? "O'chirish" : "Kamerani yoqish"}
@@ -469,27 +473,36 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
             </div>
             <div>
               <p className="text-lg font-bold text-white font-display">Kamera Tizimi Tayyor</p>
-              <p className="mt-1 text-xs text-slate-400 max-w-xs mx-auto">Kamerani yoqish orqali AI yuz detektori va diqqat darajasini tahlil qilishni boshlang</p>
+              <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto">
+                Kamerani yoqing: tizim yuzlarni belgilaydi, diqqat darajasini hisoblaydi va past diqqatni ogohlantiradi.
+              </p>
             </div>
-            <button onClick={activate} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#F5A623] to-[#e8941a] px-6 py-3 text-sm font-bold text-black shadow-lg shadow-[#F5A623]/20 hover:scale-105 active:scale-95 transition-all">
+            <button onClick={activate} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#F5A623] to-[#e8941a] px-6 py-3 text-sm font-bold text-black shadow-[0_2px_10px_rgba(245,166,35,0.18)] hover:scale-105 active:scale-95 transition-all">
               <Camera size={16} />
               Kamerani Yoqish
             </button>
           </div>
         )}
 
-        {isOn && stats.students === 0 && (
+        {isOn && stats.students === 0 && !error && (
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-md bg-[#0d1320]/90 px-4 py-2 text-sm font-semibold text-[#f5a623]">
-            Talabalar qidirilmoqda...
+            Yuzlar qidirilmoqda...
+          </div>
+        )}
+
+        {error && (
+          <div className="absolute inset-x-4 bottom-4 rounded-xl border border-red-500/30 bg-red-950/85 px-4 py-3 text-sm font-semibold text-red-200">
+            {error}
           </div>
         )}
       </div>
 
-      <div className="grid gap-px bg-white/10 md:grid-cols-4">
-        <StatCard icon={<Users size={18} />} label="O'quvchilar" value={String(stats.students)} hint={`${MAX_CLASS_FACES} tagacha yuz`} />
+      <div className="grid gap-px bg-white/15 md:grid-cols-5">
+        <StatCard icon={<Users size={18} />} label="Yuzlar" value={String(stats.students)} hint={`${MAX_CLASS_FACES} tagacha`} />
         <StatCard icon={<Gauge size={18} />} label="Diqqat" value={`${stats.avgAttention}%`} hint={`${stats.engaged} yaxshi, ${stats.softWarn} o'rta, ${stats.distracted} past`} />
-        <StatCard icon={<Activity size={18} />} label="Tezlik" value={`${fpsDisplay || "--"} FPS`} hint={`detect ${stats.latency}ms`} />
-        <StatCard icon={<Camera size={18} />} label="Detektor" value={stats.students > 0 ? "Faol" : "Kutilmoqda"} hint={stats.students > 0 ? `Ishonch: ${stats.conf}` : "AI talabalarni qidirmoqda"} />
+        <StatCard icon={<Eye size={18} />} label="Birinchi yuz" value={stats.conf} hint={`x ${stats.x} y ${stats.y}`} />
+        <StatCard icon={<Activity size={18} />} label="Tezlik" value={`${stats.fps || "--"} FPS`} hint={`detect ${stats.latency}ms`} />
+        <StatCard icon={<Camera size={18} />} label="Model" value={stats.students > 0 ? "Faol" : "Kutilmoqda"} hint={stats.model} />
       </div>
     </section>
   );
@@ -497,13 +510,13 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
 
 function StatCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
   return (
-    <div className="bg-slate-950/40 p-5 backdrop-blur-md">
+    <div className="bg-slate-950/45 p-4 backdrop-blur-sm">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-300">
         <span className="text-[#F5A623]">{icon}</span>
         {label}
       </div>
-      <div className="text-2xl font-black text-white">{value}</div>
-      <div className="mt-1 text-xs text-slate-300">{hint}</div>
+      <div className="truncate text-xl font-black text-white">{value}</div>
+      <div className="mt-1 truncate text-xs text-slate-300">{hint}</div>
     </div>
   );
 }

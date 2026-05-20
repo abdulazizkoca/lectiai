@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { X, Search, BookOpen, Users, FileText, Clock, Star } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
@@ -32,6 +33,7 @@ const mockData = {
 };
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<typeof mockData>({ lessons: [], students: [], materials: [] });
@@ -77,9 +79,14 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   }, [searchTerm]);
 
   const handleItemClick = (type: string, id: number) => {
-    void type;
+    const routes: Record<string, string> = {
+      lesson: "/professor/lessons",
+      student: "/professor/students",
+      material: "/professor/materials",
+    };
     void id;
     onClose();
+    router.push(routes[type] || "/professor/dashboard");
   };
 
   if (!isOpen) return null;

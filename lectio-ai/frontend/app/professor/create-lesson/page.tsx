@@ -128,17 +128,34 @@ export default function CreateLesson() {
     setLoading(true);
     setError("");
 
+    const saveGeneratedLesson = (lessonData: Record<string, any>) => {
+      const saved = JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]");
+      const lesson = {
+        id: Date.now(),
+        title: title.trim(),
+        topic: topic.trim(),
+        duration,
+        createdAt: new Date().toISOString(),
+        progress: 0,
+        status: "preparing",
+        presentation_data: lessonData,
+      };
+      localStorage.setItem("lectio_professor_lessons", JSON.stringify([lesson, ...saved]));
+    };
+
     try {
       const token = localStorage.getItem("lectio_token");
       const data = await lessonsAPI.create(
         { title: title.trim(), topic: topic.trim(), duration_minutes: duration, professor_id: 1 },
         token || ""
       );
-      setResult(data.presentation_data || data);
+      const generated = data.presentation_data || data;
+      setResult(generated);
+      saveGeneratedLesson(generated);
       addToast({ title: t.successTitle, description: t.successDesc, type: "success" });
     } catch {
       // Fallback to mock data if API fails
-      setResult({
+      const generated = {
         wow_fact: "Al-Xorazmiy algebra fanining asoschisi — 'algoritm' so'zi uning nomidan kelib chiqqan!",
         slides: [
           { slide_number: 1, title: "Kirish va maqsad", content: `Bugungi mavzu: ${topic}. Asosiy tushunchalarni o'rganamiz.` },
@@ -147,7 +164,9 @@ export default function CreateLesson() {
           { slide_number: 4, title: "Mustahkamlash", content: "Savol va javoblar. Test savollari va xulosa." },
         ],
         summary: `Bugungi darsda ${topic} mavzusini o'rgandik. Asosiy tushunchalar, amaliy misollar va mustahkamlash mashqlari bilan tanishdik.`,
-      });
+      };
+      setResult(generated);
+      saveGeneratedLesson(generated);
       addToast({ title: t.demoTitle, description: t.demoDesc, type: "warning" });
     } finally {
       setLoading(false);

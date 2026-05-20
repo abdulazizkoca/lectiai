@@ -1,6 +1,6 @@
 import React from "react";
 import StudentCamera from "@/components/StudentCamera";
-import GlobalBackButton from "@/components/ui/GlobalBackButton";
+import { GlobalBackButton } from "@/components/ui/GlobalBackButton";
 
 export const metadata = {
   title: "Talaba Kamerasi | LectioAI",

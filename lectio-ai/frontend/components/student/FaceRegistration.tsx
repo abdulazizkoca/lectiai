@@ -198,7 +198,8 @@ export function FaceRegistration({ userId, onRegistrationComplete }: FaceRegistr
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const imageData = canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
 
-      const response = await fetch("/api/face-recognition/register", {
+      const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_BASE}/api/face-recognition/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId, image_data: imageData }),

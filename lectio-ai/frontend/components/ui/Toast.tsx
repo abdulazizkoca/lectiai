@@ -81,14 +81,18 @@ export function Toast({ id, title, description, type = "info", duration = 5000, 
 
 // Global Toast Container (To be mounted at root)
 // This is a simple implementation. In real app, use Context or Zustand.
-export const ToastContainer = ({ toasts, onClose }: { toasts: ToastProps[], onClose: (id: string) => void }) => (
-  <div className="fixed top-[97px] right-4 z-50 flex flex-col gap-2 pointer-events-none">
-    <AnimatePresence>
-      {toasts.map(t => (
-        <div key={t.id} className="pointer-events-auto">
-          <Toast {...t} onClose={onClose} />
-        </div>
-      ))}
-    </AnimatePresence>
-  </div>
-);
+export const ToastContainer = ({ toasts, onClose }: { toasts: ToastProps[], onClose: (id: string) => void }) => {
+  if (toasts.length === 0) return null;
+
+  return (
+    <div className="fixed top-20 right-4 z-[80] flex flex-col gap-2 pointer-events-none">
+      <AnimatePresence>
+        {toasts.map(t => (
+          <div key={t.id} className="pointer-events-auto">
+            <Toast {...t} onClose={onClose} />
+          </div>
+        ))}
+      </AnimatePresence>
+    </div>
+  );
+};

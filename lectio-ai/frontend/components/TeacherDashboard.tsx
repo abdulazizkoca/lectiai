@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, Activity, Eye, EyeOff, AlertTriangle } from "lucide-react";
 import { io, Socket } from "socket.io-client";

@@ -36,7 +36,7 @@ export function Header({ onOpenSearch, onOpenNotifications, onToggleMobileMenu }
   };
 
   return (
-    <header className="h-16 shrink-0 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-b border-black/5 dark:border-white/5 flex items-center justify-between px-6 z-30">
+    <header className="h-16 shrink-0 bg-white/80 dark:bg-black/45 backdrop-blur-md border-b border-black/5 dark:border-white/5 flex items-center justify-between px-4 md:px-6 relative z-40">
       
       {/* Search Input trigger */}
       <div className="flex-1 flex items-center gap-2 max-w-xl">
@@ -64,7 +64,7 @@ export function Header({ onOpenSearch, onOpenNotifications, onToggleMobileMenu }
       <div className="flex items-center gap-2 sm:gap-4 ml-6">
         {/* Language Switcher */}
         <div className="flex items-center bg-slate-100 dark:bg-white/5 rounded-lg p-1 border border-black/5 dark:border-white/5">
-          {(['uz', 'ru', 'en'] as const).map((lang) => (
+          {(['uz', 'ru'] as const).map((lang) => (
             <button
               key={lang}
               onClick={() => setLanguage(lang)}

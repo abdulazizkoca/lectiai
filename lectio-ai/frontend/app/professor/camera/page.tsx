@@ -1,6 +1,6 @@
 import React from "react";
 import TeacherDashboard from "@/components/TeacherDashboard";
-import GlobalBackButton from "@/components/ui/GlobalBackButton";
+import { GlobalBackButton } from "@/components/ui/GlobalBackButton";
 
 export const metadata = {
   title: "Professor Dashboard | LectioAI",

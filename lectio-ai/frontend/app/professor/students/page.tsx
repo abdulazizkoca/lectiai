@@ -36,14 +36,14 @@ export default function ProfessorStudentsPage() {
   const { toasts, addToast, removeToast } = useToast();
   const { t } = useLanguage();
 
-  const mockStudents: Student[] = [
+  const [students, setStudents] = useState<Student[]>([
     { id: 1, name: "Ali Karimov", email: "ali.karimov@univer.uz", phone: "+998 90 123 45 67", avatar: "AK", progress: 85, streak: 12, lastActive: t("students.mock.2h_ago"), courses: 3, status: "active", performance: "excellent" },
     { id: 2, name: "Dilora Nazarova", email: "dilora.n@univer.uz", phone: "+998 91 234 56 78", avatar: "DN", progress: 72, streak: 8, lastActive: t("students.mock.1d_ago"), courses: 2, status: "active", performance: "good" },
     { id: 3, name: "Bobur Toshmatov", email: "bobur.t@univer.uz", phone: "+998 93 345 67 89", avatar: "BT", progress: 45, streak: 3, lastActive: t("students.mock.3d_ago"), courses: 1, status: "inactive", performance: "average" },
     { id: 4, name: "Gulnora Saidova", email: "gulnora.s@univer.uz", phone: "+998 94 456 78 90", avatar: "GS", progress: 93, streak: 20, lastActive: t("students.mock.30m_ago"), courses: 4, status: "active", performance: "excellent" },
-  ];
+  ]);
 
-  const filteredStudents = mockStudents.filter((student) => {
+  const filteredStudents = students.filter((student) => {
     const matchesSearch =
       student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -65,6 +65,28 @@ export default function ProfessorStudentsPage() {
       addToast({ title: t("students.error"), description: t("students.name_email_required"), type: "error" });
       return;
     }
+    const initials = newStudentName
+      .split(" ")
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+    setStudents((prev) => [
+      {
+        id: Date.now(),
+        name: newStudentName.trim(),
+        email: newStudentEmail.trim(),
+        phone: "+998 -- --- -- --",
+        avatar: initials || "ST",
+        progress: 0,
+        streak: 0,
+        lastActive: "Hozir",
+        courses: 0,
+        status: "active",
+        performance: "average",
+      },
+      ...prev,
+    ]);
     addToast({ title: t("students.added_title"), description: t("students.added_desc").replace("{name}", newStudentName), type: "success" });
     setIsAddingStudent(false);
     setNewStudentName("");

@@ -36,8 +36,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const baseStyles = "inline-flex items-center justify-center gap-2 rounded-xl font-body font-bold transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0A0A0F] active:scale-95 disabled:pointer-events-none disabled:opacity-50";
     
     const variants = {
-      primary: "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-[0_4px_15px_rgba(245,166,35,0.3)] hover:shadow-[0_0_30px_rgba(245,166,35,0.25)]",
-      secondary: "bg-[#FAFAF7]/5 text-white border border-white/10 hover:bg-white/10 hover:border-[#F5A623]",
+      primary: "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-[0_2px_10px_rgba(245,166,35,0.18)] hover:shadow-[0_4px_18px_rgba(245,166,35,0.16)]",
+      secondary: "bg-[#FAFAF7]/5 text-white border border-white/20 hover:bg-white/10 hover:border-[#F5A623]",
       ghost: "text-white/70 hover:text-white hover:bg-white/5",
       danger: "bg-[#E84855]/10 text-[#E84855] hover:bg-[#E84855] hover:text-white",
       premium: "bg-gradient-to-r from-[#F5A623] to-[#e8941a] text-black shadow-lg shadow-[#F5A623]/20",

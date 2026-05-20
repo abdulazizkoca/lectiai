@@ -84,13 +84,13 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div 
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]" 
+          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50" 
           onClick={onCloseMobile}
         />
       )}
       <motion.aside 
         animate={{ width: collapsed ? 80 : 260 }}
-        className={`h-screen shrink-0 bg-white/70 dark:bg-black/40 backdrop-blur-xl border-r border-black/5 dark:border-white/5 flex flex-col transition-all duration-300 z-[70] absolute md:relative ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-[100dvh] shrink-0 bg-white/80 dark:bg-black/45 backdrop-blur-md border-r border-black/5 dark:border-white/5 flex flex-col transition-transform duration-300 z-[60] md:z-20 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
       <button 
         onClick={() => setCollapsed(!collapsed)}
