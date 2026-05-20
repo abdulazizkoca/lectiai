@@ -68,19 +68,22 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
         {"has_frame": frame_raw is not None, "frame_type": type(frame_raw).__name__ if frame_raw is not None else None},
     )
     # endregion
-    frame_b64 = frame_raw.split(",")[1]
+    if not frame_raw:
+        raise HTTPException(status_code=400, detail="frame field is missing")
+
+    if "," not in frame_raw:
+        raise HTTPException(status_code=400, detail="frame field is not a valid base64 data URI")
+
+    frame_b64 = frame_raw.split(",", 1)[1]
     frame_bytes = base64.b64decode(frame_b64)
     nparr = np.frombuffer(frame_bytes, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-    # region agent log
-    _debug_log(
-        "H3",
-        "backend/routers/camera.py:analyze_frame:decoded_frame",
-        "decoded frame state",
-        {"frame_is_none": frame is None, "frame_shape": list(frame.shape) if frame is not None else None},
-    )
-    # endregion
+    if frame is None:
+        raise HTTPException(status_code=400, detail="Unable to decode frame image")
+
+    h, w = frame.shape[:2]
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    students = []
     
     # Load known faces for recognition
     known_faces = []
@@ -101,12 +104,14 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     
     if not HAS_MEDIAPIPE:
         # Graceful fallback mock metrics
-        students.append({
+        students = [{
             "id": "mock_student_1",
+            "name": None,
             "x": 0.5,
             "y": 0.5,
             "attention": 85,
-        })
+            "recognition_confidence": 0.0,
+        }]
         return {
             "students": students,
             "overall_attention": 85,

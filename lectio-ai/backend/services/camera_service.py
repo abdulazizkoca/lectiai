@@ -4,6 +4,7 @@ Camera Service — Talabalar diqqatini kuzatish, obyektlarni aniqlash, atrof-muh
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Tuple
 import asyncio
+import importlib
 import random
 import time
 import math
@@ -52,32 +53,32 @@ class AttentionData:
 try:
     import cv2
     import numpy as np
-    import mediapipe as mp
+    mp = importlib.import_module("mediapipe")
     try:
-        from mediapipe.python.solutions import face_mesh, face_detection, pose, hands
-        mp_face_mesh = face_mesh
-        mp_face_detection = face_detection
-        mp_pose = pose
-        mp_hands = hands
-    except ImportError:
         mp_face_mesh = mp.solutions.face_mesh
         mp_face_detection = mp.solutions.face_detection
         mp_pose = mp.solutions.pose
         mp_hands = mp.solutions.hands
-    
+    except AttributeError:
+        mp_solutions = importlib.import_module("mediapipe.python.solutions")
+        mp_face_mesh = mp_solutions.face_mesh
+        mp_face_detection = mp_solutions.face_detection
+        mp_pose = mp_solutions.pose
+        mp_hands = mp_solutions.hands
+
     _ = mp_face_mesh.FaceMesh
     _ = mp_face_detection.FaceDetection
     _ = mp_pose.Pose
     _ = mp_hands.Hands
     CAMERA_AVAILABLE = True
-except (ImportError, AttributeError) as e:
+except (ImportError, AttributeError, ModuleNotFoundError) as e:
     CAMERA_AVAILABLE = False
     print(f"WARNING: OpenCV/MediaPipe issue ({e}).")
 
 # GPU Acceleration (CUDA) and CPU optimization for YOLO
 try:
-    from ultralytics import YOLO
-    import torch
+    YOLO = importlib.import_module("ultralytics").YOLO
+    torch = importlib.import_module("torch")
     _yolo_model = YOLO('yolov8n.pt')
     if torch.cuda.is_available():
         _yolo_model.to('cuda')
@@ -85,16 +86,18 @@ try:
     else:
         print("INFO: YOLO modeli CPU orqali ishlamoqda. Kadrlar o'tkazib yuborish (Frame skipping) yoqildi.")
     YOLO_AVAILABLE = True
-except ImportError:
+except (ImportError, ModuleNotFoundError, AttributeError):
     YOLO_AVAILABLE = False
     _yolo_model = None
 
 try:
-    import pyaudio
-    import audioop
+    pyaudio = importlib.import_module("pyaudio")
+    audioop = importlib.import_module("audioop")
     AUDIO_AVAILABLE = True
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     AUDIO_AVAILABLE = False
+    pyaudio = None
+    audioop = None
 
 
 class AudioAnalyzer:
@@ -141,10 +144,9 @@ class FaceRecognitionService:
         
         # DeepFace or InsightFace integration (RAM optimized)
         try:
-            from deepface import DeepFace
-            self.deepface = DeepFace
+            self.deepface = importlib.import_module("deepface").DeepFace
             self.use_deepface = True
-        except ImportError:
+        except (ImportError, ModuleNotFoundError):
             self.use_deepface = False
 
     def extract_encoding(self, face_image: np.ndarray) -> list:
@@ -182,6 +184,80 @@ class FaceRecognitionService:
     def check_face_pose(self, landmarks) -> bool:
         ratio = abs(landmarks.landmark[4].x - landmarks.landmark[234].x) / max(0.001, abs(landmarks.landmark[454].x - landmarks.landmark[4].x))
         return 0.1 <= ratio <= 10.0
+
+    def register_face(self, face_image: np.ndarray) -> Optional[List[float]]:
+        if face_image is None or not isinstance(face_image, np.ndarray) or face_image.size == 0:
+            return None
+
+        if self.use_deepface:
+            try:
+                embedding_objs = self.deepface.represent(
+                    img_path=face_image,
+                    model_name="Facenet",
+                    enforce_detection=False
+                )
+                return embedding_objs[0]["embedding"]
+            except Exception:
+                pass
+
+        try:
+            if face_image.ndim == 3:
+                gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)
+            else:
+                gray = face_image
+
+            resized = cv2.resize(gray, (32, 32), interpolation=cv2.INTER_AREA)
+            vector = resized.astype(np.float32).flatten()
+            norm = np.linalg.norm(vector)
+            if norm > 0:
+                vector /= norm
+            return vector.tolist()
+        except Exception:
+            return None
+
+    def recognize_face(self, face_image: np.ndarray) -> "RecognitionResult":
+        if face_image is None or not isinstance(face_image, np.ndarray):
+            return RecognitionResult(None, None, 0.0)
+
+        if not self.known_encodings:
+            return RecognitionResult(None, None, 0.0)
+
+        candidate_encoding = self.extract_encoding(face_image)
+        if not candidate_encoding:
+            return RecognitionResult(None, None, 0.0)
+
+        candidate_encoding = np.array(candidate_encoding, dtype=np.float32)
+        best_idx = None
+        best_dist = float("inf")
+
+        for idx, known_encoding in enumerate(self.known_encodings):
+            try:
+                known_vector = np.array(known_encoding, dtype=np.float32)
+                if known_vector.shape != candidate_encoding.shape:
+                    continue
+                dist = np.linalg.norm(candidate_encoding - known_vector)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_idx = idx
+            except Exception:
+                continue
+
+        if best_idx is None or best_dist > 0.7:
+            return RecognitionResult(None, None, 0.0)
+
+        confidence = max(0.0, min(1.0, 1.0 - best_dist / 0.8))
+        return RecognitionResult(
+            student_id=self.known_ids[best_idx],
+            student_name=self.known_names[best_idx],
+            confidence=round(confidence, 2)
+        )
+
+
+@dataclass
+class RecognitionResult:
+    student_id: Optional[int]
+    student_name: Optional[str]
+    confidence: float = 0.0
 
 
 class CameraAnalyzer:
