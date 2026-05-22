@@ -48,10 +48,9 @@ async def generate_stats_card(name: str, xp: int, streak: int, rank: int, level:
     draw.text((530, 240), "Reyting", font=get_font(20), fill="#888")
     draw.text((530, 270), f"#{rank} 🏆", font=get_font(32), fill="white")
     
-    output_path = f"/tmp/stats_{name.replace(' ', '_')}.png"
-    
-    # Create dir if not exists
-    os.makedirs("/tmp", exist_ok=True)
+    temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    os.makedirs(temp_dir, exist_ok=True)
+    output_path = os.path.join(temp_dir, f"stats_{name.replace(' ', '_')}.png")
     image.save(output_path)
     return output_path
 
@@ -71,7 +70,9 @@ async def generate_weekly_chart(data: list) -> str:
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     
-    output_path = "/tmp/weekly_chart.png"
+    temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    os.makedirs(temp_dir, exist_ok=True)
+    output_path = os.path.join(temp_dir, "weekly_chart.png")
     plt.savefig(output_path, bbox_inches='tight', transparent=True)
     plt.close()
     

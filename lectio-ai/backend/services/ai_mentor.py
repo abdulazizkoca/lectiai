@@ -1,7 +1,7 @@
 import os
 from anthropic import AsyncAnthropic
 
-client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or "mock-key")
 
 async def get_ai_mentor_response(
     student_id: int,
@@ -9,6 +9,8 @@ async def get_ai_mentor_response(
     conversation_history: list,
     student_profile: dict
 ) -> str:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
     
     system_prompt = f"""
 Sen Lectio AI — {student_profile.get('name', 'Talaba')} ning shaxsiy o'quv yo'ldoshisan.
@@ -50,6 +52,8 @@ async def generate_study_plan(
     deadline_days: int,
     weak_topics: list
 ) -> dict:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
     
     prompt = f"""
 O'quvchi uchun individual o'qish rejasi tuz.
@@ -97,6 +101,8 @@ JSON formatda qaytargin:
     return json.loads(response.content[0].text)
 
 async def get_claude_response(prompt: str) -> str:
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
     response = await client.messages.create(
         model="claude-3-5-sonnet-20241022",
         max_tokens=1500,

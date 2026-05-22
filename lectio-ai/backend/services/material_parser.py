@@ -157,7 +157,7 @@ def process_material_task(self, material_id: str, professor_id: int, object_name
         from database import SessionLocal
         from models.lesson import Lesson
         from models.flashcard import FlashCard
-        from models.question import Question
+        from models.question import Question, QuestionType
         from datetime import datetime
 
         db = SessionLocal()
@@ -201,9 +201,9 @@ def process_material_task(self, material_id: str, professor_id: int, object_name
             # Testlar generatsiyasi
             q = Question(
                 lesson_id=lesson.id,
-                text=f"{title} mavzusidagi eng muhim qism nima?",
-                type="multiple_choice",
-                options=json.dumps(["Bilmadim", "Muhim", "Soha", "Asosiy tushuncha"]),
+                question=f"{title} mavzusidagi eng muhim qism nima?",
+                type=QuestionType.multiple_choice,
+                options=["Bilmadim", "Muhim", "Soha", "Asosiy tushuncha"],
                 correct="Asosiy tushuncha",
                 points=100,
                 time_limit=30,

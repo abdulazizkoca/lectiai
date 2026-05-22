@@ -132,6 +132,12 @@ class AudioAnalyzer:
 
 audio_analyzer = AudioAnalyzer()
 
+@dataclass
+class FaceRecognitionResult:
+    student_id: Optional[int] = None
+    student_name: Optional[str] = None
+    confidence: float = 0.0
+
 
 class FaceRecognitionService:
     def __init__(self, tolerance: float = 0.5):
@@ -144,26 +150,79 @@ class FaceRecognitionService:
         
         # DeepFace or InsightFace integration (RAM optimized)
         try:
-            self.deepface = importlib.import_module("deepface").DeepFace
+            deepface_module = importlib.import_module("deepface")
+            self.deepface = deepface_module.DeepFace
             self.use_deepface = True
         except (ImportError, ModuleNotFoundError):
+            self.deepface = None
             self.use_deepface = False
 
     def extract_encoding(self, face_image: np.ndarray) -> list:
         """DeepFace yoki yengil model orqali embedding olish"""
-        if self.use_deepface:
+        if self.use_deepface and self.deepface is not None:
             try:
-                # RAM kam serverlar uchun eng yengil model Facenet512 yoki VGG-Face ishlatiladi
-                # enforce_detection=False, chunki yuz qirqishni MediaPipe qilib bo'lgan
                 embedding_objs = self.deepface.represent(
-                    img_path=face_image, 
-                    model_name="Facenet", 
+                    img_path=face_image,
+                    model_name="Facenet",
                     enforce_detection=False
                 )
                 return embedding_objs[0]["embedding"]
-            except Exception as e:
+            except Exception:
                 pass
-        return []
+
+        try:
+            if face_image is None or not isinstance(face_image, np.ndarray) or face_image.size == 0:
+                return []
+            gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY) if face_image.ndim == 3 else face_image
+            resized = cv2.resize(gray, (32, 32), interpolation=cv2.INTER_AREA)
+            vector = resized.astype(np.float32).flatten()
+            norm = np.linalg.norm(vector)
+            if norm > 0:
+                vector /= norm
+            return vector.tolist()
+        except Exception:
+            return []
+
+    def register_face(self, face_image: np.ndarray) -> Optional[list]:
+        """Yuzni ro'yxatdan o'tkazish uchun embedding olish"""
+        if not self.check_face_quality(face_image):
+            return None
+        encoding = self.extract_encoding(face_image)
+        return encoding if encoding else None
+
+    def recognize_face(self, face_image: np.ndarray) -> FaceRecognitionResult:
+        """Yuzni tanish va mos keluvchi eng yaxshi talabani aniqlash"""
+        if not self.is_loaded or not self.known_encodings:
+            return FaceRecognitionResult()
+            
+        encoding = self.extract_encoding(face_image)
+        if not encoding:
+            return FaceRecognitionResult()
+            
+        encoding = np.array(encoding)
+        best_similarity = -1.0
+        best_idx = -1
+        
+        for i, known_enc in enumerate(self.known_encodings):
+            dot = np.dot(encoding, known_enc)
+            norm_a = np.linalg.norm(encoding)
+            norm_b = np.linalg.norm(known_enc)
+            if norm_a > 0 and norm_b > 0:
+                sim = dot / (norm_a * norm_b)
+                if sim > best_similarity:
+                    best_similarity = sim
+                    best_idx = i
+                    
+        # Tolerance check (distance = 1 - similarity. similarity >= 1 - tolerance)
+        threshold = 1.0 - self.tolerance
+        if best_idx != -1 and best_similarity >= threshold:
+            return FaceRecognitionResult(
+                student_id=self.known_ids[best_idx],
+                student_name=self.known_names[best_idx],
+                confidence=float(best_similarity)
+            )
+            
+        return FaceRecognitionResult()
 
     def load_known_faces(self, faces_data: List[Dict[str, Any]]):
         self.known_encodings, self.known_ids, self.known_names = [], [], []
@@ -184,80 +243,6 @@ class FaceRecognitionService:
     def check_face_pose(self, landmarks) -> bool:
         ratio = abs(landmarks.landmark[4].x - landmarks.landmark[234].x) / max(0.001, abs(landmarks.landmark[454].x - landmarks.landmark[4].x))
         return 0.1 <= ratio <= 10.0
-
-    def register_face(self, face_image: np.ndarray) -> Optional[List[float]]:
-        if face_image is None or not isinstance(face_image, np.ndarray) or face_image.size == 0:
-            return None
-
-        if self.use_deepface:
-            try:
-                embedding_objs = self.deepface.represent(
-                    img_path=face_image,
-                    model_name="Facenet",
-                    enforce_detection=False
-                )
-                return embedding_objs[0]["embedding"]
-            except Exception:
-                pass
-
-        try:
-            if face_image.ndim == 3:
-                gray = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)
-            else:
-                gray = face_image
-
-            resized = cv2.resize(gray, (32, 32), interpolation=cv2.INTER_AREA)
-            vector = resized.astype(np.float32).flatten()
-            norm = np.linalg.norm(vector)
-            if norm > 0:
-                vector /= norm
-            return vector.tolist()
-        except Exception:
-            return None
-
-    def recognize_face(self, face_image: np.ndarray) -> "RecognitionResult":
-        if face_image is None or not isinstance(face_image, np.ndarray):
-            return RecognitionResult(None, None, 0.0)
-
-        if not self.known_encodings:
-            return RecognitionResult(None, None, 0.0)
-
-        candidate_encoding = self.extract_encoding(face_image)
-        if not candidate_encoding:
-            return RecognitionResult(None, None, 0.0)
-
-        candidate_encoding = np.array(candidate_encoding, dtype=np.float32)
-        best_idx = None
-        best_dist = float("inf")
-
-        for idx, known_encoding in enumerate(self.known_encodings):
-            try:
-                known_vector = np.array(known_encoding, dtype=np.float32)
-                if known_vector.shape != candidate_encoding.shape:
-                    continue
-                dist = np.linalg.norm(candidate_encoding - known_vector)
-                if dist < best_dist:
-                    best_dist = dist
-                    best_idx = idx
-            except Exception:
-                continue
-
-        if best_idx is None or best_dist > 0.7:
-            return RecognitionResult(None, None, 0.0)
-
-        confidence = max(0.0, min(1.0, 1.0 - best_dist / 0.8))
-        return RecognitionResult(
-            student_id=self.known_ids[best_idx],
-            student_name=self.known_names[best_idx],
-            confidence=round(confidence, 2)
-        )
-
-
-@dataclass
-class RecognitionResult:
-    student_id: Optional[int]
-    student_name: Optional[str]
-    confidence: float = 0.0
 
 
 class CameraAnalyzer:

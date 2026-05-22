@@ -57,7 +57,9 @@ async def upload_material(
     object_name = f"{professor_id}/{material_id}/{file.filename}"
     
     # Save to temp file to upload
-    temp_path = f"/tmp/{material_id}{ext}"
+    temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_path = os.path.join(temp_dir, f"{material_id}{ext}")
     with open(temp_path, "wb") as f:
         f.write(file_bytes)
         

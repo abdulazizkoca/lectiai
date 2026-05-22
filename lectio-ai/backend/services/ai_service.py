@@ -4,14 +4,13 @@ import os
 from typing import Dict, Any
 
 # Initialize Claude client
-api_key = os.getenv("ANTHROPIC_API_KEY")
-if not api_key:
-    raise ValueError("ANTHROPIC_API_KEY environment variable must be set")
-
+api_key = os.getenv("ANTHROPIC_API_KEY") or "mock-key"
 client = anthropic.AsyncAnthropic(api_key=api_key)
 
 async def generate_lesson(topic: str, duration: int = 45, level: str = "Bakalavr") -> Dict[str, Any]:
     """Generate full lesson from topic"""
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
     if not topic or len(topic.strip()) < 3:
         raise ValueError("Topic must be at least 3 characters long")
     
@@ -97,6 +96,8 @@ Faqat JSON. Boshqa narsa yozma.
 
 async def analyze_material(text: str) -> Dict[str, Any]:
     """Parse uploaded metodichka"""
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
     if not text or len(text.strip()) < 10:
         raise ValueError("Text must be at least 10 characters long")
     

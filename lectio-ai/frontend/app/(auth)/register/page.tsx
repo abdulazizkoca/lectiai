@@ -45,6 +45,18 @@ export default function RegisterPage() {
       const data = await authAPI.register(formData);
       localStorage.setItem("lectio_token", data.access_token);
       
+      // Save this registered account to stored accounts list
+      const newAccount = {
+        email: formData.email,
+        role: formData.role,
+        name: formData.full_name,
+        password: formData.password
+      };
+      const stored = localStorage.getItem("lectio_saved_accounts");
+      const currentSaved = stored ? JSON.parse(stored) : [];
+      const updated = [...currentSaved.filter((acc: any) => acc.email !== formData.email), newAccount];
+      localStorage.setItem("lectio_saved_accounts", JSON.stringify(updated));
+
       if (data.user.role === "professor") {
         router.push("/professor/dashboard");
       } else {

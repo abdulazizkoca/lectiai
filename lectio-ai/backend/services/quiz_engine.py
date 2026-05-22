@@ -34,7 +34,7 @@ except Exception as e:
     redis_client = None
 
 # Anthropic for AI grading
-anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or "mock-key")
 
 def generate_room_code() -> str:
     # 6 characters, readable (no O/0, I/1 confusion)
@@ -65,6 +65,9 @@ Siz o'qituvchisiz. O'quvchining qisqa javobini baholang (0.0 dan 1.0 gacha bo'lg
 To'g'ri javob: {correct_answer}
 O'quvchi javobi: {student_answer}
 """
+    if not os.getenv("ANTHROPIC_API_KEY"):
+        return 1.0 if correct_answer.strip().lower() == student_answer.strip().lower() else 0.0
+        
     try:
         response = await anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
@@ -414,7 +417,7 @@ async def camera_frame(sid, data):
         await sio.emit("student_attention", {
             "student_id": student_id,
             "nickname": nickname,
-            "attention": attention_data.attention_level * 100,
+            "attention": attention_data.attention_level,
             "boredom": attention_data.boredom_detected,
             "confusion": attention_data.confusion_detected
         }, to=room["professor_sid"])

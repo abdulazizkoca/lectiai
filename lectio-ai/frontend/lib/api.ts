@@ -87,3 +87,21 @@ export const analyticsAPI = {
 
   getOverview: (token?: string) => fetchAPI("/api/analytics/overview", { token }),
 };
+
+// Sessions (Live Quiz)
+export const sessionsAPI = {
+  create: (lessonId: number, token: string) =>
+    fetchAPI(`/api/sessions/create?lesson_id=${lessonId}`, { method: "POST", token }),
+
+  get: (roomCode: string) => fetchAPI(`/api/sessions/${roomCode}`),
+
+  start: (sessionId: number, token: string) =>
+    fetchAPI(`/api/sessions/${sessionId}/start`, { method: "POST", token }),
+
+  end: (sessionId: number, token: string) =>
+    fetchAPI(`/api/sessions/${sessionId}/end`, { method: "POST", token }),
+
+  getResults: (sessionId: number, token: string) =>
+    fetchAPI(`/api/sessions/${sessionId}/results`, { token }),
+};
+
