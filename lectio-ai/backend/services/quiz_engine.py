@@ -6,7 +6,7 @@ import string
 import time
 import os
 import redis.asyncio as redis
-from anthropic import AsyncAnthropic
+import google.generativeai as genai
 import cv2
 import numpy as np
 import base64
@@ -33,8 +33,9 @@ except Exception as e:
     print(f"Failed to connect to Redis at {REDIS_URL}: {e}")
     redis_client = None
 
-# Anthropic for AI grading
-anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or "mock-key")
+# Gemini for AI grading
+genai.configure(api_key=os.getenv("GEMINI_API_KEY") or "mock-key")
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 def generate_room_code() -> str:
     # 6 characters, readable (no O/0, I/1 confusion)
@@ -65,16 +66,15 @@ Siz o'qituvchisiz. O'quvchining qisqa javobini baholang (0.0 dan 1.0 gacha bo'lg
 To'g'ri javob: {correct_answer}
 O'quvchi javobi: {student_answer}
 """
-    if not os.getenv("ANTHROPIC_API_KEY"):
+    if not os.getenv("GEMINI_API_KEY"):
         return 1.0 if correct_answer.strip().lower() == student_answer.strip().lower() else 0.0
         
     try:
-        response = await anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=10,
-            messages=[{"role": "user", "content": prompt}]
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(max_output_tokens=10)
         )
-        score_str = response.content[0].text.strip()
+        score_str = response.text.strip()
         score = float(score_str)
         return max(0.0, min(1.0, score))
     except:
@@ -125,9 +125,21 @@ async def connect(sid, environ):
 
 @sio.event
 async def disconnect(sid):
-    # Find which room the user is in from redis index (simple scan for demo)
-    # In production, use a reverse mapping sid -> room_code in Redis
-    pass
+    if not redis_client:
+        return
+    room_code = await redis_client.get(f"quiz:sid_room:{sid}")
+    if not room_code:
+        return
+    room = await get_room(room_code)
+    if room and sid in room["participants"]:
+        del room["participants"][sid]
+        await save_room(room_code, room)
+        nicknames = [p["name"] for p in room["participants"].values()]
+        await sio.emit("participant_left", {
+            "participant_count": len(room["participants"]),
+            "nickname_list": nicknames
+        }, room=room_code)
+    await redis_client.delete(f"quiz:sid_room:{sid}")
 
 # PROFESSOR EVENTS
 @sio.event
@@ -282,9 +294,13 @@ async def join_room(sid, data):
         
     await save_room(room_code, room)
     await sio.enter_room(sid, room_code)
-    
+
+    # sid → room_code mapping (disconnect uchun kerak)
+    if redis_client:
+        await redis_client.setex(f"quiz:sid_room:{sid}", 4 * 3600, room_code)
+
     nicknames = [p["name"] for p in room["participants"].values()]
-    
+
     await sio.emit("room_joined", {
         "participant_count": len(room["participants"]),
         "nickname_list": nicknames
@@ -303,16 +319,13 @@ async def submit_answer(sid, data):
     if sid in room["answers"].get(q_idx, {}):
         return # Duplicate submission
         
-    # Set NX to prevent double submit race conditions via Redis
-    if not redis_client:
-        return True # Fallback if redis is down (allows double submits but app doesn't crash)
-        
-    nx_key = f"quiz:submit:{room_code}:{q_idx}:{sid}"
-    is_first = await redis_client.setnx(nx_key, "1")
-    if not is_first:
-        return
-        
-    await redis_client.expire(nx_key, 60) # Expire lock
+    # Deduplicate via Redis NX lock when available
+    if redis_client:
+        nx_key = f"quiz:submit:{room_code}:{q_idx}:{sid}"
+        is_first = await redis_client.setnx(nx_key, "1")
+        if not is_first:
+            return
+        await redis_client.expire(nx_key, 60)
     
     answer = data["answer"]
     

@@ -6,7 +6,7 @@ from typing import List, Dict, Any
 import pytesseract
 from PIL import Image
 import io
-from services.ai_mentor import get_claude_response
+from services.ai_mentor import get_ai_response as get_claude_response
 from sqlalchemy.ext.asyncio import AsyncSession
 import asyncio
 

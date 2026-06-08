@@ -6,14 +6,45 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { sessionsAPI } from "@/lib/api";
 
 export default function QuizJoinPage() {
   const [code, setCode] = useState("");
   const [nickname, setNickname] = useState("");
   const [step, setStep] = useState<"code" | "name">("code");
+  const [checkingCode, setCheckingCode] = useState(false);
+  const [joining, setJoining] = useState(false);
   const router = useRouter();
   const { toasts, addToast, removeToast } = useToast();
   const { language } = useLanguage();
+
+  const handleCodeEnter = async () => {
+    if (code.length < 4) return;
+    setCheckingCode(true);
+    try {
+      await sessionsAPI.get(code);
+      setStep("name");
+    } catch {
+      addToast({ title: "Xona topilmadi", description: `"${code}" kodli xona mavjud emas. Tekshiring.`, type: "error" });
+    } finally {
+      setCheckingCode(false);
+    }
+  };
+
+  const handleJoin = async () => {
+    if (!nickname.trim()) return;
+    setJoining(true);
+    try {
+      let studentId: number | undefined;
+      try { const u = JSON.parse(localStorage.getItem("lectio_user") || "{}"); studentId = u?.id; } catch {}
+      const res = await sessionsAPI.join(code, nickname.trim(), studentId);
+      localStorage.setItem("lectio_quiz_participant", JSON.stringify({ participant_id: res.participant_id, nickname: res.nickname, room_code: code }));
+      router.push(`/quiz/${code}?name=${encodeURIComponent(nickname.trim())}`);
+    } catch (e: any) {
+      addToast({ title: "Xatolik", description: e?.message || "Qo'shilishda muammo yuz berdi", type: "error" });
+      setJoining(false);
+    }
+  };
 
   const dict = {
     uz: {
@@ -100,10 +131,11 @@ export default function QuizJoinPage() {
               
               <div className="flex gap-3 mt-4">
                 <button
-                  onClick={() => code.length >= 4 && setStep("name")}
-                  className="flex-1 py-4 rounded-xl bg-[#F5A623] text-black font-bold text-lg"
+                  onClick={handleCodeEnter}
+                  disabled={code.length < 4 || checkingCode}
+                  className="flex-1 py-4 rounded-xl bg-[#F5A623] text-black font-bold text-lg disabled:opacity-50"
                 >
-                  {t.enter}
+                  {checkingCode ? "Tekshirilmoqda..." : t.enter}
                 </button>
               </div>
               
@@ -147,10 +179,11 @@ export default function QuizJoinPage() {
                 autoFocus
               />
               <button
-                onClick={() => nickname.trim() && router.push(`/quiz/${code}?name=${nickname}`)}
-                className="w-full mt-4 py-4 rounded-xl bg-[#F5A623] text-black font-bold text-lg"
+                onClick={handleJoin}
+                disabled={!nickname.trim() || joining}
+                className="w-full mt-4 py-4 rounded-xl bg-[#F5A623] text-black font-bold text-lg disabled:opacity-50"
               >
-                {t.enterFast}
+                {joining ? "Qo'shilmoqda..." : t.enterFast}
               </button>
             </motion.div>
           )}

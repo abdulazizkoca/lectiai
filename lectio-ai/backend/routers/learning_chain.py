@@ -162,7 +162,7 @@ async def complete_chain(
             student_id=req.student_id,
             topic=req.topic,
             subject=req.subject,
-            quiz_results=[r.dict() for r in req.quiz_results],
+            quiz_results=[r.model_dump() for r in req.quiz_results],
             flashcard_ids=req.flashcard_ids,
             lesson_id=req.lesson_id
         )

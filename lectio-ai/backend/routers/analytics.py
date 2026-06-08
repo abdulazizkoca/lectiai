@@ -113,20 +113,32 @@ async def get_platform_overview(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Platforma umumiy ko'rsatkichlari - faqat admin uchun"""
-    if current_user.role.value != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Platforma statistikasini ko'rish faqat admin uchun ruxsat etilgan"
-        )
-    
-    total_users = db.query(User).count()
-    total_lessons = db.query(Lesson).count()
-    total_cards = db.query(Card).count()
-    
-    return {
-        "total_users": total_users,
-        "total_lessons": total_lessons,
-        "total_cards": total_cards,
-        "platform": "Lectio AI"
-    }
+    """Platforma umumiy ko'rsatkichlari. Admin: barchasi, Professor: o'z darslari."""
+    if current_user.role.value == "admin":
+        total_users = db.query(User).count()
+        total_lessons = db.query(Lesson).count()
+        total_cards = db.query(Card).count()
+        return {
+            "total_users": total_users,
+            "total_lessons": total_lessons,
+            "total_cards": total_cards,
+            "active_students": total_users,
+            "avg_attention": 75,
+            "platform": "Lectio AI"
+        }
+
+    if current_user.role.value == "professor":
+        professor_lessons = db.query(Lesson).filter(
+            Lesson.professor_id == current_user.id
+        ).count()
+        return {
+            "total_lessons": professor_lessons,
+            "active_students": 0,
+            "avg_attention": 75,
+            "platform": "Lectio AI"
+        }
+
+    raise HTTPException(
+        status_code=403,
+        detail="Platforma statistikasini ko'rishga ruxsat yo'q"
+    )

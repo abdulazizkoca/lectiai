@@ -59,7 +59,7 @@ export const authAPI = {
 
 // Lessons
 export const lessonsAPI = {
-  create: (data: { title: string; topic: string; duration_minutes: number; professor_id: number }, token: string) =>
+  create: (data: { title: string; topic: string; duration_minutes: number }, token: string) =>
     fetchAPI("/api/lessons/create", { method: "POST", body: JSON.stringify(data), token }),
 
   getById: (id: number, token?: string) => fetchAPI(`/api/lessons/${id}`, { token }),
@@ -95,6 +95,12 @@ export const sessionsAPI = {
 
   get: (roomCode: string) => fetchAPI(`/api/sessions/${roomCode}`),
 
+  join: (roomCode: string, nickname: string, studentId?: number) =>
+    fetchAPI(`/api/sessions/${roomCode}/join`, {
+      method: "POST",
+      body: JSON.stringify({ nickname, student_id: studentId ?? null }),
+    }),
+
   start: (sessionId: number, token: string) =>
     fetchAPI(`/api/sessions/${sessionId}/start`, { method: "POST", token }),
 
@@ -103,5 +109,113 @@ export const sessionsAPI = {
 
   getResults: (sessionId: number, token: string) =>
     fetchAPI(`/api/sessions/${sessionId}/results`, { token }),
+
+  submitAnswer: (
+    sessionId: number,
+    data: { question_id: number; student_answer: string; participant_id: number; time_taken?: number }
+  ) =>
+    fetchAPI(`/api/sessions/${sessionId}/answer`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+};
+
+// Materials (metodichka upload)
+export const materialsAPI = {
+  upload: (file: File, token: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return fetch(`${API_BASE}/api/materials/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+      return res.json();
+    });
+  },
+
+  getProgress: (materialId: string) =>
+    fetchAPI(`/api/materials/${materialId}/progress`),
+
+  getTopics: (materialId: string) =>
+    fetchAPI(`/api/materials/${materialId}/topics`),
+
+  generateLesson: (data: { material_id: string; professor_id: number; topic_name: string }, token: string) =>
+    fetchAPI("/api/materials/generate-topic-lesson", {
+      method: "POST",
+      body: JSON.stringify(data),
+      token,
+    }),
+
+  getLessonProgress: (materialId: string) =>
+    fetchAPI(`/api/materials/${materialId}/lesson-progress`),
+
+  getLessonResult: (materialId: string) =>
+    fetchAPI(`/api/materials/${materialId}/lesson-result`),
+};
+
+// Learning Chain (mustaqil o'qish zanjiri)
+export const chainAPI = {
+  generateFlashcards: (
+    data: { student_id: number; topic: string; subject?: string; count?: number; difficulty?: string; lesson_id?: number },
+    token: string
+  ) => fetchAPI("/api/chain/flashcards", { method: "POST", body: JSON.stringify(data), token }),
+
+  generateQuiz: (
+    data: { topic: string; flashcards: { front: string; back: string; hint?: string }[]; count?: number },
+    token: string
+  ) => fetchAPI("/api/chain/quiz-from-cards", { method: "POST", body: JSON.stringify(data), token }),
+
+  complete: (
+    data: {
+      student_id: number;
+      topic: string;
+      subject?: string;
+      quiz_results: { card_index: number; is_correct: boolean; time_ms?: number }[];
+      flashcard_ids?: number[];
+      lesson_id?: number;
+    },
+    token: string
+  ) => fetchAPI("/api/chain/complete", { method: "POST", body: JSON.stringify(data), token }),
+
+  getProgress: (studentId: number, token: string) =>
+    fetchAPI(`/api/chain/progress/${studentId}`, { token }),
+
+  getDueFlashcards: (studentId: number, token: string) =>
+    fetchAPI(`/api/chain/due-flashcards/${studentId}`, { token }),
+};
+
+// AI Mentor
+export const mentorAPI = {
+  chat: (
+    data: {
+      student_id: number;
+      message: string;
+      conversation_history?: { role: string; content: string }[];
+      student_profile?: Record<string, unknown>;
+    },
+    token: string
+  ) => fetchAPI("/api/mentor/chat", { method: "POST", body: JSON.stringify(data), token }),
+
+  generateStudyPlan: (
+    data: { student_id: number; goal: string; available_hours_per_day: number; deadline_days: number; weak_topics: string[] },
+    token: string
+  ) => fetchAPI("/api/mentor/study-plan", { method: "POST", body: JSON.stringify(data), token }),
+};
+
+// Student Hub
+export const studentAPI = {
+  getDashboard: (studentId: number, token?: string) =>
+    fetchAPI(`/api/student/${studentId}/dashboard`, { token }),
+
+  getKnowledgeMap: (studentId: number, token?: string) =>
+    fetchAPI(`/api/student/${studentId}/knowledge-map`, { token }),
+
+  completeQuest: (studentId: number, questId: string, token?: string) =>
+    fetchAPI(`/api/student/${studentId}/daily-quest/complete?quest_id=${questId}`, { method: "POST", token }),
 };
 

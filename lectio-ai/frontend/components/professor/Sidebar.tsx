@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
-  Home, BookOpen, FolderOpen, PlusCircle, Radio, 
+  Home, BookOpen, FolderOpen, PlusCircle, Radio, Video,
   BarChart2, Users, Settings, ChevronLeft, ChevronRight, Crown
 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
@@ -17,9 +17,9 @@ const dict = {
   uz: {
     dashboard: "Dashboard",
     myLessons: "Mening darslarim",
-    materials: "Materiallar",
+    materials: "Metodichkalar",
     createLesson: "Dars yaratish",
-    liveQuiz: "Jonli Quiz",
+    liveLesson: "Jonli Dars",
     analytics: "Analitika",
     students: "Talabalar",
     settings: "Sozlamalar",
@@ -32,9 +32,9 @@ const dict = {
   ru: {
     dashboard: "Дашборд",
     myLessons: "Мои уроки",
-    materials: "Материалы",
+    materials: "Методички",
     createLesson: "Создать урок",
-    liveQuiz: "Живой Quiz",
+    liveLesson: "Живой урок",
     analytics: "Аналитика",
     students: "Студенты",
     settings: "Настройки",
@@ -49,7 +49,7 @@ const dict = {
     myLessons: "My Lessons",
     materials: "Materials",
     createLesson: "Create Lesson",
-    liveQuiz: "Live Quiz",
+    liveLesson: "Live Lesson",
     analytics: "Analytics",
     students: "Students",
     settings: "Settings",
@@ -63,17 +63,32 @@ const dict = {
 
 export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolean, onCloseMobile?: () => void }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [userName, setUserName] = useState("Professor");
+  const [userInitials, setUserInitials] = useState("P");
   const pathname = usePathname();
   const { language } = useLanguage();
   const langKey = (language === "uz" || language === "ru" || language === "en") ? language : "uz";
   const t = dict[langKey];
+
+  React.useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lectio_user");
+      if (raw) {
+        const user = JSON.parse(raw);
+        if (user?.full_name) {
+          setUserName(user.full_name);
+          setUserInitials(user.full_name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase());
+        }
+      }
+    } catch {}
+  }, []);
 
   const navItems = [
     { name: t.dashboard, href: "/professor/dashboard", icon: <Home size={20} /> },
     { name: t.myLessons, href: "/professor/lessons", icon: <BookOpen size={20} />, badge: "12" },
     { name: t.materials, href: "/professor/materials", icon: <FolderOpen size={20} /> },
     { name: t.createLesson, href: "/professor/create-lesson", icon: <PlusCircle size={20} className="text-[#F5A623]" />, highlight: true },
-    { name: t.liveQuiz, href: "/professor/live", icon: <Radio size={20} />, live: true },
+    { name: t.liveLesson, href: "/professor/live", icon: <Video size={20} />, live: true },
     { name: t.analytics, href: "/professor/analytics", icon: <BarChart2 size={20} /> },
     { name: t.students, href: "/professor/students", icon: <Users size={20} /> },
     { name: t.settings, href: "/professor/settings", icon: <Settings size={20} /> },
@@ -139,10 +154,10 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
 
       <div className="p-4 border-t border-slate-800 shrink-0">
         <Link href="/professor/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors group">
-          <Avatar initials="JD" size="sm" status="online" className="shrink-0" />
+          <Avatar initials={userInitials} size="sm" status="online" className="shrink-0" />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate group-hover:text-[#F5A623] transition-colors">Prof. J. Doe</p>
+              <p className="text-sm font-bold text-white truncate group-hover:text-[#F5A623] transition-colors">{userName}</p>
               <p className="text-xs text-slate-500 truncate">{t.basicPlan}</p>
             </div>
           )}

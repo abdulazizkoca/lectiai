@@ -1,31 +1,17 @@
 import base64
 import cv2
 import numpy as np
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
-from models.user import User
+from models.user import User, UserRole
 import os
-from anthropic import AsyncAnthropic
-import json
+import google.generativeai as genai
 from datetime import datetime
 
 router = APIRouter()
-client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-
-
-def _debug_log(hypothesis_id: str, location: str, message: str, data: dict, run_id: str = "pre-fix"):
-    payload = {
-        "sessionId": "08c3f7",
-        "runId": run_id,
-        "hypothesisId": hypothesis_id,
-        "location": location,
-        "message": message,
-        "data": data,
-        "timestamp": int(datetime.now().timestamp() * 1000),
-    }
-    with open("debug-08c3f7.log", "a", encoding="utf-8") as logf:
-        logf.write(json.dumps(payload, ensure_ascii=True) + "\n")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 from services.camera_service import FaceRecognitionService
 try:
@@ -51,23 +37,7 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     Receives camera frame → analyzes faces → returns attention data.
     All processing is LOCAL. No data stored.
     """
-    # region agent log
-    _debug_log(
-        "H1",
-        "backend/routers/camera.py:analyze_frame:entry",
-        "analyze_frame payload received",
-        {"keys": list(data.keys()) if isinstance(data, dict) else "non-dict"},
-    )
-    # endregion
     frame_raw = data.get("frame") if isinstance(data, dict) else None
-    # region agent log
-    _debug_log(
-        "H2",
-        "backend/routers/camera.py:analyze_frame:frame_presence",
-        "frame field presence/type",
-        {"has_frame": frame_raw is not None, "frame_type": type(frame_raw).__name__ if frame_raw is not None else None},
-    )
-    # endregion
     if not frame_raw:
         raise HTTPException(status_code=400, detail="frame field is missing")
 
@@ -89,7 +59,7 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     known_faces = []
     users_with_faces = db.query(User).filter(
         User.face_encoding.isnot(None),
-        User.role == "student"
+        User.role == UserRole.student
     ).all()
     
     for user in users_with_faces:
@@ -122,18 +92,7 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     # Detect faces
     detection_results = face_detector.process(rgb)
     mesh_results = face_mesh.process(rgb)
-    
-    # region agent log
-    _debug_log(
-        "H4",
-        "backend/routers/camera.py:analyze_frame:mediapipe_results",
-        "mediapipe detection result",
-        {
-            "has_detections": bool(detection_results and detection_results.detections),
-            "has_mesh_faces": bool(mesh_results and mesh_results.multi_face_landmarks),
-        },
-    )
-    # endregion
+
     if detection_results.detections and mesh_results.multi_face_landmarks:
         for i, (detection, landmarks) in enumerate(
             zip(detection_results.detections, mesh_results.multi_face_landmarks)
@@ -184,25 +143,12 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
         except Exception:
             pass
     
-    result_payload = {
+    return {
         "students": students,
         "overall_attention": round(overall),
         "recommendation": recommendation,
         "student_count": len(students),
     }
-    # region agent log
-    _debug_log(
-        "H5",
-        "backend/routers/camera.py:analyze_frame:response",
-        "analyze_frame response summary",
-        {
-            "student_count": result_payload["student_count"],
-            "overall_attention": result_payload["overall_attention"],
-            "has_recommendation": result_payload["recommendation"] is not None,
-        },
-    )
-    # endregion
-    return result_payload
 
 
 def calculate_attention(landmarks, width: int, height: int) -> int:
@@ -287,13 +233,12 @@ async def get_ai_recommendation(attention: float, students_list: list, session_i
     )
 
     try:
-        response = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=150,
-            messages=[{"role": "user", "content": prompt}]
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(max_output_tokens=150)
         )
         setattr(get_ai_recommendation, f"last_rec_{session_id}", now)
-        return response.content[0].text
+        return response.text
     except Exception:
         return None
 

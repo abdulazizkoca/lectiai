@@ -1,7 +1,8 @@
 import os
-from anthropic import AsyncAnthropic
+import google.generativeai as genai
 
-client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY") or "mock-key")
+genai.configure(api_key=os.getenv("GEMINI_API_KEY") or "mock-key")
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 async def get_ai_mentor_response(
     student_id: int,
@@ -9,8 +10,8 @@ async def get_ai_mentor_response(
     conversation_history: list,
     student_profile: dict
 ) -> str:
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
     
     system_prompt = f"""
 Sen Lectio AI — {student_profile.get('name', 'Talaba')} ning shaxsiy o'quv yo'ldoshisan.
@@ -33,16 +34,20 @@ Qoidalar:
 6. O'quvchini rag'batlantirib tur
 """
     
-    messages = conversation_history + [{"role": "user", "content": message}]
+    model = genai.GenerativeModel('gemini-1.5-pro', system_instruction=system_prompt)
     
-    response = await client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=800,
-        system=system_prompt,
-        messages=messages
+    gemini_messages = []
+    for msg in conversation_history:
+        role = 'model' if msg.get('role') in ['assistant', 'model'] else 'user'
+        gemini_messages.append({"role": role, "parts": [msg.get('content', '')]})
+    gemini_messages.append({"role": "user", "parts": [message]})
+    
+    response = await model.generate_content_async(
+        gemini_messages,
+        generation_config=genai.types.GenerationConfig(max_output_tokens=800)
     )
     
-    return response.content[0].text
+    return response.text
 
 
 async def generate_study_plan(
@@ -52,8 +57,8 @@ async def generate_study_plan(
     deadline_days: int,
     weak_topics: list
 ) -> dict:
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
     
     prompt = f"""
 O'quvchi uchun individual o'qish rejasi tuz.
@@ -91,21 +96,24 @@ JSON formatda qaytargin:
 }}
 """
     
-    response = await client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}]
+    # JSON format required, adding json specification if needed
+    response = await gemini_model.generate_content_async(
+        prompt,
+        generation_config=genai.types.GenerationConfig(
+            max_output_tokens=2000,
+            response_mime_type="application/json"
+        )
     )
     
     import json
-    return json.loads(response.content[0].text)
+    return json.loads(response.text)
 
-async def get_claude_response(prompt: str) -> str:
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
-    response = await client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=1500,
-        messages=[{"role": "user", "content": prompt}]
+async def get_ai_response(prompt: str) -> str:
+    """Gemini yordamida umumiy AI javob olish."""
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
+    response = await gemini_model.generate_content_async(
+        prompt,
+        generation_config=genai.types.GenerationConfig(max_output_tokens=1500)
     )
-    return response.content[0].text
+    return response.text

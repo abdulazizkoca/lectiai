@@ -1,26 +1,36 @@
-import cv2
-import mediapipe as mp
-import numpy as np
-from anthropic import AsyncAnthropic
 import asyncio
-import base64
 import os
 
-client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-import mediapipe as mp
 try:
-    from mediapipe.python.solutions import face_mesh as mp_face_mesh
-    from mediapipe.python.solutions import pose as mp_pose
-    from mediapipe.python.solutions import hands as mp_hands
-    HAS_MEDIAPIPE = True
-except (ImportError, AttributeError):
+    import cv2
+    import numpy as np
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+    cv2 = None
+    np = None
+
+try:
+    import mediapipe as mp
     try:
+        from mediapipe.python.solutions import face_mesh as mp_face_mesh
+        from mediapipe.python.solutions import pose as mp_pose
+        from mediapipe.python.solutions import hands as mp_hands
+    except (ImportError, AttributeError):
         mp_face_mesh = mp.solutions.face_mesh
         mp_pose = mp.solutions.pose
         mp_hands = mp.solutions.hands
-        HAS_MEDIAPIPE = True
-    except AttributeError:
-        HAS_MEDIAPIPE = False
+    HAS_MEDIAPIPE = True
+except (ImportError, AttributeError):
+    HAS_MEDIAPIPE = False
+    mp_face_mesh = None
+    mp_pose = None
+    mp_hands = None
+
+import google.generativeai as genai
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY") or "mock-key")
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 class ClassroomAnalyzer:
     """
@@ -29,7 +39,7 @@ class ClassroomAnalyzer:
     """
     
     def __init__(self):
-        if HAS_MEDIAPIPE:
+        if HAS_MEDIAPIPE and HAS_CV2:
             self.face_mesh = mp_face_mesh.FaceMesh(
                 max_num_faces=50,
                 refine_landmarks=True
@@ -53,9 +63,9 @@ class ClassroomAnalyzer:
             "hand_raised": 0,
         }
     
-    def analyze_frame(self, frame: np.ndarray) -> dict:
+    def analyze_frame(self, frame) -> dict:
         """Bitta kadrni tahlil qilish"""
-        if not HAS_MEDIAPIPE:
+        if not HAS_MEDIAPIPE or not HAS_CV2:
             # Graceful fallback mock metrics
             return {
                 "total": 1,
@@ -203,9 +213,8 @@ Professorga QISQA (1-2 gap) amaliy tavsiya ber o'zbek tilida.
 Masalan: darsni jonlantirish, savol berish, faoliyat o'zgartirish.
 Faqat tavsiyani yoz, boshqa narsa emas.
 """
-    response = await client.messages.create(
-        model="claude-3-5-sonnet-20241022",
-        max_tokens=200,
-        messages=[{"role": "user", "content": prompt}]
+    response = await gemini_model.generate_content_async(
+        prompt,
+        generation_config=genai.types.GenerationConfig(max_output_tokens=200)
     )
-    return response.content[0].text
+    return response.text

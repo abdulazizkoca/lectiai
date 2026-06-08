@@ -1,16 +1,17 @@
-import anthropic
+import google.generativeai as genai
 import json
 import os
 from typing import Dict, Any
 
-# Initialize Claude client
-api_key = os.getenv("ANTHROPIC_API_KEY") or "mock-key"
-client = anthropic.AsyncAnthropic(api_key=api_key)
+# Initialize Gemini client
+api_key = os.getenv("GEMINI_API_KEY") or "mock-key"
+genai.configure(api_key=api_key)
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 async def generate_lesson(topic: str, duration: int = 45, level: str = "Bakalavr") -> Dict[str, Any]:
     """Generate full lesson from topic"""
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
     if not topic or len(topic.strip()) < 3:
         raise ValueError("Topic must be at least 3 characters long")
     
@@ -18,10 +19,7 @@ async def generate_lesson(topic: str, duration: int = 45, level: str = "Bakalavr
         raise ValueError("Duration must be between 10 and 180 minutes")
     
     try:
-        response = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=3000,
-            messages=[{"role": "user", "content": f"""
+        prompt = f"""
 O'zbek universiteti uchun dars tayyorla.
 Mavzu: {topic}
 Davomiylik: {duration} daqiqa
@@ -48,10 +46,16 @@ JSON formatda qaytargin:
   "summary": "60 soniyalik xulosa matni"
 }}
 Faqat JSON. Boshqa narsa yozma.
-"""}]
+"""
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=3000,
+                response_mime_type="application/json"
+            )
         )
         
-        content = response.content[0].text
+        content = response.text
         result = json.loads(content)
         
         # Validate the structure
@@ -62,18 +66,6 @@ Faqat JSON. Boshqa narsa yozma.
         
     except json.JSONDecodeError as e:
         print(f"JSON parsing error: {e}")
-        # Fallback empty structure
-        return {
-            "title": topic,
-            "wow_fact": "O'zbekistonda bu texnologiya rivojlanmoqda.",
-            "slides": [],
-            "quiz": [],
-            "flashcards": [],
-            "summary": "Dars xulosasi."
-        }
-    except anthropic.APIError as e:
-        print(f"Anthropic API error: {e}")
-        # Fallback empty structure
         return {
             "title": topic,
             "wow_fact": "O'zbekistonda bu texnologiya rivojlanmoqda.",
@@ -83,8 +75,7 @@ Faqat JSON. Boshqa narsa yozma.
             "summary": "Dars xulosasi."
         }
     except Exception as e:
-        print(f"Unexpected error generating lesson: {e}")
-        # Fallback empty structure
+        print(f"Gemini API error: {e}")
         return {
             "title": topic,
             "wow_fact": "O'zbekistonda bu texnologiya rivojlanmoqda.",
@@ -96,16 +87,13 @@ Faqat JSON. Boshqa narsa yozma.
 
 async def analyze_material(text: str) -> Dict[str, Any]:
     """Parse uploaded metodichka"""
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        raise ValueError("ANTHROPIC_API_KEY environment variable is not set. Please add it to your .env file.")
+    if not os.getenv("GEMINI_API_KEY"):
+        raise ValueError("GEMINI_API_KEY environment variable is not set. Please add it to your .env file.")
     if not text or len(text.strip()) < 10:
         raise ValueError("Text must be at least 10 characters long")
     
     try:
-        response = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=4000,
-            messages=[{"role": "user", "content": f"""
+        prompt = f"""
 Metodichka matni:
 {text[:6000]}
 
@@ -126,10 +114,16 @@ JSON formatda tahlil qil:
   "exam_topics": ["string"]
 }}
 Faqat JSON.
-"""}]
+"""
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=4000,
+                response_mime_type="application/json"
+            )
         )
         
-        content = response.content[0].text
+        content = response.text
         result = json.loads(content)
         
         # Validate the structure
@@ -148,18 +142,8 @@ Faqat JSON.
             "wow_facts": [],
             "exam_topics": []
         }
-    except anthropic.APIError as e:
-        print(f"Anthropic API error in material analysis: {e}")
-        return {
-            "title": "Noma'lum",
-            "subject": "Noma'lum",
-            "topics": [],
-            "suggested_lessons": 0,
-            "wow_facts": [],
-            "exam_topics": []
-        }
     except Exception as e:
-        print(f"Unexpected error analyzing material: {e}")
+        print(f"Gemini API error in material analysis: {e}")
         return {
             "title": "Noma'lum",
             "subject": "Noma'lum",

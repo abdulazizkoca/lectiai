@@ -1,11 +1,13 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Zap, Camera, Flame, Trophy, Clock, Sun, Moon, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 const MAIN_CARDS = [
   {
@@ -50,6 +52,35 @@ export default function StudentDashboardPage() {
   const { language, setLanguage } = useLanguage();
   const lang = language as "uz" | "ru" | "en";
 
+  const [stats, setStats] = useState({ xp: 0, streak: 0, due_for_review: 0, total_flashcards: 0 });
+  const [lastTopic, setLastTopic] = useState<{ subject: string; topic: string } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("lectio_user");
+      if (raw) {
+        const u = JSON.parse(raw);
+        if (u?.id) {
+          fetch(`${API_URL}/api/student/${u.id}/dashboard`)
+            .then((r) => r.json())
+            .then((d) => setStats({ xp: d.xp || 0, streak: d.streak || 0, due_for_review: d.due_for_review || 0, total_flashcards: d.total_flashcards || 0 }))
+            .catch(() => {});
+          // Oxirgi o'rganilgan mavzuni olish
+          const token = localStorage.getItem("lectio_token");
+          if (token) {
+            fetch(`${API_URL}/api/chain/progress/${u.id}`, { headers: { Authorization: `Bearer ${token}` } })
+              .then((r) => r.json())
+              .then((d) => {
+                const subjects: { subject: string; topic: string }[] = d.subjects || [];
+                if (subjects.length > 0) setLastTopic(subjects[subjects.length - 1]);
+              })
+              .catch(() => {});
+          }
+        }
+      }
+    } catch {}
+  }, []);
+
   const bg = isDark ? "#0A0A0F" : "#F8FAFC";
   const fg = isDark ? "#fff" : "#0A0A0F";
   const fgMuted = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
@@ -73,10 +104,12 @@ export default function StudentDashboardPage() {
             <span className="text-sm font-bold tracking-widest uppercase hidden sm:inline" style={{ color: fgMuted }}>
               {lang === "uz" ? "O'quvchi" : lang === "ru" ? "Студент" : "Student"}
             </span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
-              <Flame size={10} className="inline mr-1" />
-              {lang === "uz" ? "7 kun" : lang === "ru" ? "7 дней" : "7 days"}
-            </span>
+            {stats.streak > 0 && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
+                <Flame size={10} className="inline mr-1" />
+                {stats.streak} {lang === "uz" ? "kun" : lang === "ru" ? "дней" : "days"}
+              </span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -132,9 +165,9 @@ export default function StudentDashboardPage() {
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-8">
             {[
-              { label: { uz: "O'rganilgan", ru: "Пройдено", en: "Studied" }, value: "18", unit: { uz: " mavzu", ru: " тем", en: " topics" }, Icon: BookOpen, color: "#1B4FD8" },
-              { label: { uz: "O'rtacha ball", ru: "Средний балл", en: "Avg score" }, value: "87", unit: "%", Icon: Trophy, color: "#F5A623" },
-              { label: { uz: "Oxirgi kirish", ru: "Последний вход", en: "Last visit" }, value: { uz: "Bugun", ru: "Сегодня", en: "Today" }, unit: "", Icon: Clock, color: "#0D9373" },
+              { label: { uz: "Flashcardlar", ru: "Флеш-карты", en: "Flashcards" }, value: String(stats.total_flashcards), unit: { uz: " ta", ru: " шт", en: " pcs" }, Icon: BookOpen, color: "#1B4FD8" },
+              { label: { uz: "XP ball", ru: "XP очки", en: "XP Points" }, value: String(stats.xp), unit: "", Icon: Trophy, color: "#F5A623" },
+              { label: { uz: "Kunlik streak", ru: "Стрик", en: "Streak" }, value: String(stats.streak), unit: { uz: " kun", ru: " дней", en: " days" }, Icon: Flame, color: "#E84855" },
             ].map((s, i) => (
               <motion.div key={i}
                 initial={{ opacity: 0, y: 10 }}
@@ -200,7 +233,7 @@ export default function StudentDashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
-            onClick={() => router.push("/student/study")}
+            onClick={() => router.push("/student/flashcards")}
             className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 px-5 md:px-6 py-4 rounded-2xl transition-all text-left group"
             style={{ background: surface, border: `1px solid ${surfaceBorder}` }}
             whileHover={{ borderColor: "rgba(245,166,35,0.3)", backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)" }}
@@ -214,7 +247,17 @@ export default function StudentDashboardPage() {
                   {lang === "uz" ? "Davom etish" : lang === "ru" ? "Продолжить" : "Continue"}
                 </p>
                 <p className="text-xs" style={{ color: fgMuted }}>
-                  {lang === "uz" ? "Oxirgi mavzu: Fizika — Termodinamika" : lang === "ru" ? "Последняя тема: Физика — Термодинамика" : "Last topic: Physics — Thermodynamics"}
+                  {lastTopic
+                    ? (lang === "uz"
+                        ? `Oxirgi mavzu: ${lastTopic.subject} — ${lastTopic.topic}`
+                        : lang === "ru"
+                        ? `Последняя тема: ${lastTopic.subject} — ${lastTopic.topic}`
+                        : `Last topic: ${lastTopic.subject} — ${lastTopic.topic}`)
+                    : (lang === "uz"
+                        ? "Hali mavzu tanlanmagan. Boshlang!"
+                        : lang === "ru"
+                        ? "Тема ещё не выбрана. Начните!"
+                        : "No topic yet. Start learning!")}
                 </p>
               </div>
             </div>

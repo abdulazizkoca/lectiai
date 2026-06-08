@@ -18,13 +18,7 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
     { id: 3, title: "Material tayyor", body: "AI dars rejasi va quiz savollarini yaratdi.", read: true },
   ]);
   const { isDark } = useTheme();
-  const { language, setLanguage } = useLanguage();
-
-  useEffect(() => {
-    if (language === "en") {
-      setLanguage("uz");
-    }
-  }, [language, setLanguage]);
+  const { language } = useLanguage();
 
   return (
     <div className="flex h-[100dvh] bg-[#FAFAF7] dark:bg-[#050508] overflow-hidden relative">

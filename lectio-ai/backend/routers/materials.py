@@ -1,105 +1,218 @@
 import os
 import uuid
-from fastapi import APIRouter, UploadFile, File, BackgroundTasks, HTTPException, Request
-from sse_starlette.sse import EventSourceResponse
 import asyncio
-from minio import Minio
-from celery.result import AsyncResult
-from services.material_parser import process_material_task
-import redis
 import json
+from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Depends
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from sse_starlette.sse import EventSourceResponse
+from database import get_db
+from models.user import User
+from routers.auth import get_current_user
+from services.material_parser import (
+    start_extract_topics,
+    start_generate_lesson,
+    get_progress,
+    get_topics,
+    get_lesson_result
+)
 
 router = APIRouter()
 
-MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")
-MINIO_ACCESS_KEY = os.getenv("MINIO_ACCESS_KEY", "minioadmin")
-MINIO_SECRET_KEY = os.getenv("MINIO_SECRET_KEY", "minioadmin")
-MINIO_SECURE = os.getenv("MINIO_SECURE", "False").lower() == "true"
-
-minio_client = Minio(
-    MINIO_ENDPOINT,
-    access_key=MINIO_ACCESS_KEY,
-    secret_key=MINIO_SECRET_KEY,
-    secure=MINIO_SECURE
-)
-
-BUCKET_NAME = "materials"
-
-def ensure_bucket():
-    try:
-        if not minio_client.bucket_exists(BUCKET_NAME):
-            minio_client.make_bucket(BUCKET_NAME)
-    except Exception as e:
-        print(f"MinIO bucket error: {e}")
-
-redis_client = redis.Redis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379/0"), decode_responses=True)
-
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50MB
+MAX_FILE_SIZE = 50 * 1024 * 1024   # 50 MB
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt"}
 
+
+def _temp_dir() -> str:
+    base = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
+    os.makedirs(base, exist_ok=True)
+    return base
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /upload  —  Upload file, start topic extraction
+# ─────────────────────────────────────────────────────────────
 @router.post("/upload")
 async def upload_material(
-    professor_id: int,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
 ):
-    # 1. Validation
-    ensure_bucket()
-    ext = os.path.splitext(file.filename)[1].lower()
+    if current_user.role.value not in ("professor", "admin"):
+        raise HTTPException(status_code=403, detail="Faqat professorlar fayl yuklashi mumkin")
+    professor_id = current_user.id
+    # 1. Validate extension
+    ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail="Faqat PDF, DOCX, PPTX va TXT ruxsat etilgan.")
-    
+        raise HTTPException(
+            status_code=400,
+            detail=f"Faqat PDF, DOCX, PPTX va TXT ruxsat etilgan. Siz: '{ext}'"
+        )
+
+    # 2. Read and validate size
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="Fayl hajmi 50MB dan oshmasligi kerak.")
-    
-    # 2. MinIO ga yuklash
-    material_id = str(uuid.uuid4())
-    object_name = f"{professor_id}/{material_id}/{file.filename}"
-    
-    # Save to temp file to upload
-    temp_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "tmp")
-    os.makedirs(temp_dir, exist_ok=True)
-    temp_path = os.path.join(temp_dir, f"{material_id}{ext}")
-    with open(temp_path, "wb") as f:
-        f.write(file_bytes)
-        
-    minio_client.fput_object(BUCKET_NAME, object_name, temp_path)
-    
-    # Update Redis state
-    redis_client.set(f"material_progress:{material_id}", json.dumps({
-        "stage": "started",
-        "percent": 0,
-        "message": "Fayl qabul qilindi, navbatga qo'shildi..."
-    }))
+    if len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Fayl bo'sh.")
 
-    # 3. Background processing via Celery
-    task = process_material_task.delay(material_id, professor_id, object_name, temp_path, ext)
-    
+    # 3. Save to temp
+    material_id = str(uuid.uuid4())
+    temp_path = os.path.join(_temp_dir(), f"{material_id}{ext}")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(file_bytes)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Faylni saqlashda xatolik: {str(e)}")
+
+    # 4. Start background processing (thread — no Celery/MinIO needed)
+    from services.material_parser import update_progress
+    update_progress(material_id, "started", 5, "Fayl qabul qilindi, tahlil boshlanmoqda...")
+    start_extract_topics(material_id, professor_id, temp_path, ext)
+
     return {
         "material_id": material_id,
-        "task_id": task.id,
-        "message": "Fayl muvaffaqiyatli qabul qilindi va tahlil boshlandi."
+        "message": "Fayl muvaffaqiyatli qabul qilindi. Tahlil boshlandi.",
+        "filename": file.filename,
+        "size_kb": round(len(file_bytes) / 1024, 1)
     }
 
+
+# ─────────────────────────────────────────────────────────────
+# GET /{material_id}/progress  —  SSE real-time progress stream
+# ─────────────────────────────────────────────────────────────
 @router.get("/{material_id}/progress")
-async def get_progress(request: Request, material_id: str):
-    """ Server-Sent Events (SSE) endpoint for real-time progress """
-    async def event_generator():
-        last_data = None
+async def progress_stream(request: Request, material_id: str):
+    async def generator():
+        last_sent = None
+        idle_ticks = 0
+
         while True:
-            # Agar klient aloqani uzsa, to'xtatish
             if await request.is_disconnected():
                 break
-                
-            raw_data = redis_client.get(f"material_progress:{material_id}")
-            if raw_data and raw_data != last_data:
-                yield {"data": raw_data}
-                last_data = raw_data
-                
-                data_dict = json.loads(raw_data)
-                if data_dict.get("stage") in ["done", "error"]:
+
+            data = get_progress(material_id)
+            payload = json.dumps(data) if data else None
+
+            if payload and payload != last_sent:
+                yield {"data": payload}
+                last_sent = payload
+                idle_ticks = 0
+
+                if data and data.get("stage") in ("done", "error"):
                     break
-                    
+            else:
+                idle_ticks += 1
+                # Stop after 5 minutes of no change
+                if idle_ticks > 300:
+                    break
+
             await asyncio.sleep(1)
-            
-    return EventSourceResponse(event_generator())
+
+    return EventSourceResponse(generator())
+
+
+# ─────────────────────────────────────────────────────────────
+# GET /{material_id}/topics  —  Return extracted topics
+# ─────────────────────────────────────────────────────────────
+@router.get("/{material_id}/topics")
+async def get_topics_endpoint(material_id: str):
+    data = get_topics(material_id)
+    if not data:
+        # Check if there's a progress entry (still running)
+        progress = get_progress(material_id)
+        if progress and progress.get("stage") == "error":
+            raise HTTPException(status_code=500, detail=progress.get("message", "Xatolik yuz berdi."))
+        raise HTTPException(status_code=404, detail="Mavzular hali tayyor emas. Iltimos kuting.")
+    return data
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /generate-topic-lesson  —  Generate lesson for one topic
+# ─────────────────────────────────────────────────────────────
+class GenerateLessonRequest(BaseModel):
+    material_id: str
+    professor_id: int
+    topic_name: str
+
+
+@router.post("/generate-topic-lesson")
+async def generate_topic_lesson(
+    req: GenerateLessonRequest,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role.value not in ("professor", "admin"):
+        raise HTTPException(status_code=403, detail="Faqat professorlar dars yaratishi mumkin")
+    req.professor_id = current_user.id
+    # Get stored topics & text_path
+    data = get_topics(req.material_id)
+    if not data:
+        raise HTTPException(status_code=404, detail="Avval faylni yuklang va mavzular tayyorlanishini kuting.")
+
+    text_path = data.get("text_path")
+    if not text_path or not os.path.exists(text_path):
+        raise HTTPException(
+            status_code=404,
+            detail="Matn fayli topilmadi. Iltimos faylni qayta yuklang."
+        )
+
+    if not req.topic_name.strip():
+        raise HTTPException(status_code=400, detail="Mavzu nomi bo'sh bo'lmasligi kerak.")
+
+    # Set initial progress
+    from services.material_parser import update_progress
+    lesson_key = req.material_id + "_lesson"
+    update_progress(lesson_key, "started", 5, f"'{req.topic_name}' uchun dars yaratish boshlanmoqda...")
+
+    # Start background thread
+    start_generate_lesson(req.material_id, req.professor_id, req.topic_name, text_path)
+
+    return {"message": "Dars generatsiyasi boshlandi.", "topic": req.topic_name}
+
+
+# ─────────────────────────────────────────────────────────────
+# GET /{material_id}/lesson-progress  —  SSE for lesson creation
+# ─────────────────────────────────────────────────────────────
+@router.get("/{material_id}/lesson-progress")
+async def lesson_progress_stream(request: Request, material_id: str):
+    lesson_key = material_id + "_lesson"
+
+    async def generator():
+        last_sent = None
+        idle_ticks = 0
+
+        while True:
+            if await request.is_disconnected():
+                break
+
+            data = get_progress(lesson_key)
+            payload = json.dumps(data) if data else None
+
+            if payload and payload != last_sent:
+                yield {"data": payload}
+                last_sent = payload
+                idle_ticks = 0
+
+                if data and data.get("stage") in ("done", "error"):
+                    break
+            else:
+                idle_ticks += 1
+                if idle_ticks > 600:
+                    break
+
+            await asyncio.sleep(1)
+
+    return EventSourceResponse(generator())
+
+
+# ─────────────────────────────────────────────────────────────
+# GET /{material_id}/lesson-result  —  Return generated lesson
+# ─────────────────────────────────────────────────────────────
+@router.get("/{material_id}/lesson-result")
+async def lesson_result(material_id: str):
+    data = get_lesson_result(material_id)
+    if not data:
+        progress = get_progress(material_id + "_lesson")
+        if progress and progress.get("stage") == "error":
+            raise HTTPException(status_code=500, detail=progress.get("message", "Dars yaratishda xatolik."))
+        raise HTTPException(status_code=404, detail="Dars natijasi hali tayyor emas.")
+    return data

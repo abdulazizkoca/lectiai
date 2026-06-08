@@ -1,404 +1,392 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { io, Socket } from "socket.io-client";
+import { Trophy, Clock, Zap, CheckCircle2, XCircle, Users, Crown, Star } from "lucide-react";
 
-import { StudentCamera } from "@/components/student/StudentCamera";
-import dynamic from "next/dynamic";
-import { SessionQRWidget } from "@/components/shared/SessionQRWidget";
-import { NotePanel } from "@/components/student/NotePanel";
-import { ConfusionButton } from "@/components/student/ConfusionButton";
-import { ReactionSystem } from "@/components/student/ReactionSystem";
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-const DynamicStudentCamera = dynamic(() => import("@/components/student/StudentCamera").then(mod => mod.StudentCamera), {
-  ssr: false,
-  loading: () => <div className="w-full h-32 bg-slate-800/50 animate-pulse rounded-xl flex items-center justify-center text-slate-500">Kamera yuklanmoqda...</div>
-});
+type GameStatus = "waiting" | "question" | "answered" | "results" | "ended";
 
-export default function StudentQuizPage() {
-  const { code } = useParams();
+interface Question {
+  question: string;
+  type?: string;
+  options?: string[];
+  time_limit: number;
+  points?: number;
+}
+
+interface LeaderboardEntry {
+  rank: number;
+  name: string;
+  score: number;
+  streak?: number;
+}
+
+export default function QuizRoomPage() {
+  const params = useParams();
   const searchParams = useSearchParams();
-  const roomCode = typeof code === "string" ? code : "";
+  const router = useRouter();
 
-  // Get nickname from URL param (set by /join page) — avoids double prompt
-  const urlNickname = searchParams.get("name") || "";
+  const roomCode = (params.code as string).toUpperCase();
+  const nickname = searchParams.get("name") || "O'quvchi";
 
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [phase, setPhase] = useState<"join" | "lobby" | "question" | "result" | "leaderboard" | "final">(
-    urlNickname ? "lobby" : "join"
-  );
-
-  const [nickname, setNickname] = useState(urlNickname);
-  const [participants, setParticipants] = useState<string[]>([]);
-
-  const [question, setQuestion] = useState<any>(null);
+  const [status, setStatus] = useState<GameStatus>("waiting");
+  const [participantCount, setParticipantCount] = useState(1);
+  const [question, setQuestion] = useState<Question | null>(null);
   const [timeLeft, setTimeLeft] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [isPhoneAllowed, setIsPhoneAllowed] = useState(false);
+  const [myScore, setMyScore] = useState(0);
+  const [myRank, setMyRank] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [lastPoints, setLastPoints] = useState(0);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [correctAnswer, setCorrectAnswer] = useState("");
+  const [explanation, setExplanation] = useState("");
+  const [questionStartTime, setQuestionStartTime] = useState(0);
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState("");
 
-  const [result, setResult] = useState<any>(null);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-
-  const [shortAnswer, setShortAnswer] = useState("");
-
-  const [isNotePanelOpen, setIsNotePanelOpen] = useState(false);
-  const [isConfused, setIsConfused] = useState(false);
-  const [reactions, setReactions] = useState<any[]>([]);
-  const [currentSlide] = useState(1);
-  const [currentTopic] = useState("");
-
+  const socketRef = useRef<Socket | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const questionStartRef = useRef<number>(0);
 
-  const setupSocketListeners = (s: Socket) => {
-    s.on("room_joined", (data) => {
-      setParticipants(data.nickname_list || []);
-      setPhase("lobby");
+  useEffect(() => {
+    const socket = io(SOCKET_URL, { transports: ["websocket"] });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setConnected(true);
+      socket.emit("join_room", { room_code: roomCode, nickname, student_id: null });
     });
 
-    s.on("phone_permission", (data) => {
-      setIsPhoneAllowed(data.allowed);
+    socket.on("connect_error", () => {
+      setError("Server bilan ulanib bo'lmadi. Qayta urinib ko'ring.");
     });
 
-    s.on("question_started", (data) => {
+    socket.on("error", (data: { message: string }) => {
+      setError(data.message || "Xona topilmadi.");
+    });
+
+    socket.on("room_joined", (data: { participant_count: number }) => {
+      setParticipantCount(data.participant_count);
+    });
+
+    socket.on("question_started", (data: { question: Question; time_limit: number }) => {
       setQuestion(data.question);
-      setTimeLeft(data.time_limit);
+      const tl = data.question.time_limit || data.time_limit || 30;
+      setTimeLeft(tl);
       setSelectedAnswer(null);
-      setShortAnswer("");
-      setPhase("question");
-      questionStartRef.current = Date.now();
+      setIsCorrect(null);
+      setStatus("question");
+      setQuestionStartTime(Date.now());
 
       if (timerRef.current) clearInterval(timerRef.current);
+      let t = tl;
       timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            return 0;
-          }
-          return prev - 1;
-        });
+        t -= 1;
+        setTimeLeft(t);
+        if (t <= 0) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          setStatus("answered");
+        }
       }, 1000);
     });
 
-    s.on("answer_confirmed", (data) => {
-      setResult(data);
-      setPhase("result");
+    socket.on("answer_confirmed", (data: {
+      is_correct: boolean;
+      points_earned: number;
+      current_score: number;
+      rank: number;
+      streak: number;
+    }) => {
+      setIsCorrect(data.is_correct);
+      setLastPoints(data.points_earned);
+      setMyScore(data.current_score);
+      setMyRank(data.rank);
+      setStreak(data.streak);
+      setStatus("answered");
+      if (timerRef.current) clearInterval(timerRef.current);
     });
 
-    s.on("question_results", (data) => {
+    socket.on("question_results", (data: {
+      correct_answer: string;
+      explanation: string;
+      top5_leaderboard: LeaderboardEntry[];
+    }) => {
+      setCorrectAnswer(data.correct_answer || "");
+      setExplanation(data.explanation || "");
       setLeaderboard(data.top5_leaderboard || []);
-      setPhase("leaderboard");
+      setStatus("results");
     });
 
-    s.on("quiz_ended", (data) => {
+    socket.on("quiz_ended", (data: { final_leaderboard: LeaderboardEntry[] }) => {
       setLeaderboard(data.final_leaderboard || []);
-      setPhase("final");
-    });
-  };
-
-  // Auto-join if nickname came from URL
-  useEffect(() => {
-    const nick = urlNickname || localStorage.getItem(`quiz_nickname_${roomCode}`) || "";
-    if (nick) {
-      setNickname(nick);
-      const s = io(process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000", { 
-        transports: ["websocket"], 
-        timeout: 5000,
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionDelayMax: 5000,
-        reconnectionAttempts: Infinity
-      });
-      setSocket(s);
-
-      s.on("connect", () => {
-        s.emit("join_room", { room_code: roomCode, nickname: nick });
-      });
-
-      s.on("connect_error", () => {
-        // Backend not available — stay in lobby with mock data
-        setParticipants([nick, "Jasur", "Malika", "Aziz"]);
-        setPhase("lobby");
-      });
-      
-      // Handle silent reconnections
-      s.on("reconnect", () => {
-        s.emit("join_room", { room_code: roomCode, nickname: nick });
-      });
-
-      setupSocketListeners(s);
-      return () => { s.disconnect(); };
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomCode, urlNickname]);
-
-  useEffect(() => {
-    if (phase === "final") {
-      import("canvas-confetti").then((confetti) => {
-        confetti.default({
-          particleCount: 150,
-          spread: 80,
-          origin: { y: 0.6 },
-          colors: ["#F5A623", "#0D9373", "#E84855", "#1B4FD8"],
-        });
-      });
-    }
-  }, [phase]);
-
-  const handleJoin = () => {
-    if (!nickname.trim()) return;
-    localStorage.setItem(`quiz_nickname_${roomCode}`, nickname.trim());
-
-    const s = io(process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000", { 
-      transports: ["websocket"], 
-      timeout: 5000,
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: Infinity
-    });
-    setSocket(s);
-
-    s.on("connect", () => {
-      s.emit("join_room", { room_code: roomCode, nickname: nickname.trim() });
+      setStatus("ended");
+      if (timerRef.current) clearInterval(timerRef.current);
     });
 
-    s.on("connect_error", () => {
-      // Backend not available — go to lobby with mock
-      setParticipants([nickname.trim(), "Jasur", "Malika"]);
-      setPhase("lobby");
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      socket.disconnect();
+    };
+  }, [roomCode, nickname]);
+
+  const handleAnswer = useCallback((answer: string) => {
+    if (selectedAnswer || status !== "question" || !socketRef.current) return;
+    setSelectedAnswer(answer);
+    const timeTaken = Date.now() - questionStartTime;
+    socketRef.current.emit("submit_answer", {
+      room_code: roomCode,
+      answer,
+      time_taken_ms: timeTaken,
     });
-    
-    s.on("reconnect", () => {
-      s.emit("join_room", { room_code: roomCode, nickname: nickname.trim() });
-    });
+  }, [selectedAnswer, status, roomCode, questionStartTime]);
 
-    setupSocketListeners(s);
-  };
+  const timePercent = question ? Math.max(0, (timeLeft / (question.time_limit || 30)) * 100) : 0;
+  const timeColor = timeLeft > 10 ? "#0D9373" : timeLeft > 5 ? "#F5A623" : "#E84855";
 
-  const handleReaction = (reaction: any) => {
-    setReactions((prev) => [...prev, { ...reaction, id: Date.now().toString(), timestamp: Date.now() }]);
-    if (socket) socket.emit("student_reaction", { room_code: roomCode, reaction: reaction.type });
-  };
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="text-5xl mb-4">❌</div>
+          <h2 className="text-xl font-bold text-white mb-2">Xatolik yuz berdi</h2>
+          <p className="text-slate-400 mb-6">{error}</p>
+          <button onClick={() => router.push("/join")} className="px-6 py-3 bg-[#F5A623] text-black rounded-xl font-bold">
+            Orqaga qaytish
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-  const handleConfusionToggle = (confused: boolean) => {
-    setIsConfused(confused);
-    if (socket) socket.emit("student_confusion", { room_code: roomCode, confused });
-  };
-
-  const submitAnswer = (ans: string) => {
-    if (selectedAnswer || !socket) return;
-    if (typeof navigator !== "undefined" && navigator.vibrate) navigator.vibrate(25);
-    setSelectedAnswer(ans);
-    const timeTaken = Date.now() - questionStartRef.current;
-    socket.emit("submit_answer", { room_code: roomCode, answer: ans, time_taken_ms: timeTaken });
-
-    // Optimistic result if backend doesn't respond
-    setTimeout(() => {
-      if (!result) {
-        setResult({ is_correct: Math.random() > 0.5, points_earned: 100, current_score: 350, rank: 2, streak: 3 });
-        setPhase("result");
-      }
-    }, 3000);
-  };
-
-  const timerPct = question ? (timeLeft / (question.time_limit || 30)) * 100 : 0;
+  const OPTION_COLORS = ["#E84855", "#1B4FD8", "#0D9373", "#F5A623", "#7B2FBE"];
+  const LETTERS = ["A", "B", "C", "D", "E"];
 
   return (
-    <div className="min-h-[100dvh] bg-[#0C0C12] text-white font-body flex flex-col items-center justify-center p-4 relative">
-      <NotePanel isOpen={isNotePanelOpen} onClose={() => setIsNotePanelOpen(false)} currentSlide={currentSlide} currentTopic={currentTopic} />
-      <ConfusionButton onConfusionToggle={handleConfusionToggle} isConfused={isConfused} />
-      <ReactionSystem onReaction={handleReaction} reactions={reactions} />
-
-      <AnimatePresence mode="wait">
-
-        {/* JOIN SCREEN — only shown if no nickname from URL */}
-        {phase === "join" && (
-          <motion.div key="join" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full max-w-sm text-center">
-            <h1 className="text-6xl font-display font-bold text-[#F5A623] tracking-wider mb-2">{roomCode}</h1>
-            <p className="text-slate-400 mb-8">Laqabingizni kiriting</p>
-            <input
-              type="text"
-              placeholder="Laqab..."
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && nickname.trim() && handleJoin()}
-              className="w-full bg-[#18181F] border-2 border-slate-700 text-white p-4 text-xl rounded-xl text-center focus:border-[#F5A623] outline-none mb-6"
-              autoFocus
-            />
-            <button
-              onClick={handleJoin}
-              disabled={!nickname.trim()}
-              className="w-full bg-[#F5A623] text-black font-bold text-xl py-4 rounded-xl active:scale-95 transition-transform disabled:opacity-50"
-            >
-              KIRISH
-            </button>
-          </motion.div>
-        )}
-
-        {/* LOBBY SCREEN */}
-        {phase === "lobby" && (
-          <motion.div key="lobby" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="w-full max-w-md text-center">
-            <div className="text-5xl mb-4">⚡</div>
-            <h2 className="text-2xl font-bold mb-2">Siz ichkaridasiz!</h2>
-            <p className="text-slate-400 mb-8 animate-pulse">Professor o'yinni boshlashini kuting...</p>
-
-            <div className="bg-[#18181F] p-4 rounded-xl border border-slate-800 mb-6">
-              <p className="text-[#F5A623] font-bold text-xl mb-4">👤 {participants.length} ishtirokchi</p>
-              <div className="flex flex-wrap justify-center gap-2">
-                {participants.map((p, i) => (
-                  <span key={i} className={`px-3 py-1 rounded-full text-sm ${p === nickname ? "bg-[#F5A623] text-black font-bold" : "bg-slate-800 text-slate-300"}`}>
-                    {p}
-                  </span>
-                ))}
-              </div>
+    <div className="min-h-screen bg-[#0A0A0F] text-white flex flex-col">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-bold text-black">L</div>
+          <div>
+            <span className="font-mono font-bold text-[#F5A623] text-sm">{roomCode}</span>
+            <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
+              <Users size={10} /> {participantCount} ishtirokchi
             </div>
-
-            <div className="bg-[#18181F] p-4 rounded-xl border border-slate-800">
-              <StudentCamera sessionId={roomCode} isPhoneAllowed={isPhoneAllowed} onAttentionUpdate={() => {}} />
+          </div>
+        </div>
+        <div className="flex items-center gap-3 text-sm">
+          <div className="flex items-center gap-1">
+            <Star size={14} className="text-[#F5A623]" />
+            <span className="font-bold">{myScore}</span>
+          </div>
+          {myRank > 0 && (
+            <div className="flex items-center gap-1">
+              <Trophy size={14} className="text-amber-400" />
+              <span className="font-bold">#{myRank}</span>
             </div>
-          </motion.div>
-        )}
-
-        {/* QUESTION SCREEN */}
-        {phase === "question" && question && (
-          <motion.div key="question" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-lg flex flex-col items-center">
-            <button onClick={() => setIsNotePanelOpen(true)} className="absolute top-4 right-4 p-2 bg-[#18181F] rounded-lg hover:bg-slate-700 transition-colors">
-              📝 Eslatmalar
-            </button>
-
-            <div className="relative w-24 h-24 mb-6">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="#1E1E28" strokeWidth="10" />
-                <motion.circle
-                  cx="50" cy="50" r="45" fill="none"
-                  stroke={timeLeft <= 5 ? "#E84855" : "#0D9373"}
-                  strokeWidth="10" strokeLinecap="round"
-                  strokeDasharray="283"
-                  animate={{ strokeDashoffset: 283 * (1 - timerPct / 100) }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-3xl font-bold font-mono">{timeLeft}</div>
+          )}
+          {streak > 1 && (
+            <div className="px-2 py-0.5 rounded-full bg-orange-500/20 text-orange-400 text-xs font-bold">
+              🔥 {streak}
             </div>
+          )}
+        </div>
+      </header>
 
-            <h2 className="text-2xl md:text-3xl font-display font-bold text-center mb-8">{question.question}</h2>
+      <div className="flex-1 flex flex-col items-center justify-center p-4 max-w-2xl mx-auto w-full">
+        <AnimatePresence mode="wait">
 
-            {question.type === "multiple_choice" && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-                {question.options?.map((opt: string, i: number) => {
-                  const colors = ["bg-[#E84855]", "bg-[#1B4FD8]", "bg-[#F5A623]", "bg-[#0D9373]"];
-                  const shapes = ["▲", "◆", "●", "■"];
-                  const isSelected = selectedAnswer === opt;
-                  const isDimmed = selectedAnswer && !isSelected;
-
-                  return (
-                    <motion.button key={i} onClick={() => submitAnswer(opt)} disabled={!!selectedAnswer} whileTap={{ scale: 0.95 }}
-                      className={`${colors[i]} text-white p-6 rounded-xl font-bold text-lg flex items-center gap-4 ${isDimmed ? "opacity-30" : "opacity-100"} ${isSelected ? "ring-4 ring-white" : ""}`}>
-                      <span className="text-2xl drop-shadow-md">{shapes[i]}</span>
-                      <span className="text-left leading-tight drop-shadow-md">{opt}</span>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            )}
-
-            {question.type === "true_false" && (
-              <div className="grid grid-cols-2 gap-4 w-full">
-                <button onClick={() => submitAnswer("True")} disabled={!!selectedAnswer} className={`bg-[#1B4FD8] p-8 rounded-xl font-bold text-2xl ${selectedAnswer === "True" ? "ring-4 ring-white" : ""} ${selectedAnswer === "False" ? "opacity-30" : ""}`}>Rost</button>
-                <button onClick={() => submitAnswer("False")} disabled={!!selectedAnswer} className={`bg-[#E84855] p-8 rounded-xl font-bold text-2xl ${selectedAnswer === "False" ? "ring-4 ring-white" : ""} ${selectedAnswer === "True" ? "opacity-30" : ""}`}>Yolg&apos;on</button>
-              </div>
-            )}
-
-            {question.type === "short_answer" && (
-              <div className="w-full flex flex-col gap-4">
-                <input
-                  type="text"
-                  value={shortAnswer}
-                  onChange={(e) => setShortAnswer(e.target.value)}
-                  disabled={!!selectedAnswer}
-                  placeholder="Javobingizni yozing..."
-                  className="w-full bg-[#18181F] p-6 text-xl rounded-xl border border-slate-700 outline-none focus:border-white"
-                />
-                <button onClick={() => submitAnswer(shortAnswer)} disabled={!!selectedAnswer || !shortAnswer.trim()} className="w-full bg-white text-black font-bold p-4 rounded-xl disabled:opacity-50">
-                  Yuborish
-                </button>
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* RESULT SCREEN */}
-        {phase === "result" && result && (
-          <motion.div key="result" initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-            <div className={`w-32 h-32 rounded-full mx-auto flex items-center justify-center text-6xl mb-6 shadow-2xl ${result.is_correct ? "bg-[#0D9373] shadow-[#0D9373]/30" : "bg-[#E84855] shadow-[#E84855]/30"}`}>
-              {result.is_correct ? "✓" : "✗"}
-            </div>
-            <h2 className="text-4xl font-bold mb-2">{result.is_correct ? "Zo'r! 🔥" : "Afsus! 💔"}</h2>
-            <p className="text-[#F5A623] text-3xl font-black font-display mb-8">+{result.points_earned}</p>
-
-            <div className="bg-[#18181F] p-4 rounded-xl flex justify-between gap-8 text-lg">
-              <div><p className="text-slate-400 text-sm">Umumiy ball</p><p className="font-bold">{result.current_score}</p></div>
-              <div><p className="text-slate-400 text-sm">O'rin</p><p className="font-bold">#{result.rank || "-"}</p></div>
-              {result.streak >= 3 && <div><p className="text-slate-400 text-sm">Streak</p><p className="font-bold text-orange-500">🔥 {result.streak}</p></div>}
-            </div>
-          </motion.div>
-        )}
-
-        {/* LEADERBOARD SCREEN */}
-        {phase === "leaderboard" && (
-          <motion.div key="leaderboard" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
-            <h2 className="text-3xl font-display font-bold text-center text-[#F5A623] mb-8">🏆 Reyting</h2>
-            <div className="space-y-3">
-              {leaderboard.map((p, i) => (
-                <motion.div initial={{ x: -50, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }}
-                  key={p.name} className={`flex items-center justify-between p-4 rounded-xl ${p.name === nickname ? "bg-[#F5A623] text-black font-bold" : "bg-[#18181F]"}`}>
-                  <div className="flex items-center gap-4">
-                    <span className="text-xl w-6">{i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}</span>
-                    <span className="text-lg">{p.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    {p.streak >= 3 && <span>🔥</span>}
-                    <span className="font-mono">{p.score}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* FINAL SCREEN */}
-        {phase === "final" && (
-          <motion.div key="final" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center w-full max-w-md">
-            <div className="text-8xl mb-6">🎉</div>
-            <h2 className="text-4xl font-display font-bold mb-8">Yakunlandi!</h2>
-
-            <div className="space-y-3 mb-8">
-              {leaderboard.slice(0, 3).map((p, i) => (
-                <div key={p.name} className={`flex justify-between p-4 rounded-xl ${i === 0 ? "bg-amber-400 text-black scale-110 font-bold my-4" : "bg-[#18181F]"}`}>
-                  <span>{i + 1}. {p.name}</span>
-                  <span>{p.score} ball</span>
+          {/* WAITING */}
+          {status === "waiting" && (
+            <motion.div key="waiting" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+                className="text-6xl mb-6"
+              >⏳</motion.div>
+              <h2 className="text-2xl font-bold mb-2">Dars boshlanishini kuting</h2>
+              <p className="text-slate-400 mb-6">Professor test boshlaydi</p>
+              <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/5 border border-white/10">
+                <div className="w-8 h-8 rounded-full bg-[#F5A623]/20 flex items-center justify-center font-bold text-[#F5A623]">
+                  {nickname[0]?.toUpperCase()}
                 </div>
-              ))}
-            </div>
+                <span className="font-bold">{nickname}</span>
+              </div>
+              <div className="mt-4 flex items-center justify-center gap-2 text-slate-500 text-sm">
+                <span className={`w-2 h-2 rounded-full inline-block ${connected ? "bg-green-400 animate-pulse" : "bg-yellow-400 animate-spin"}`} />
+                {connected ? "Ulangan" : "Ulanmoqda..."}
+              </div>
+            </motion.div>
+          )}
 
-            <button
-              className="bg-white/10 p-4 rounded-xl w-full text-center hover:bg-white/20 transition-colors"
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: "Lectio AI Quiz", text: `${nickname} ${leaderboard.find((p) => p.name === nickname)?.score || 0} ball to'pladi!` });
-                }
-              }}
-            >
-              Natijani ulashish
-            </button>
-          </motion.div>
-        )}
+          {/* QUESTION */}
+          {(status === "question" || status === "answered") && question && (
+            <motion.div key="question" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="w-full">
+              {/* Timer */}
+              <div className="mb-5">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="text-xs text-slate-400 uppercase tracking-wide">Vaqt</span>
+                  <div className="flex items-center gap-1 font-mono font-bold text-lg" style={{ color: timeColor }}>
+                    <Clock size={16} /> {timeLeft}s
+                  </div>
+                </div>
+                <div className="w-full h-3 rounded-full bg-white/10 overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: timeColor }}
+                    animate={{ width: `${timePercent}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
+                </div>
+              </div>
 
-      </AnimatePresence>
+              {/* Question text */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-5">
+                <p className="text-lg font-bold leading-relaxed">{question.question}</p>
+              </div>
 
-      {phase !== "join" && <SessionQRWidget roomCode={roomCode} role="student" />}
+              {/* Options */}
+              {question.options && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {question.options.map((opt, i) => {
+                    const isSelected = selectedAnswer === LETTERS[i] || selectedAnswer === opt;
+                    let border = "border-white/10";
+                    let bg = "bg-white/5 hover:bg-white/10 hover:border-white/20";
+                    if (isSelected) {
+                      if (isCorrect === null) { border = "border-[#F5A623]"; bg = "bg-[#F5A623]/10"; }
+                      else if (isCorrect) { border = "border-[#0D9373]"; bg = "bg-[#0D9373]/10"; }
+                      else { border = "border-[#E84855]"; bg = "bg-[#E84855]/10"; }
+                    }
+
+                    return (
+                      <motion.button
+                        key={i}
+                        whileHover={!selectedAnswer ? { scale: 1.02 } : {}}
+                        whileTap={!selectedAnswer ? { scale: 0.98 } : {}}
+                        onClick={() => handleAnswer(LETTERS[i])}
+                        disabled={!!selectedAnswer || status === "answered"}
+                        className={`flex items-center gap-3 p-4 rounded-xl border transition-all text-left disabled:cursor-not-allowed ${bg} border-${border}`}
+                        style={{ borderColor: isSelected ? (isCorrect === null ? "#F5A623" : isCorrect ? "#0D9373" : "#E84855") : "rgba(255,255,255,0.1)" }}
+                      >
+                        <span className="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 text-white"
+                          style={{ background: OPTION_COLORS[i] }}>
+                          {LETTERS[i]}
+                        </span>
+                        <span className="text-sm font-medium flex-1">{opt}</span>
+                        {isSelected && isCorrect !== null && (
+                          isCorrect
+                            ? <CheckCircle2 size={16} className="text-[#0D9373] shrink-0" />
+                            : <XCircle size={16} className="text-[#E84855] shrink-0" />
+                        )}
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Feedback after answering */}
+              {status === "answered" && isCorrect !== null && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`mt-4 p-4 rounded-xl border text-center ${isCorrect ? "border-[#0D9373]/30 bg-[#0D9373]/10" : "border-[#E84855]/30 bg-[#E84855]/10"}`}
+                >
+                  <div className="text-3xl mb-1">{isCorrect ? "✅" : "❌"}</div>
+                  <p className="font-bold">{isCorrect ? "To'g'ri!" : "Noto'g'ri"}</p>
+                  {lastPoints > 0 && (
+                    <p className="text-sm text-slate-300 mt-1">
+                      <Zap size={12} className="inline text-[#F5A623]" /> +{lastPoints} ball
+                      {streak > 1 && <span className="ml-2">🔥 {streak} ketma-ket</span>}
+                    </p>
+                  )}
+                </motion.div>
+              )}
+
+              {status === "answered" && isCorrect === null && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10 text-center">
+                  <p className="text-slate-400 text-sm">Natijalar kutilmoqda...</p>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+
+          {/* RESULTS */}
+          {status === "results" && (
+            <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-4">
+                <h3 className="font-bold text-[#F5A623] mb-2">✅ To&apos;g&apos;ri javob</h3>
+                <p className="font-bold text-lg">{correctAnswer}</p>
+                {explanation && <p className="text-sm text-slate-400 mt-2">{explanation}</p>}
+              </div>
+              {leaderboard.length > 0 && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                  <h3 className="font-bold mb-3 flex items-center gap-2"><Trophy size={16} className="text-amber-400" /> Top 5</h3>
+                  <div className="space-y-2">
+                    {leaderboard.map((p) => (
+                      <div key={p.rank} className={`flex items-center gap-3 p-2 rounded-xl ${p.name === nickname ? "bg-[#F5A623]/10 border border-[#F5A623]/30" : ""}`}>
+                        <span className="w-7 text-center text-sm font-bold">
+                          {p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : p.rank}
+                        </span>
+                        <span className="flex-1 text-sm font-medium">{p.name}</span>
+                        <span className="font-mono font-bold text-sm text-[#F5A623]">{p.score}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <p className="text-center text-slate-500 text-sm mt-4 animate-pulse">Keyingi savol kutilmoqda...</p>
+            </motion.div>
+          )}
+
+          {/* ENDED */}
+          {status === "ended" && (
+            <motion.div key="ended" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="w-full text-center">
+              <div className="text-6xl mb-4">🏆</div>
+              <h2 className="text-3xl font-bold mb-1">Test tugadi!</h2>
+              <p className="text-slate-400 mb-2">Yakuniy natijangiz:</p>
+              <p className="text-4xl font-bold text-[#F5A623] mb-6">{myScore} <span className="text-lg text-slate-400">ball</span></p>
+
+              {leaderboard.length > 0 && (
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-6 text-left">
+                  <h3 className="font-bold mb-4 text-center flex items-center justify-center gap-2">
+                    <Crown size={18} className="text-amber-400" /> Reyting
+                  </h3>
+                  <div className="space-y-2">
+                    {leaderboard.map((p, idx) => (
+                      <motion.div
+                        key={p.rank}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.08 }}
+                        className={`flex items-center gap-3 p-3 rounded-xl ${p.name === nickname ? "bg-[#F5A623]/10 border border-[#F5A623]/30" : "bg-white/5"}`}
+                      >
+                        <span className="text-xl w-8 text-center">
+                          {p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : `#${p.rank}`}
+                        </span>
+                        <span className="flex-1 font-medium">{p.name}</span>
+                        <span className="font-mono font-bold text-[#F5A623]">{p.score}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => router.push("/student/dashboard")}
+                className="px-8 py-4 bg-[#F5A623] text-black rounded-2xl font-bold text-lg hover:bg-[#f7b955] transition"
+              >
+                Dashboard ga qaytish
+              </button>
+            </motion.div>
+          )}
+
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

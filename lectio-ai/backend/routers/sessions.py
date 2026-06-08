@@ -1,6 +1,8 @@
 """Live Quiz sessiyalar router"""
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 from database import get_db
 from models import LiveSession, SessionParticipant, Question, Answer, Lesson, SessionStatus
 from models.user import User
@@ -83,37 +85,50 @@ async def get_session(room_code: str, db: Session = Depends(get_db)):
         "participants": [{"id": p.id, "nickname": p.nickname, "score": p.score} for p in parts]
     }
 
+class JoinSessionRequest(BaseModel):
+    nickname: str = "O'quvchi"
+    student_id: Optional[int] = None
+
+
 @router.post("/{room_code}/join")
 async def join_session(
-    room_code: str, 
-    nickname: str = "O'quvchi", 
-    student_id: int = None, 
+    room_code: str,
+    body: JoinSessionRequest,
     db: Session = Depends(get_db)
 ):
-    if not nickname or len(nickname.strip()) < 2:
+    nickname = body.nickname.strip()
+    if not nickname or len(nickname) < 2:
         raise HTTPException(400, "Laqab kamida 2 ta belgidan iborat bo'lishi kerak")
-    
+
     s = db.query(LiveSession).filter(LiveSession.room_code == room_code.upper()).first()
-    if not s: 
+    if not s:
         raise HTTPException(404, "Room topilmadi")
-    
+
+    if s.status.value not in ("waiting", "active"):
+        raise HTTPException(400, "Sessiya hali boshlanmagan yoki allaqachon tugagan")
+
+    # Duplicate nickname check
+    existing = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == s.id,
+        SessionParticipant.nickname == nickname
+    ).first()
+    if existing:
+        raise HTTPException(400, "Bu laqab allaqachon band. Boshqa laqab tanlang")
+
     try:
         p = SessionParticipant(
-            session_id=s.id, 
-            student_id=student_id, 
-            nickname=nickname.strip(), 
+            session_id=s.id,
+            student_id=body.student_id,
+            nickname=nickname,
             score=0
         )
         db.add(p)
         db.commit()
         db.refresh(p)
         return {"success": True, "participant_id": p.id, "nickname": nickname}
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Sessiyaga qo'shilishda xatolik yuz berdi"
-        )
+        raise HTTPException(status_code=500, detail="Sessiyaga qo'shilishda xatolik yuz berdi")
 
 @router.post("/{session_id}/start")
 async def start_session(
@@ -125,13 +140,14 @@ async def start_session(
     if not s: 
         raise HTTPException(404, "Sessiya topilmadi")
     
-    # Faqat sessiya yaratuvchisi boshlashi mumkin (admin ham)
     if s.professor_id != current_user.id and current_user.role.value != "admin":
-        raise HTTPException(
-            status_code=403,
-            detail="Sessiyani boshlashga ruxsat yo'q"
-        )
-    
+        raise HTTPException(status_code=403, detail="Sessiyani boshlashga ruxsat yo'q")
+
+    if s.status.value == "active":
+        return {"success": True, "status": "active", "message": "Sessiya allaqachon faol"}
+    if s.status.value == "ended":
+        raise HTTPException(400, "Bu sessiya allaqachon tugatilgan")
+
     try:
         s.status = SessionStatus.active
         s.started_at = datetime.utcnow()
@@ -198,18 +214,33 @@ async def get_results(
         "leaderboard": [{"rank": i+1, "nickname": p.nickname, "score": p.score} for i,p in enumerate(parts)]
     }
 
+class SubmitAnswerRequest(BaseModel):
+    question_id: int
+    student_answer: str
+    participant_id: int
+    time_taken: int = 5000
+
+
 @router.post("/{session_id}/answer")
 async def submit_answer(
-    session_id: int, 
-    question_id: int, 
-    student_answer: str, 
-    participant_id: int, 
-    time_taken: int = 5000, 
+    session_id: int,
+    body: SubmitAnswerRequest,
     db: Session = Depends(get_db)
 ):
+    question_id = body.question_id
+    student_answer = body.student_answer
+    participant_id = body.participant_id
+    time_taken = body.time_taken
+
     if not student_answer or len(student_answer.strip()) == 0:
         raise HTTPException(400, "Javob bo'sh bo'lishi mumkin emas")
-    
+
+    s = db.query(LiveSession).filter(LiveSession.id == session_id).first()
+    if not s:
+        raise HTTPException(404, "Sessiya topilmadi")
+    if s.status.value != "active":
+        raise HTTPException(400, "Sessiya faol emas yoki allaqachon tugagan")
+
     q = db.query(Question).filter(Question.id == question_id).first()
     if not q: 
         raise HTTPException(404, "Savol topilmadi")

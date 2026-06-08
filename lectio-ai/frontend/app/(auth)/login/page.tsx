@@ -76,7 +76,10 @@ export default function LoginPage() {
     try {
       const data = await authAPI.login(email.trim(), password);
       localStorage.setItem("lectio_token", data.access_token);
-      
+      if (data.user) {
+        localStorage.setItem("lectio_user", JSON.stringify(data.user));
+      }
+
       const role = data.user?.role || "student";
       const name = data.user?.full_name || (role === "professor" ? "Professor (Host)" : "Talaba (Mehmon)");
       

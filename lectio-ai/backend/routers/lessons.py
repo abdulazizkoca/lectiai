@@ -7,6 +7,7 @@ from models.user import User
 from services.ai_service import generate_lesson
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime
 from routers.auth import get_current_user
 
 router = APIRouter()
@@ -16,7 +17,6 @@ class LessonCreate(BaseModel):
     title: str
     topic: str
     duration_minutes: int = 45
-    professor_id: int
 
 
 class LessonResponse(BaseModel):
@@ -25,6 +25,8 @@ class LessonResponse(BaseModel):
     topic: str
     wow_fact: Optional[str]
     presentation_data: Optional[dict]
+    created_at: Optional[datetime]
+    duration_minutes: Optional[int]
 
     class Config:
         from_attributes = True
@@ -137,7 +139,7 @@ async def get_professor_lessons(
     lessons = db.query(Lesson).filter(
         Lesson.professor_id == professor_id
     ).order_by(Lesson.created_at.desc()).all()
-    return {"lessons": lessons}
+    return {"lessons": _serialize_lessons(lessons)}
 
 
 @router.get("/")
@@ -151,6 +153,21 @@ async def get_all_lessons(
             status_code=403,
             detail="Barcha darslarni ko'rish faqat admin uchun ruxsat etilgan"
         )
-    
+
     lessons = db.query(Lesson).order_by(Lesson.created_at.desc()).all()
-    return {"lessons": lessons}
+    return {"lessons": _serialize_lessons(lessons)}
+
+
+def _serialize_lessons(lessons: list) -> list:
+    return [
+        {
+            "id": l.id,
+            "title": l.title,
+            "topic": l.topic,
+            "wow_fact": l.wow_fact,
+            "duration_minutes": l.duration_minutes,
+            "created_at": l.created_at.isoformat() if l.created_at else None,
+            "presentation_data": l.presentation_data,
+        }
+        for l in lessons
+    ]

@@ -20,14 +20,15 @@ import json
 import os
 from datetime import datetime, timedelta
 from typing import Optional
-from anthropic import AsyncAnthropic
+import google.generativeai as genai
 from sqlalchemy.orm import Session
 from models.card import Card
 from models.flashcard import FlashCard
 from models.student_progress import StudentProgress
 from models.achievement import Achievement, UserAchievement
 
-anthropic_client = AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,12 +68,14 @@ Faqat JSON massiv qaytargin, boshqa matn yo'q:
 ]"""
 
     try:
-        response = await anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=2000,
-            messages=[{"role": "user", "content": prompt}]
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=2000,
+                response_mime_type="application/json"
+            )
         )
-        content = response.content[0].text.strip()
+        content = response.text.strip()
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
@@ -159,12 +162,14 @@ Faqat JSON massiv qaytargin:
 ]"""
 
     try:
-        response = await anthropic_client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=3000,
-            messages=[{"role": "user", "content": prompt}]
+        response = await gemini_model.generate_content_async(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=3000,
+                response_mime_type="application/json"
+            )
         )
-        content = response.content[0].text.strip()
+        content = response.text.strip()
         if content.startswith("```"):
             content = content.split("```")[1]
             if content.startswith("json"):
