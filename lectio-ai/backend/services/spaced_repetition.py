@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models.card import Card
 
 
@@ -29,14 +29,14 @@ def calculate_next_review(card: Card, quality: int) -> Card:
     )
 
     # Keyingi takrorlash sanasi
-    card.next_review = datetime.utcnow() + timedelta(days=card.interval)
+    card.next_review = datetime.now(timezone.utc) + timedelta(days=card.interval)
 
     return card
 
 
 def get_due_cards(db, student_id: int, limit: int = 20):
     """Bugun takrorlanishi kerak bo'lgan kartalar"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return db.query(Card).filter(
         Card.student_id == student_id,
         Card.next_review <= now

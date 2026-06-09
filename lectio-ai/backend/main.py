@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi import Request
+from fastapi import Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from routers import auth, lessons, polling, spaced_repetition, analytics
 from routers import materials, sessions, questions, camera, mentor, student_hub, creative, face_recognition
@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from rate_limiter import setup_rate_limiting
 from monitoring import monitoring_router, metrics_middleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from typing import Callable
 import os
 import logging
 
@@ -24,11 +25,23 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Sinxron engine bo'lgani uchun to'g'ridan-to'g'ri chaqiramiz
     Base.metadata.create_all(bind=engine)
     logger.info("Lectio AI backend v2.0 started successfully — http://localhost:8000")
     yield
     logger.info("Lectio AI backend shutting down cleanly")
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Xavfsizlik sarlavhalari qo'shadi"""
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
+        return response
+
 
 app = FastAPI(
     title="Lectio AI API",
@@ -47,8 +60,11 @@ app.add_middleware(
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
 )
+
+# Xavfsizlik sarlavhalari
+app.add_middleware(SecurityHeadersMiddleware)
 
 # O'lchovlar va Rate Limiting
 app.add_middleware(BaseHTTPMiddleware, dispatch=metrics_middleware)

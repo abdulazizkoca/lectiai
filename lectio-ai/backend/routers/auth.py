@@ -3,16 +3,19 @@ from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User, UserRole
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
-from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
+from pydantic import BaseModel, field_validator
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from passlib.context import CryptContext
 import os
 import hashlib
-import secrets
+import re
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
 
+logger = logging.getLogger("lectio.auth")
 router = APIRouter()
 
 # JWT sozlamalari
@@ -24,22 +27,27 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1008
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
+# ═══ Bcrypt parol hashlash ═══
+_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# ═══ Parol hashlash (passlib/bcrypt o'rniga — Python built-in) ═══
+
 def _hash_password(password: str) -> str:
-    """Parolni xavfsiz hash qilish (SHA-256 + salt)"""
-    salt = secrets.token_hex(16)
-    hashed = hashlib.sha256((salt + password).encode()).hexdigest()
-    return f"{salt}${hashed}"
+    return _pwd_context.hash(password)
 
 
 def _verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Parolni tekshirish"""
     try:
-        salt, stored_hash = hashed_password.split("$", 1)
-        new_hash = hashlib.sha256((salt + plain_password).encode()).hexdigest()
-        return new_hash == stored_hash
-    except (ValueError, AttributeError):
+        # Yangi bcrypt format
+        if hashed_password.startswith(("$2b$", "$2a$", "$2y$")):
+            return _pwd_context.verify(plain_password, hashed_password)
+        # Eski SHA-256+salt format (migration uchun)
+        parts = hashed_password.split("$", 1)
+        if len(parts) == 2:
+            salt, stored_hash = parts
+            new_hash = hashlib.sha256((salt + plain_password).encode()).hexdigest()
+            return new_hash == stored_hash
+        return False
+    except Exception:
         return False
 
 
@@ -49,7 +57,43 @@ class UserCreate(BaseModel):
     full_name: str
     password: str
     role: str = "student"
-    
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[^@\s]+@[^@\s]+\.[^@\s]+$', v):
+            raise ValueError("Noto'g'ri email format")
+        if len(v) > 254:
+            raise ValueError("Email juda uzun")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Parol kamida 6 belgidan iborat bo'lishi kerak")
+        if len(v) > 128:
+            raise ValueError("Parol juda uzun")
+        return v
+
+    @field_validator("full_name")
+    @classmethod
+    def validate_full_name(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 2:
+            raise ValueError("Ism kamida 2 belgidan iborat bo'lishi kerak")
+        if len(v) > 100:
+            raise ValueError("Ism juda uzun")
+        return v
+
+    @field_validator("role")
+    @classmethod
+    def validate_role(cls, v: str) -> str:
+        if v not in ("student", "professor", "admin"):
+            raise ValueError("Noto'g'ri rol: student, professor yoki admin bo'lishi kerak")
+        return v
+
     class Config:
         from_attributes = True
 
@@ -75,7 +119,7 @@ class Token(BaseModel):
 # Yordamchi funksiyalar
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -132,8 +176,10 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
         db.add(user)
         db.commit()
         db.refresh(user)
+        logger.info(f"New user registered: {user.email} role={user.role.value}")
     except Exception as e:
         db.rollback()
+        logger.exception(f"User registration failed for {user_data.email}")
         raise HTTPException(
             status_code=500,
             detail="Foydalanuvchi yaratishda xatolik yuz berdi"
@@ -159,14 +205,24 @@ async def register(user_data: UserCreate, db: Session = Depends(get_db)):
 @router.post("/login", response_model=Token)
 async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """Kirish — email va parol"""
-    user = db.query(User).filter(User.email == form_data.username).first()
+    user = db.query(User).filter(User.email == form_data.username.strip().lower()).first()
     if not user or not _verify_password(form_data.password, user.hashed_password):
+        logger.warning(f"Failed login attempt for: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email yoki parol noto'g'ri",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Eski SHA-256 hash → bcrypt ga ko'chirish (bir martalik migration)
+    if not user.hashed_password.startswith(("$2b$", "$2a$", "$2y$")):
+        try:
+            user.hashed_password = _hash_password(form_data.password)
+            db.commit()
+        except Exception:
+            db.rollback()
+
+    logger.info(f"Successful login: user_id={user.id}")
     access_token = create_access_token(data={"sub": user.email})
 
     return Token(

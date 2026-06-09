@@ -5,7 +5,7 @@ from database import get_db
 from models.card import Card
 from models.lesson import Lesson
 from models.user import User
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from routers.auth import get_current_user
 
 router = APIRouter()
@@ -29,7 +29,7 @@ async def get_student_analytics(
     total_cards = db.query(Card).filter(Card.student_id == student_id).count()
     
     # Bugun takrorlanishi kerak bo'lgan kartalar
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     due_cards = db.query(Card).filter(
         Card.student_id == student_id,
         Card.next_review <= now

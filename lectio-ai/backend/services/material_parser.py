@@ -197,26 +197,153 @@ def extract_text(file_path: str, ext: str) -> str:
 
 
 # ── Mavzular ajratish (AI + fallback) ────────────────────────
+
+# Sarlavha darajalari uchun tartibli patternlar (aniqlash uchun)
+_HEADING_PATTERNS = [
+    # Level 1 — asosiy bo'limlar
+    (1, re.compile(r"^(Mavzu|Bob|Bo['']lim|Qism|Глава|Раздел|Тема|Chapter|Section|Part|ТЕМА|РАЗДЕЛ|ГЛАВА)\s*[\d\s.:\-]*(.{0,100})$", re.IGNORECASE)),
+    (1, re.compile(r"^(\d{1,2})[.)]\s{1,4}(?!\d{1,2}[.)])(.{4,90})$")),           # "1. Title" (lekin "1.1." emas)
+    (1, re.compile(r"^#{1}\s(.{3,80})$")),                                           # # Title
+    # Level 2 — kichik bo'limlar
+    (2, re.compile(r"^(\d{1,2}\.\d{1,2})[.):\s]+(.{3,80})$")),                     # "1.1 Title"
+    (2, re.compile(r"^#{2}\s(.{3,80})$")),                                           # ## Title
+    (2, re.compile(r"^[а-яa-z]?\)\s(.{4,80})$")),                                  # "a) subsection"
+    # Level 3 — kichik kichik bo'limlar
+    (3, re.compile(r"^(\d{1,2}\.\d{1,2}\.\d{1,2})[.):\s]+(.{3,80})$")),           # "1.1.1 Title"
+    (3, re.compile(r"^#{3}\s(.{3,80})$")),                                           # ### Title
+]
+
+_CAPS_PAT = re.compile(r"^[А-ЯA-ZO'UG'\s]{4,80}$")
+
+
+def _build_toc(text: str) -> list:
+    """
+    Matndan Mundarija (TOC) qurib beradi.
+    Har element: {line_idx, level, title, clean_title}
+    Bu funksiya hujjat strukturasini aniq tushunadi va
+    keyingi `extract_topic_section` uchun pozitsiya ma'lumotini saqlaydi.
+    """
+    lines = text.splitlines()
+    toc = []
+    seen = set()
+
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if not stripped or len(stripped) < 3 or len(stripped) > 140:
+            continue
+
+        key = stripped.lower()[:80]
+        if key in seen:
+            continue
+
+        # Pattern bo'yicha daraja aniqlash
+        matched_level = None
+        clean_title = stripped
+
+        for level, pat in _HEADING_PATTERNS:
+            m = pat.match(stripped)
+            if m:
+                groups = [g for g in m.groups() if g and len(g.strip()) >= 2]
+                clean_title = groups[-1].strip() if groups else stripped
+                # Agar sarlavha matni juda qisqa bo'lsa — o'tkazib yubor
+                if len(clean_title) < 3:
+                    clean_title = stripped
+                matched_level = level
+                break
+
+        # ALL CAPS qatorlari (1-darajali sarlavha, ko'p hujjatlarda)
+        if matched_level is None and _CAPS_PAT.match(stripped):
+            word_count = len(stripped.split())
+            if 1 <= word_count <= 10:
+                matched_level = 1
+                clean_title = stripped.title()
+
+        # Ikkala tomondagi bo'sh qatorlar bilan o'ralgan qisqa qatorlar
+        if matched_level is None and 5 <= len(stripped) <= 80:
+            prev_empty = (i == 0 or not lines[i - 1].strip())
+            next_empty = (i >= len(lines) - 1 or not lines[i + 1].strip())
+            if prev_empty and next_empty and not stripped.endswith(".") and not stripped.endswith(","):
+                word_count = len(stripped.split())
+                if 1 <= word_count <= 8:
+                    matched_level = 2
+                    clean_title = stripped
+
+        if matched_level is not None:
+            toc.append({
+                "line_idx": i,
+                "level": matched_level,
+                "title": stripped,
+                "clean_title": clean_title,
+            })
+            seen.add(key)
+
+    return toc
+
+
+def _regex_extract_headings(text: str) -> list:
+    """Matndan sarlavhalar ro'yxatini qaytaradi — AI uchun hint sifatida."""
+    toc = _build_toc(text)
+    return [item["title"] for item in toc]
+
+
 def extract_topics_from_text(text: str) -> list:
-    """Gemini yordamida mavzular ro'yxatini chiqaradi."""
-    # Birinchi 25000 belgi (sarlavhalar ko'pincha boshida)
-    chunk = text[:25000]
+    """
+    Kuchaytirilgan multi-pass strategiya bilan mavzular ro'yxatini chiqaradi:
+    1-pass: TOC (hujjat tarkibi, eng aniq)
+    2-pass: AI + TOC hint'lari (to'ldiruvchi)
+    3-pass: Regex fallback
+    """
 
-    prompt = f"""Quyidagi ta'lim matni (darslik, metodichka yoki o'quv qo'llanma).
-Barcha mavzular / bo'limlar ro'yxatini chiqar.
+    # ── 1. TOC asosida ─────────────────────────────────────────
+    toc = _build_toc(text)
+    toc_topics = [item["title"] for item in toc]
+    logger.info(f"[topics] TOC: {len(toc_topics)} sarlavha topildi")
 
-MUHIM:
-- Har bir mavzu alohida element bo'lsin
-- Qisqa, aniq sarlavhalar (3-80 ta belgi)
-- Raqamlar yoki belgilarni olib tashlama
-- Kamida 3, ko'pi bilan 40 ta mavzu
-- Faqat JSON qaytargin
+    # Agar TOC yetarlicha kuchli bo'lsa — AI ni to'ldiruvchi sifatida ishlatamiz
+    use_ai_supplement = True
 
-Format:
-{{"topics": ["1. Kirish", "2. Asosiy tushunchalar", "3. Amaliy misol"]}}
+    if len(toc_topics) >= 20:
+        # Ko'p sarlavha — AI ni faqat tekshirish uchun ishlatamiz
+        use_ai_supplement = False
+        logger.info(f"[topics] TOC yetarli ({len(toc_topics)} ta), AI skip")
+        return toc_topics[:50]
 
-Matn:
-{chunk}"""
+    # ── 2. AI + TOC hint'lari ──────────────────────────────────
+    total_len = len(text)
+    chunk_size = 12000
+    parts = []
+    for start in [0, total_len // 4, total_len // 2, 3 * total_len // 4]:
+        parts.append(text[start : start + chunk_size])
+    combined = "\n---\n".join(dict.fromkeys(parts))[:48000]
+
+    hints_str = ""
+    if toc_topics:
+        hints_str = f"""
+Hujjatdan quyidagi sarlavhalar aniq topildi — BULARNI MAJBURIY kirgiz:
+{chr(10).join(f"  - {h}" for h in toc_topics[:30])}
+
+Ular bilan birga matndan boshqa mavzularni ham qo'sh.
+"""
+
+    prompt = f"""Sen metodichka va darsliklarni tahlil qiladigan AI mutaxassis.
+Quyidagi matn O'zbekiston universiteti metodichkasi.
+
+VAZIFA: Barcha mavzular, boblar, bo'limlar va kichik bo'limlarni to'liq ro'yxat qilib ber.
+
+QOIDALAR:
+- Har bir mavzu/bob/bo'lim alohida element — hatto kichik bo'lsa ham
+- Sarlavha/nomini AYNAN matnda qanday yozilgan bo'lsa shunday yoz
+- Raqamli tartibni SAQLAGAN holda ber (1. 1.1. 2. va h.k.)
+- Kamida 5, ko'pi bilan 50 ta element
+- FAQAT JSON qaytargin — boshqa hech narsa yo'q
+
+{hints_str}
+
+JSON format:
+{{"topics": ["1. Kirish", "1.1 Asosiy tushunchalar", "2. Amaliy qism"]}}
+
+MATN (ko'p qismlar):
+{combined}"""
 
     try:
         model = _get_model()
@@ -224,84 +351,253 @@ Matn:
             prompt,
             generation_config=genai.types.GenerationConfig(
                 response_mime_type="application/json",
-                max_output_tokens=2000,
-                temperature=0.2,
+                max_output_tokens=3000,
+                temperature=0.1,
             ),
         )
         raw = resp.text.strip()
-        # JSON tozalash
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
         data = json.loads(raw)
-        topics = data.get("topics", [])
-        if isinstance(topics, list) and len(topics) >= 2:
-            # Tozalash
-            topics = [str(t).strip() for t in topics if str(t).strip()]
-            return topics[:40]
-        logger.warning("[topics] AI bo'sh natija qaytardi, fallback ishlatilyapti")
+        ai_topics = data.get("topics", [])
+        if isinstance(ai_topics, list) and len(ai_topics) >= 2:
+            cleaned = [str(t).strip() for t in ai_topics if str(t).strip() and 3 <= len(str(t).strip()) <= 120]
+            if cleaned:
+                # TOC va AI natijalarini birlashtirish (dedup)
+                merged = list(dict.fromkeys(toc_topics + cleaned))
+                logger.info(f"[topics] AI+TOC birlashtirildi: {len(merged)} mavzu")
+                return merged[:50]
     except Exception as e:
         logger.error(f"[topics] Gemini xatosi: {e}")
+
+    # ── 3. TOC fallback ────────────────────────────────────────
+    if len(toc_topics) >= 3:
+        logger.info(f"[topics] TOC fallback: {len(toc_topics)} mavzu")
+        return toc_topics[:50]
 
     return _fallback_extract_topics(text)
 
 
 def _fallback_extract_topics(text: str) -> list:
-    """Regex asosida mavzular ajratish."""
+    """Kuchaytirilgan regex asosida mavzular ajratish."""
     lines = text.splitlines()
     topics = []
+    seen = set()
 
-    # 1. Raqamlangan ro'yxat (1. 2) 3- va h.k.)
-    num_pattern = re.compile(r"^(\d{1,2}[.):\s]\s*.{5,80})$")
+    def add(t: str):
+        k = t.lower().strip()
+        if k not in seen and len(t.strip()) >= 4:
+            seen.add(k)
+            topics.append(t.strip())
+
+    # Pass 1: Raqamlangan ro'yxat (1. 2) 3- va h.k.)
+    num_pattern = re.compile(r"^(\d{1,3}[\d.]*[.):\-]\s*.{4,100})$")
     for line in lines:
         m = num_pattern.match(line.strip())
         if m:
-            topics.append(m.group(1).strip())
-        if len(topics) >= 30:
-            break
+            add(m.group(1))
+
+    # Pass 2: Sarlavha belgilari (# ## ###)
+    for line in lines:
+        if line.startswith("#") and 4 < len(line.strip()) < 110:
+            add(line.lstrip("#").strip())
+
+    # Pass 3: KATTA HARF qatorlari (≥3 so'z)
+    for line in lines:
+        s = line.strip()
+        words = s.split()
+        if s.isupper() and 4 < len(s) < 90 and len(words) >= 2:
+            add(s.title())
+
+    # Pass 4: "Mavzu", "Bob", "Раздел", "Chapter" kalit so'zlari
+    key_pattern = re.compile(
+        r"^(Mavzu|Bob|Bo'lim|Qism|Chapter|Раздел|Тема|Part|Section)\s+\d*[.):\s]?.{0,80}$",
+        re.IGNORECASE
+    )
+    for line in lines:
+        if key_pattern.match(line.strip()) and 4 < len(line.strip()) < 110:
+            add(line.strip())
+
+    # Pass 5: ":" bilan tugagan qatorlar
+    for line in lines:
+        s = line.strip()
+        if s.endswith(":") and 4 < len(s) < 90:
+            add(s[:-1])
 
     if len(topics) >= 3:
-        return topics
+        return topics[:50]
 
-    # 2. Sarlavha belgilari (# ## ###)
-    for line in lines:
-        if line.startswith("#") and 5 < len(line.strip()) < 100:
-            topics.append(line.lstrip("#").strip())
-        if len(topics) >= 30:
-            break
-
-    if len(topics) >= 2:
-        return topics
-
-    # 3. KATTA HARF bilan yozilgan qatorlar
-    for line in lines:
-        stripped = line.strip()
-        if stripped.isupper() and 5 < len(stripped) < 80:
-            topics.append(stripped.title())
-        if len(topics) >= 20:
-            break
-
-    if len(topics) >= 2:
-        return topics
-
-    # 4. ":" bilan tugagan qatorlar
-    for line in lines:
-        stripped = line.strip()
-        if stripped.endswith(":") and 5 < len(stripped) < 80:
-            topics.append(stripped[:-1])
-        if len(topics) >= 20:
-            break
+    # Pass 6: Bo'sh bo'lmagan qisqa qatorlar (sarlavha bo'lishi mumkin)
+    short_lines = [l.strip() for l in lines if 5 < len(l.strip()) < 80 and not l.strip().endswith(".")]
+    for l in short_lines[:20]:
+        add(l)
 
     if topics:
-        return topics
+        return topics[:50]
 
-    # 5. Birinchi 10 ta bo'sh bo'lmagan qatorni mavzu sifatida
-    first_lines = [l.strip() for l in lines if l.strip() and len(l.strip()) > 5][:10]
+    # Oxirgi chora: birinchi 15 ta qator
+    first_lines = [l.strip() for l in lines if l.strip() and len(l.strip()) > 4][:15]
     if first_lines:
         return first_lines
 
     raise RuntimeError(
-        "Mavzular topilmadi. Matnda sarlavha yoki raqamlangan ro'yxat bo'lishi kerak."
+        "Mavzular topilmadi. Hujjatda sarlavha yoki raqamlangan bo'limlar bo'lishi kerak."
     )
+
+
+# ── Mavzuga tegishli asl matnni ajratish (TOC asosida) ───────
+def _topic_match_score(topic_name: str, entry_title: str) -> float:
+    """Mavzu nomi va TOC elementi qanchalik mos kelishini hisoblaydi (0.0–1.0)."""
+    # Raqamlarni tozalash
+    def _clean(s: str) -> str:
+        return re.sub(r"^\d+[\d.]*[.):\-\s]+", "", s).strip().lower()
+
+    tc = _clean(topic_name)
+    ec = _clean(entry_title)
+
+    # To'liq mos kelish
+    if tc == ec:
+        return 1.0
+
+    # Prefix mos kelish (biri boshqasining prefiksi)
+    if tc.startswith(ec[:min(15, len(ec))]) or ec.startswith(tc[:min(15, len(tc))]):
+        return 0.85
+
+    # So'zlar bo'yicha mos kelish
+    tc_words = set(w for w in tc.split() if len(w) >= 4)
+    ec_words = set(w for w in ec.split() if len(w) >= 4)
+    if tc_words and ec_words:
+        overlap = len(tc_words & ec_words)
+        score = overlap / max(len(tc_words), len(ec_words))
+        return score
+
+    # Bitta qisqa so'z moslik
+    if tc and ec and (tc in ec or ec in tc):
+        return 0.6
+
+    return 0.0
+
+
+def extract_topic_section(text: str, topic_name: str) -> str:
+    """
+    TOC asosida berilgan mavzuga tegishli aniq matn bo'limini ajratadi.
+    Strategiya:
+    1. TOC quriladi — har bir sarlavhaning qator raqami va darajasi aniqlanadi
+    2. Mavzu nomi bo'yicha eng mos TOC elementi topiladi
+    3. O'sha darajadagi keyingi sarlavhagacha matn olinadi
+    4. Matn 8000 belgiga cheklanadi
+    """
+    toc = _build_toc(text)
+    lines = text.splitlines()
+
+    if not toc:
+        # TOC yo'q — oddiy qidiruv
+        return _extract_by_keyword(text, topic_name)
+
+    # Eng mos TOC elementini topish
+    best_idx = -1
+    best_score = 0.0
+    for i, entry in enumerate(toc):
+        score = _topic_match_score(topic_name, entry["title"])
+        if score > best_score:
+            best_score = score
+            best_idx = i
+
+    if best_idx == -1 or best_score < 0.2:
+        return _extract_by_keyword(text, topic_name)
+
+    start_entry = toc[best_idx]
+    start_line = start_entry["line_idx"]
+    level = start_entry["level"]
+
+    # O'sha yoki yuqori darajadagi keyingi sarlavhani topish
+    end_line = len(lines)
+    for j in range(best_idx + 1, len(toc)):
+        if toc[j]["level"] <= level:
+            end_line = toc[j]["line_idx"]
+            break
+
+    section = "\n".join(lines[start_line:end_line]).strip()
+
+    if len(section) > 8000:
+        section = section[:8000].rsplit("\n", 1)[0] + "\n\n[...matn davom etmoqda...]"
+
+    return section or _extract_by_keyword(text, topic_name)
+
+
+def _extract_by_keyword(text: str, topic_name: str) -> str:
+    """TOC ishlamasa — kalit so'zlar bo'yicha qidiruv (fallback)."""
+    clean_topic = re.sub(r"^\d+[\d.]*[.):\-\s]+", "", topic_name).strip()
+    topic_words = [w.lower() for w in re.split(r"[\s,;]+", clean_topic) if len(w) >= 4]
+
+    if not topic_words:
+        return text[:3000]
+
+    lines = text.splitlines()
+    best_score = 0
+    start_idx = 0
+
+    for i, line in enumerate(lines):
+        line_lower = line.lower()
+        score = sum(1 for w in topic_words if w in line_lower)
+        if score > best_score:
+            best_score = score
+            start_idx = i
+
+    end_idx = min(len(lines), start_idx + 200)
+    heading_pat = re.compile(r"^(\d{1,3}[.):\-]|#{1,4}\s)")
+    for j in range(start_idx + 4, min(start_idx + 200, len(lines))):
+        line_j = lines[j].strip()
+        if line_j and heading_pat.match(line_j):
+            if not any(w in line_j.lower() for w in topic_words[:2]):
+                end_idx = j
+                break
+
+    section = "\n".join(lines[start_idx:end_idx]).strip()
+    if len(section) > 6000:
+        section = section[:6000].rsplit("\n", 1)[0] + "\n\n[...matn davomi...]"
+    return section or f"[{topic_name} bo'yicha matn topilmadi]"
+
+
+# ── PPTX → Slaydlar ro'yxati ──────────────────────────────────
+def parse_pptx_to_slides(file_path: str) -> list:
+    """PPTX prezentatsiyasini slaydlar ro'yxatiga aylantiradi."""
+    if not HAS_PPTX:
+        raise RuntimeError("python-pptx o'rnatilmagan. `pip install python-pptx` qiling.")
+
+    prs = Presentation(file_path)
+    slides = []
+
+    for i, slide in enumerate(prs.slides, 1):
+        title = ""
+        content_parts = []
+
+        for shape in slide.shapes:
+            if not hasattr(shape, "text") or not shape.text.strip():
+                continue
+            shape_text = shape.text.strip()
+            is_title = False
+            if hasattr(shape, "placeholder_format") and shape.placeholder_format:
+                if shape.placeholder_format.idx in (0, 1):
+                    is_title = True
+            if is_title and not title:
+                title = shape_text
+            elif shape_text != title:
+                content_parts.append(shape_text)
+
+        if not title and not content_parts:
+            continue
+
+        slides.append({
+            "id": i,
+            "slide_number": i,
+            "title": title or f"Slayd {i}",
+            "content": "\n".join(content_parts),
+            "notes": "",
+            "duration_min": 5,
+        })
+
+    return slides
 
 
 # ── To'liq dars yaratish (AI) ────────────────────────────────
@@ -310,12 +606,29 @@ def synthesize_full_lesson(text: str, topic_name: str, professor_id: int) -> dic
     Berilgan matn va mavzu bo'yicha to'liq dars paketi yaratadi.
     Qaytaruvchi struktura create-lesson sahifasi bilan mos keladi.
     """
-    # Mavzuga oid qismni ajratish (first 60k chars)
-    chunk = text[:60000]
+    # Mavzuga oid qismni ajratish — ko'proq matn
+    total_len = len(text)
+    # Mavzuni matnda qidiramiz
+    topic_lower = topic_name.lower()
+    topic_pos = text.lower().find(topic_lower[:20]) if len(topic_lower) >= 5 else -1
+    if topic_pos > 1000:
+        # Mavzu atrofidagi matnni olish
+        start = max(0, topic_pos - 500)
+        chunk = text[start : start + 70000]
+    else:
+        chunk = text[:70000]
 
-    prompt = f"""Sen professional O'zbekiston universiteti o'qituvchisi va AI usto darslik yaratuvchisan.
+    prompt = f"""Sen professional O'zbekiston universiteti professor-o'qituvchisi va AI dars yaratuvchisan.
 
-VAZIFA: Quyidagi matndan "{topic_name}" mavzusiga tegishli qismni topib, mukammal dars paketi yarat.
+VAZIFA: Quyidagi metodichka matni asosida "{topic_name}" mavzusidan TO'LIQ VA BATAFSIL dars paketi yarat.
+
+QOIDALAR:
+- Matndan haqiqiy ma'lumot ol, o'ylab chiqarma
+- O'ZBEK tilida yaz (termin/atamalar ruscha/inglizcha bo'lishi mumkin)
+- Kamida 5-6 ta slayd yarat (har biri 3-5 gap)
+- Kamida 5 ta quiz savoli
+- Kamida 5 ta flashcard
+- Barcha izohlar batafsil bo'lsin
 
 MATN:
 {chunk}
@@ -338,32 +651,48 @@ JSON strukturasi (barcha maydonlar to'ldirilishi SHART):
       "id": 1,
       "slide_number": 1,
       "title": "Kirish: {topic_name}",
-      "content": "Bu slaydning batafsil mazmuni. Kamida 3 gap.",
-      "notes": "Professor uchun eslatma: bu qismda nima aytish kerak.",
+      "content": "Bugungi mavzu: {topic_name}. Dars maqsadlari va rejasi. Ushbu darsda nimalarga e'tibor beramiz va talabalar nimalarni o'rganadi.",
+      "notes": "Talabalarni salomlang va mavzu bilan tanishtiring. Dars maqsadlarini e'lon qiling.",
       "duration_min": 5
     }},
     {{
       "id": 2,
       "slide_number": 2,
-      "title": "Asosiy tushunchalar",
-      "content": "Mavzuning asosiy tushunchalari va ta'riflari.",
-      "notes": "Misol keltiring.",
+      "title": "Nazariy asoslar va ta'riflar",
+      "content": "Mavzuning asosiy nazariy tushunchalari, ta'riflar va terminologiya. Muhim atamalar va ularning ma'nosi.",
+      "notes": "Ta'riflarni yozma tarzda ko'rsating. Talabalar daftarlariga yozdirsin.",
       "duration_min": 10
     }},
     {{
       "id": 3,
       "slide_number": 3,
-      "title": "Amaliy misol",
-      "content": "Amaliy misol va tahlil.",
-      "notes": "Talabalardan savol so'rang.",
+      "title": "Asosiy qoidalar va prinsiplar",
+      "content": "Mavzuning asosiy qoidalari, prinsiplari va formulalari. Nazariy asoslar chuqurroq ko'rib chiqiladi.",
+      "notes": "Formulalar va qoidalarni taxtaga yozing. Misol ko'rsating.",
       "duration_min": 10
     }},
     {{
       "id": 4,
       "slide_number": 4,
-      "title": "Mustahkamlash",
-      "content": "Asosiy fikrlar xulosasi va test savollari.",
-      "notes": "Quiz vaqti.",
+      "title": "Amaliy misollar",
+      "content": "Mavzuni amalda qo'llash. Konkret misollar, masalalar va ularning yechimlari. Haqiqiy hayotdagi qo'llanish holatlari.",
+      "notes": "Talabalar bilan birga misol yeching. Savollar bering.",
+      "duration_min": 12
+    }},
+    {{
+      "id": 5,
+      "slide_number": 5,
+      "title": "Qiyinchiliklar va xatolar",
+      "content": "Ko'p uchraydigan xatolar va qiyinchiliklar. Ularni qanday bartaraf etish mumkin. Eslatmalar va ogohlantirishlar.",
+      "notes": "Talabalar ko'pincha shu joylarda adashadi — alohida e'tibor bering.",
+      "duration_min": 8
+    }},
+    {{
+      "id": 6,
+      "slide_number": 6,
+      "title": "Xulosa va mustahkamlash",
+      "content": "Bugungi dars xulosasi. Asosiy fikrlar va muhim nuqtalar. Keyingi dars mavzusi va uyga vazifa.",
+      "notes": "Quiz o'tkazing. Uyga vazifani bering. Savollarga javob bering.",
       "duration_min": 5
     }}
   ],
@@ -652,6 +981,9 @@ def run_generate_lesson(material_id: str, professor_id: int, topic_name: str, te
 
         final_json = synthesize_full_lesson(text, topic_name, professor_id)
 
+        # Metodichkadan asl mavzu matnini qo'shish (referat uchun)
+        final_json["original_topic_text"] = extract_topic_section(text, topic_name)
+
         update_progress(lesson_key, "saving", 80, "Dars DB va xotiraga saqlanmoqda...")
         time.sleep(0.3)
 
@@ -685,7 +1017,7 @@ def _save_to_db(lesson_json: dict, topic_name: str, professor_id: int):
         from models.lesson import Lesson
         from models.flashcard import FlashCard
         from models.question import Question, QuestionType
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         db = SessionLocal()
         try:
@@ -700,7 +1032,7 @@ def _save_to_db(lesson_json: dict, topic_name: str, professor_id: int):
                 content=json.dumps(lesson_json, ensure_ascii=False),
                 wow_fact=wow_fact,
                 professor_id=professor_id,
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
             db.add(lesson)
             db.commit()
@@ -720,7 +1052,7 @@ def _save_to_db(lesson_json: dict, topic_name: str, professor_id: int):
                     ease_factor=2.5,
                     interval=1,
                     repetitions=0,
-                    next_review=datetime.utcnow(),
+                    next_review=datetime.now(timezone.utc),
                 )
                 db.add(fc)
 

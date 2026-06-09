@@ -107,9 +107,9 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
         animate={{ width: collapsed ? 80 : 260 }}
         className={`fixed inset-y-0 left-0 md:sticky md:top-0 h-[100dvh] shrink-0 bg-white/80 dark:bg-black/45 backdrop-blur-md border-r border-black/5 dark:border-white/5 flex flex-col transition-transform duration-300 z-[60] md:z-20 ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
-      <button 
+      <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-8 w-6 h-6 bg-slate-800 border border-slate-700 rounded-full flex items-center justify-center text-white hover:bg-[#F5A623] hover:text-black transition-colors z-50"
+        className="absolute -right-3 top-8 w-6 h-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full flex items-center justify-center text-slate-600 dark:text-white hover:bg-[#F5A623] hover:text-black transition-colors z-50 shadow-sm"
         aria-label={t.hideMenu}
       >
         {collapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
@@ -122,7 +122,7 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
             className="shrink-0 transition-transform duration-300 group-hover:scale-110"
           />
           {!collapsed && (
-            <span className="font-display font-bold text-xl tracking-wide text-white group-hover:text-[#F5A623] transition-colors">
+            <span className="font-display font-bold text-xl tracking-wide text-slate-900 dark:text-white group-hover:text-[#F5A623] transition-colors">
               Lectio AI
             </span>
           )}
@@ -135,7 +135,7 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
         {navItems.map((item, idx) => {
           if (idx === 5 && !collapsed) return (
             <React.Fragment key={item.name}>
-              <div className="h-px bg-slate-800 my-4 mx-3" />
+              <div className="h-px bg-slate-200 dark:bg-slate-800 my-4 mx-3" />
               <div className="px-3 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">{t.management}</div>
               <NavItem item={item} collapsed={collapsed} isActive={pathname === item.href} />
             </React.Fragment>
@@ -144,20 +144,20 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
         })}
         
         <div className="mt-auto pt-4">
-          <div className="h-px bg-slate-800 my-4 mx-3" />
-          <Link href="/professor/upgrade" className={`flex items-center px-3 py-3 rounded-xl transition-colors hover:bg-[#7B2FBE]/10 text-slate-300 hover:text-[#7B2FBE] ${collapsed ? 'justify-center' : ''}`}>
+          <div className="h-px bg-slate-200 dark:bg-slate-800 my-4 mx-3" />
+          <Link href="/professor/upgrade" className={`flex items-center px-3 py-3 rounded-xl transition-colors hover:bg-[#7B2FBE]/10 text-slate-500 dark:text-slate-300 hover:text-[#7B2FBE] ${collapsed ? 'justify-center' : ''}`}>
             <Crown size={20} className="shrink-0 text-[#7B2FBE]" />
             {!collapsed && <span className="ml-3 font-bold text-sm">{t.goPremium}</span>}
           </Link>
         </div>
       </nav>
 
-      <div className="p-4 border-t border-slate-800 shrink-0">
-        <Link href="/professor/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-white/5 transition-colors group">
+      <div className="p-4 border-t border-slate-200 dark:border-slate-800 shrink-0">
+        <Link href="/professor/profile" className="flex items-center gap-3 p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/5 transition-colors group">
           <Avatar initials={userInitials} size="sm" status="online" className="shrink-0" />
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white truncate group-hover:text-[#F5A623] transition-colors">{userName}</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-white truncate group-hover:text-[#F5A623] transition-colors">{userName}</p>
               <p className="text-xs text-slate-500 truncate">{t.basicPlan}</p>
             </div>
           )}
@@ -179,7 +179,7 @@ function NavItem({ item, collapsed, isActive }: { item: any, collapsed: boolean,
       )}
       <div className={`
         flex items-center px-3 py-2.5 rounded-xl transition-all duration-200
-        ${isActive ? 'bg-[#F5A623]/10 text-[#F5A623]' : 'text-slate-400 hover:bg-white/5 hover:text-white'}
+        ${isActive ? 'bg-[#F5A623]/10 text-[#F5A623]' : 'text-slate-500 dark:text-slate-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white'}
         ${item.highlight ? 'text-[#F5A623] hover:text-[#F5A623] hover:bg-[#F5A623]/10' : ''}
         ${collapsed ? 'justify-center' : ''}
       `}>
@@ -197,7 +197,7 @@ function NavItem({ item, collapsed, isActive }: { item: any, collapsed: boolean,
       </div>
       
       {collapsed && (
-        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 bg-[#18181F] border border-slate-700 text-white text-xs px-3 py-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl font-bold flex items-center gap-2">
+        <div className="absolute left-full top-1/2 -translate-y-1/2 ml-4 bg-white dark:bg-[#18181F] border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white text-xs px-3 py-2 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl font-bold flex items-center gap-2">
           {item.name}
           {item.badge && <span className="bg-slate-700 px-1.5 py-0.5 rounded text-[10px]">{item.badge}</span>}
           {item.live && <span className="w-1.5 h-1.5 bg-[#E84855] rounded-full animate-pulse" />}

@@ -150,6 +150,13 @@ export default function MaterialsPage() {
       setStage("error"); return;
     }
 
+    const token = localStorage.getItem("lectio_token") || "";
+    if (!token || token.startsWith("mock_")) {
+      setErrorMsg("auth_required");
+      setStage("error");
+      return;
+    }
+
     setFileName(file.name); setFileExt(ext);
     setFileSize((file.size / 1024 / 1024).toFixed(2) + " MB");
     setStage("uploading"); setProgress(5);
@@ -159,10 +166,9 @@ export default function MaterialsPage() {
       const fd = new FormData();
       fd.append("file", file);
 
-      const token = localStorage.getItem("lectio_token") || "";
       const res = await fetch(
         `${API_URL}/api/materials/upload`,
-        { method: "POST", body: fd, headers: token ? { Authorization: `Bearer ${token}` } : {} }
+        { method: "POST", body: fd, headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (!res.ok) {
@@ -1032,21 +1038,43 @@ export default function MaterialsPage() {
           <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg mx-auto">
             <div className="rounded-2xl border border-[#E84855]/25 bg-[#E84855]/5 p-8 text-center">
               <AlertCircle size={48} className="text-[#E84855] mx-auto mb-4" />
-              <h2 className="text-xl font-bold mb-2 text-[#E84855]">Xatolik yuz berdi</h2>
-              <p className="text-slate-300 text-sm mb-2 leading-relaxed bg-white/5 rounded-xl p-3 font-mono text-left">
-                {errorMsg || "Noma'lum xatolik yuz berdi"}
-              </p>
-              <p className="text-slate-500 text-xs mb-6">Backend ishlayaptimi? GEMINI_API_KEY sozlanganmi?</p>
-              <div className="flex gap-3">
-                <button onClick={reset}
-                  className="flex-1 py-3 rounded-xl bg-[#E84855] text-white font-bold hover:bg-red-600 transition flex items-center justify-center gap-2">
-                  <RefreshCw size={14} /> Qayta urinish
-                </button>
-                <Link href="/professor/dashboard"
-                  className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold hover:bg-white/10 transition flex items-center justify-center">
-                  Dashboard
-                </Link>
-              </div>
+              {errorMsg === "auth_required" || errorMsg?.includes("Token") || errorMsg?.includes("token") ? (
+                <>
+                  <h2 className="text-xl font-bold mb-2 text-[#F5A623]">Kirish talab qilinadi</h2>
+                  <p className="text-slate-300 text-sm mb-2 leading-relaxed bg-white/5 rounded-xl p-3">
+                    Materiallar sahifasidan foydalanish uchun tizimga kirishingiz kerak. Demo rejimida bu funksiya ishlamaydi.
+                  </p>
+                  <p className="text-slate-500 text-xs mb-6">Professor akkauntingiz bilan kirganingizdan so&apos;ng fayl yuklashingiz mumkin.</p>
+                  <div className="flex gap-3">
+                    <Link href="/login"
+                      className="flex-1 py-3 rounded-xl bg-[#F5A623] text-black font-bold hover:bg-amber-400 transition flex items-center justify-center gap-2">
+                      Tizimga kirish
+                    </Link>
+                    <Link href="/professor/dashboard"
+                      className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold hover:bg-white/10 transition flex items-center justify-center">
+                      Dashboard
+                    </Link>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-xl font-bold mb-2 text-[#E84855]">Xatolik yuz berdi</h2>
+                  <p className="text-slate-300 text-sm mb-2 leading-relaxed bg-white/5 rounded-xl p-3 font-mono text-left">
+                    {errorMsg || "Noma'lum xatolik yuz berdi"}
+                  </p>
+                  <p className="text-slate-500 text-xs mb-6">Backend ishlayaptimi? GEMINI_API_KEY sozlanganmi?</p>
+                  <div className="flex gap-3">
+                    <button onClick={reset}
+                      className="flex-1 py-3 rounded-xl bg-[#E84855] text-white font-bold hover:bg-red-600 transition flex items-center justify-center gap-2">
+                      <RefreshCw size={14} /> Qayta urinish
+                    </button>
+                    <Link href="/professor/dashboard"
+                      className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold hover:bg-white/10 transition flex items-center justify-center">
+                      Dashboard
+                    </Link>
+                  </div>
+                </>
+              )}
             </div>
           </motion.div>
         )}

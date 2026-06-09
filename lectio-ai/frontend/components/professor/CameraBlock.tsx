@@ -445,20 +445,24 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
   useEffect(() => () => deactivate(), [deactivate]);
 
   return (
-    <section className="overflow-hidden rounded-2xl border border-white/15 bg-slate-900/50 backdrop-blur-md text-slate-100 shadow-xl shadow-black/20">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 bg-white/5 px-5 py-4">
-        <div>
-          <h3 className="text-sm font-bold text-white uppercase tracking-wider">AI Diqqat Kuzatuvi</h3>
-          <p className="text-xs text-slate-400">
-            {sessionId ? `Jonli sessiya faol: ${sessionId}` : "Barqaror FaceDetection pipeline: yuz, ishonch, joylashuv va diqqat tahlili"}
-          </p>
+    <section className="overflow-hidden rounded-2xl border border-black/10 dark:border-white/15 bg-white/95 dark:bg-slate-900/50 backdrop-blur-md text-slate-800 dark:text-slate-100 shadow-xl shadow-black/10 dark:shadow-black/20">
+      <div className="flex items-center justify-between gap-3 border-b border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] px-4 py-3">
+        <div className="flex items-center gap-2">
+          {isOn ? (
+            <span className="flex items-center gap-1.5 text-xs font-bold text-[#0D9373]">
+              <span className="w-2 h-2 rounded-full bg-[#0D9373] animate-pulse" />
+              Kamera Faol · {stats.students} yuz · {stats.avgAttention}% diqqat
+            </span>
+          ) : (
+            <span className="text-sm font-bold text-slate-800 dark:text-white">AI Diqqat Kuzatuvi</span>
+          )}
         </div>
         <button
           onClick={isOn ? deactivate : activate}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition active:scale-95 ${isOn ? "bg-[#E84855]/20 text-[#E84855] border border-[#E84855]/30 hover:bg-[#E84855] hover:text-white" : "bg-[#F5A623] text-black hover:bg-[#e8941a] shadow-[0_2px_10px_rgba(245,166,35,0.18)]"}`}
+          className={`inline-flex items-center gap-2 rounded-xl px-3 py-1.5 text-xs font-bold transition active:scale-95 ${isOn ? "bg-[#E84855]/20 text-[#E84855] border border-[#E84855]/30 hover:bg-[#E84855] hover:text-white" : "bg-[#F5A623] text-black hover:bg-[#e8941a]"}`}
         >
-          {isOn ? <CameraOff size={16} /> : <Camera size={16} />}
-          {isOn ? "O'chirish" : "Kamerani yoqish"}
+          {isOn ? <CameraOff size={14} /> : <Camera size={14} />}
+          {isOn ? "O'chirish" : "Yoqish"}
         </button>
       </div>
 
@@ -467,19 +471,16 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
         <canvas ref={canvasRef} width={CANVAS_WIDTH} height={CANVAS_HEIGHT} className="block h-full w-full" />
 
         {!isOn && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-slate-950/95 text-center p-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#F5A623]/10 flex items-center justify-center text-[#F5A623] mb-2 border border-[#F5A623]/20">
-              <Camera size={32} />
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-slate-100/98 dark:bg-slate-950/95 text-center p-6">
+            <div className="w-14 h-14 rounded-2xl bg-[#F5A623]/10 flex items-center justify-center text-[#F5A623] border border-[#F5A623]/20">
+              <Camera size={28} />
             </div>
             <div>
-              <p className="text-lg font-bold text-white font-display">Kamera Tizimi Tayyor</p>
-              <p className="mt-1 text-xs text-slate-400 max-w-md mx-auto">
-                Kamerani yoqing: tizim yuzlarni belgilaydi, diqqat darajasini hisoblaydi va past diqqatni ogohlantiradi.
-              </p>
+              <p className="text-base font-bold text-slate-800 dark:text-white">Kamera o&apos;chirilgan</p>
+              <p className="mt-1 text-xs text-slate-500">Yuzlar va diqqatni kuzatish uchun yoqing</p>
             </div>
-            <button onClick={activate} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-br from-[#F5A623] to-[#e8941a] px-6 py-3 text-sm font-bold text-black shadow-[0_2px_10px_rgba(245,166,35,0.18)] hover:scale-105 active:scale-95 transition-all">
-              <Camera size={16} />
-              Kamerani Yoqish
+            <button onClick={activate} className="inline-flex items-center gap-2 rounded-xl bg-[#F5A623] px-5 py-2.5 text-sm font-bold text-black hover:bg-[#e8941a] active:scale-95 transition-all">
+              <Camera size={15} /> Kamerani Yoqish
             </button>
           </div>
         )}
@@ -497,26 +498,30 @@ export const CameraBlock = React.memo(function CameraBlock({ sessionId }: { sess
         )}
       </div>
 
-      <div className="grid gap-px bg-white/15 md:grid-cols-5">
-        <StatCard icon={<Users size={18} />} label="Yuzlar" value={String(stats.students)} hint={`${MAX_CLASS_FACES} tagacha`} />
-        <StatCard icon={<Gauge size={18} />} label="Diqqat" value={`${stats.avgAttention}%`} hint={`${stats.engaged} yaxshi, ${stats.softWarn} o'rta, ${stats.distracted} past`} />
-        <StatCard icon={<Eye size={18} />} label="Birinchi yuz" value={stats.conf} hint={`x ${stats.x} y ${stats.y}`} />
-        <StatCard icon={<Activity size={18} />} label="Tezlik" value={`${stats.fps || "--"} FPS`} hint={`detect ${stats.latency}ms`} />
-        <StatCard icon={<Camera size={18} />} label="Model" value={stats.students > 0 ? "Faol" : "Kutilmoqda"} hint={stats.model} />
+      <div className="grid gap-px bg-black/8 dark:bg-white/10 grid-cols-3">
+        <StatCard icon={<Users size={16} />} label="Yuzlar" value={String(stats.students)}
+          hint={`${stats.engaged}✓ ${stats.softWarn}⚡ ${stats.distracted}✗`}
+          color={stats.students > 0 ? "#0D9373" : undefined} />
+        <StatCard icon={<Gauge size={16} />} label="Diqqat" value={stats.students > 0 ? `${stats.avgAttention}%` : "—"}
+          hint={stats.students > 0 ? (stats.avgAttention >= 70 ? "Yaxshi" : stats.avgAttention >= 50 ? "O'rta" : "Past diqqat") : "Kamera off"}
+          color={stats.students > 0 ? (stats.avgAttention >= 70 ? "#0D9373" : stats.avgAttention >= 50 ? "#F5A623" : "#E84855") : undefined} />
+        <StatCard icon={<Activity size={16} />} label="Status" value={isOn ? "Faol" : "Off"}
+          hint={isOn ? `${stats.fps || "--"} FPS` : "Kamerani yoqing"}
+          color={isOn ? "#F5A623" : undefined} />
       </div>
     </section>
   );
 });
 
-function StatCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
+function StatCard({ icon, label, value, hint, color }: { icon: React.ReactNode; label: string; value: string; hint: string; color?: string }) {
   return (
-    <div className="bg-slate-950/45 p-4 backdrop-blur-sm">
-      <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-300">
-        <span className="text-[#F5A623]">{icon}</span>
+    <div className="bg-slate-100/80 dark:bg-slate-950/40 p-3 backdrop-blur-sm">
+      <div className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+        <span style={{ color: color || "#F5A623" }}>{icon}</span>
         {label}
       </div>
-      <div className="truncate text-xl font-black text-white">{value}</div>
-      <div className="mt-1 truncate text-xs text-slate-300">{hint}</div>
+      <div className="truncate text-lg font-black text-slate-800 dark:text-white" style={color ? { color } : undefined}>{value}</div>
+      <div className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">{hint}</div>
     </div>
   );
 }

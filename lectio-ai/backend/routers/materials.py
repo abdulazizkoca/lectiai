@@ -14,7 +14,8 @@ from services.material_parser import (
     start_generate_lesson,
     get_progress,
     get_topics,
-    get_lesson_result
+    get_lesson_result,
+    parse_pptx_to_slides,
 )
 
 router = APIRouter()
@@ -216,3 +217,52 @@ async def lesson_result(material_id: str):
             raise HTTPException(status_code=500, detail=progress.get("message", "Dars yaratishda xatolik."))
         raise HTTPException(status_code=404, detail="Dars natijasi hali tayyor emas.")
     return data
+
+
+# ─────────────────────────────────────────────────────────────
+# POST /parse-presentation  —  Parse PPTX file into slides
+# ─────────────────────────────────────────────────────────────
+@router.post("/parse-presentation")
+async def parse_presentation(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """PPTX prezentatsiyasini slaydlar ro'yxatiga aylantiradi (AI ishlatmaydi)."""
+    if current_user.role.value not in ("professor", "admin"):
+        raise HTTPException(status_code=403, detail="Faqat professorlar fayl yuklashi mumkin")
+
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    if ext != ".pptx":
+        raise HTTPException(status_code=400, detail="Faqat PPTX fayli qabul qilinadi")
+
+    file_bytes = await file.read()
+    if len(file_bytes) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="Fayl hajmi 50MB dan oshmasligi kerak")
+    if len(file_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Fayl bo'sh")
+
+    temp_path = os.path.join(_temp_dir(), f"{uuid.uuid4()}{ext}")
+    try:
+        with open(temp_path, "wb") as f:
+            f.write(file_bytes)
+
+        slides = parse_pptx_to_slides(temp_path)
+
+        if not slides:
+            raise HTTPException(status_code=400, detail="PPTX faylidan slaydlar topilmadi")
+
+        return {
+            "slides": slides,
+            "count": len(slides),
+            "filename": file.filename,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Fayl parse qilishda xatolik: {str(e)}")
+    finally:
+        try:
+            if os.path.exists(temp_path):
+                os.remove(temp_path)
+        except Exception:
+            pass

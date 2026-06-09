@@ -6,14 +6,28 @@ from typing import Optional
 from database import get_db
 from models import LiveSession, SessionParticipant, Question, Answer, Lesson, SessionStatus
 from models.user import User
-from datetime import datetime
-import random, string
+from datetime import datetime, timezone
+import random, string, re
+import logging
 from routers.auth import get_current_user
 
+logger = logging.getLogger("lectio.sessions")
 router = APIRouter()
 
 def _gen_code():
     return f"LECTIO-{''.join(random.choices(string.ascii_uppercase+string.digits,k=4))}"
+
+
+def _sanitize_nickname(nickname: str) -> str:
+    """Laqabni tozalash va tekshirish"""
+    nickname = nickname.strip()
+    if not nickname or len(nickname) < 2:
+        raise HTTPException(400, "Laqab kamida 2 ta belgidan iborat bo'lishi kerak")
+    if len(nickname) > 50:
+        raise HTTPException(400, "Laqab 50 belgidan oshmasligi kerak")
+    if not re.match(r'^[\w\s\-\.\']+$', nickname, re.UNICODE):
+        raise HTTPException(400, "Laqabda ruxsatsiz belgilar bor")
+    return nickname
 
 @router.post("/create")
 async def create_session(
@@ -96,9 +110,7 @@ async def join_session(
     body: JoinSessionRequest,
     db: Session = Depends(get_db)
 ):
-    nickname = body.nickname.strip()
-    if not nickname or len(nickname) < 2:
-        raise HTTPException(400, "Laqab kamida 2 ta belgidan iborat bo'lishi kerak")
+    nickname = _sanitize_nickname(body.nickname)
 
     s = db.query(LiveSession).filter(LiveSession.room_code == room_code.upper()).first()
     if not s:
@@ -150,7 +162,7 @@ async def start_session(
 
     try:
         s.status = SessionStatus.active
-        s.started_at = datetime.utcnow()
+        s.started_at = datetime.now(timezone.utc)
         db.commit()
         return {"success": True, "status": "active"}
     except Exception as e:
@@ -179,7 +191,7 @@ async def end_session(
     
     try:
         s.status = SessionStatus.ended
-        s.ended_at = datetime.utcnow()
+        s.ended_at = datetime.now(timezone.utc)
         db.commit()
         return {"success": True, "status": "ended"}
     except Exception as e:

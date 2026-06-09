@@ -34,7 +34,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
 
     return (
       <div className={`relative inline-block ${sizes[size]} ${className}`} ref={ref} {...props}>
-        <div className="w-full h-full rounded-full bg-[#18181F] border border-white/10 flex items-center justify-center overflow-hidden font-bold text-[#F5A623]">
+        <div className="w-full h-full rounded-full bg-slate-100 dark:bg-[#18181F] border border-black/10 dark:border-white/10 flex items-center justify-center overflow-hidden font-bold text-[#F5A623]">
           {src ? (
             <img src={src} alt="Avatar" className="w-full h-full object-cover" />
           ) : (
@@ -43,7 +43,7 @@ export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
         </div>
         
         {status && (
-          <span className={`absolute bottom-0 right-0 rounded-full border border-[#0A0A0F] ${statusSizes[size]} ${statusColors[status]}`} />
+          <span className={`absolute bottom-0 right-0 rounded-full border-2 border-white dark:border-[#0A0A0F] ${statusSizes[size]} ${statusColors[status]}`} />
         )}
       </div>
     );
@@ -59,12 +59,12 @@ export const AvatarGroup = ({ children, max = 3, total }: { children: React.Reac
   return (
     <div className="flex items-center -space-x-3">
       {visibleAvatars.map((avatar, i) => (
-        <div key={i} className="relative z-10 border-2 border-[#0A0A0F] rounded-full">
+        <div key={i} className="relative z-10 border-2 border-white dark:border-[#0A0A0F] rounded-full">
           {avatar}
         </div>
       ))}
       {remaining > 0 && (
-        <div className="relative z-0 border-2 border-[#0A0A0F] rounded-full flex items-center justify-center bg-slate-800 text-xs font-bold text-slate-300 w-10 h-10">
+        <div className="relative z-0 border-2 border-white dark:border-[#0A0A0F] rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-800 text-xs font-bold text-slate-600 dark:text-slate-300 w-10 h-10">
           +{remaining}
         </div>
       )}

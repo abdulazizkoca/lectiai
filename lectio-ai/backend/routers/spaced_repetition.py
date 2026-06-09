@@ -1,22 +1,29 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from services.spaced_repetition import calculate_next_review, get_due_cards
 from models.card import Card
 from models.user import User
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from routers.auth import get_current_user
 
 router = APIRouter()
 
 
 class ReviewRequest(BaseModel):
     card_id: int
-    quality: int  # 0-5
+    quality: int = Field(..., ge=0, le=5)
 
 
 @router.get("/due-cards/{student_id}")
-def get_cards_to_review(student_id: int, db: Session = Depends(get_db)):
+def get_cards_to_review(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Bugun o'rganilishi kerak bo'lgan kartalarni olish"""
+    if student_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(403, "Bu kartalarni ko'rishga ruxsat yo'q")
     cards = get_due_cards(db, student_id)
     return {
         "cards": [
@@ -58,11 +65,17 @@ def get_cards_by_telegram(telegram_id: str, db: Session = Depends(get_db)):
 
 
 @router.post("/review")
-def review_card(request: ReviewRequest, db: Session = Depends(get_db)):
+def review_card(
+    request: ReviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
     """Kartani ko'rib chiqish va keyingi sanani hisoblash"""
     card = db.query(Card).filter(Card.id == request.card_id).first()
     if not card:
-        return {"error": "Karta topilmadi"}
+        raise HTTPException(404, "Karta topilmadi")
+    if card.student_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(403, "Bu kartaga ruxsat yo'q")
 
     updated = calculate_next_review(card, request.quality)
     db.commit()

@@ -5,18 +5,20 @@ from models.lesson import Lesson
 from models.card import Card
 from models.user import User
 from services.ai_service import generate_lesson
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from datetime import datetime
+import logging
 from routers.auth import get_current_user
 
+logger = logging.getLogger("lectio.lessons")
 router = APIRouter()
 
 
 class LessonCreate(BaseModel):
-    title: str
-    topic: str
-    duration_minutes: int = 45
+    title: str = Field(..., min_length=1, max_length=500)
+    topic: str = Field(..., min_length=1, max_length=500)
+    duration_minutes: int = Field(default=45, ge=1, le=480)
 
 
 class LessonResponse(BaseModel):
@@ -58,9 +60,10 @@ async def create_lesson(
             lesson_data.duration_minutes
         )
     except Exception as e:
+        logger.exception(f"AI lesson generation failed for topic={lesson_data.topic}")
         raise HTTPException(
             status_code=500,
-            detail=f"AI kontent yaratishda xatolik: {str(e)}"
+            detail="AI kontent yaratishda xatolik yuz berdi. Iltimos qayta urinib ko'ring."
         )
 
     # Darsni saqlash
@@ -95,8 +98,7 @@ async def create_lesson(
         db.commit()
     except Exception as e:
         db.rollback()
-        # Karta yaratish xatoligi dars yaratishini to'xtatmasligi kerak
-        print(f"Kartalar yaratishda xatolik: {e}")
+        logger.warning(f"Kartalar yaratishda xatolik (lesson_id={lesson.id}): {e}")
 
     return lesson
 
@@ -124,38 +126,41 @@ async def get_lesson(
 
 @router.get("/professor/{professor_id}")
 async def get_professor_lessons(
-    professor_id: int, 
+    professor_id: int,
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Professorning barcha darslari"""
-    # Faqat o'zi yoki admin ko'rishi mumkin
+    """Professorning darslari (sahifalash bilan)"""
     if professor_id != current_user.id and current_user.role.value != "admin":
         raise HTTPException(
             status_code=403,
             detail="Bu darslarni ko'rishga ruxsat yo'q"
         )
-    
+    limit = min(limit, 100)
     lessons = db.query(Lesson).filter(
         Lesson.professor_id == professor_id
-    ).order_by(Lesson.created_at.desc()).all()
-    return {"lessons": _serialize_lessons(lessons)}
+    ).order_by(Lesson.created_at.desc()).offset(skip).limit(limit).all()
+    return {"lessons": _serialize_lessons(lessons), "skip": skip, "limit": limit}
 
 
 @router.get("/")
 async def get_all_lessons(
+    skip: int = 0,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Barcha darslar ro'yxati - faqat admin uchun"""
+    """Barcha darslar ro'yxati - faqat admin uchun (sahifalash bilan)"""
     if current_user.role.value != "admin":
         raise HTTPException(
             status_code=403,
             detail="Barcha darslarni ko'rish faqat admin uchun ruxsat etilgan"
         )
-
-    lessons = db.query(Lesson).order_by(Lesson.created_at.desc()).all()
-    return {"lessons": _serialize_lessons(lessons)}
+    limit = min(limit, 100)
+    lessons = db.query(Lesson).order_by(Lesson.created_at.desc()).offset(skip).limit(limit).all()
+    return {"lessons": _serialize_lessons(lessons), "skip": skip, "limit": limit}
 
 
 def _serialize_lessons(lessons: list) -> list:

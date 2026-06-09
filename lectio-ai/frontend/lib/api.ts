@@ -4,6 +4,23 @@ interface FetchOptions extends RequestInit {
   token?: string;
 }
 
+/** localStorage dan token oladi (faqat client-side da) */
+export function getStoredToken(): string {
+  if (typeof window === "undefined") return "";
+  return localStorage.getItem("lectio_token") || "";
+}
+
+/** localStorage dan foydalanuvchi ID ini oladi */
+export function getStoredUserId(): number | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const user = JSON.parse(localStorage.getItem("lectio_user") || "{}");
+    return user.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
   const { token, ...fetchOpts } = options;
 
@@ -12,8 +29,10 @@ async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
     ...(options.headers as Record<string, string>),
   };
 
-  if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+  // Token: berilgan yoki localStorage dan
+  const activeToken = token || getStoredToken();
+  if (activeToken) {
+    headers["Authorization"] = `Bearer ${activeToken}`;
   }
 
   try {
@@ -29,6 +48,11 @@ async function fetchAPI(endpoint: string, options: FetchOptions = {}) {
         errorMessage = error.detail || error.message || `HTTP ${res.status}`;
       } catch {
         errorMessage = `HTTP ${res.status}`;
+      }
+      // Token muddati o'tgan bo'lsa — logout
+      if (res.status === 401 && typeof window !== "undefined") {
+        localStorage.removeItem("lectio_token");
+        localStorage.removeItem("lectio_user");
       }
       throw new Error(errorMessage);
     }
@@ -138,21 +162,23 @@ export const materialsAPI = {
     });
   },
 
-  getProgress: (materialId: string) =>
-    fetchAPI(`/api/materials/${materialId}/progress`),
+  /** SSE orqali progress kuzatish — EventSource qaytaradi */
+  openProgressStream: (materialId: string): EventSource =>
+    new EventSource(`${API_BASE}/api/materials/${materialId}/progress`),
+
+  /** SSE orqali dars yaratish progressi — EventSource qaytaradi */
+  openLessonProgressStream: (materialId: string): EventSource =>
+    new EventSource(`${API_BASE}/api/materials/${materialId}/lesson-progress`),
 
   getTopics: (materialId: string) =>
     fetchAPI(`/api/materials/${materialId}/topics`),
 
-  generateLesson: (data: { material_id: string; professor_id: number; topic_name: string }, token: string) =>
+  generateLesson: (data: { material_id: string; professor_id: number; topic_name: string }, token?: string) =>
     fetchAPI("/api/materials/generate-topic-lesson", {
       method: "POST",
       body: JSON.stringify(data),
       token,
     }),
-
-  getLessonProgress: (materialId: string) =>
-    fetchAPI(`/api/materials/${materialId}/lesson-progress`),
 
   getLessonResult: (materialId: string) =>
     fetchAPI(`/api/materials/${materialId}/lesson-result`),
