@@ -1039,22 +1039,9 @@ def _save_to_db(lesson_json: dict, topic_name: str, professor_id: int):
             db.refresh(lesson)
             lesson_json["lesson_id"] = lesson.id  # Frontend uchun
 
-            # Flashcardlar
-            for fc_data in lesson_json.get("flashcards", [])[:20]:
-                fc = FlashCard(
-                    question=fc_data.get("front", ""),
-                    answer=fc_data.get("back", ""),
-                    lesson_id=lesson.id,
-                    student_id=professor_id,
-                    subject=subject,
-                    tags=json.dumps([subject, topic_name]),
-                    difficulty=2.5,
-                    ease_factor=2.5,
-                    interval=1,
-                    repetitions=0,
-                    next_review=datetime.now(timezone.utc),
-                )
-                db.add(fc)
+            # Dars shabloniga tegishli flashcardlar presentation_data JSON da saqlanadi.
+            # Bu yerda DB ga yozilmaydi — talabalar /api/chain/flashcards orqali
+            # o'z SR kartalarini alohida yaratadi.
 
             # Quiz savollar
             for q_data in lesson_json.get("quiz", [])[:10]:

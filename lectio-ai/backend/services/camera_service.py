@@ -101,19 +101,27 @@ except (ImportError, ModuleNotFoundError):
 
 
 class AudioAnalyzer:
+    """Lazy-init: thread faqat start() chaqirilganda boshlanadi."""
+
     def __init__(self):
         self.noise_db = 0.0
         self.is_running = False
         self.stream = None
         self.p = None
-        if AUDIO_AVAILABLE:
-            try:
-                self.p = pyaudio.PyAudio()
-                self.stream = self.p.open(format=pyaudio.paInt16, channels=1, rate=44100, input=True, frames_per_buffer=1024)
-                self.is_running = True
-                threading.Thread(target=self._monitor_noise, daemon=True).start()
-            except Exception:
-                self.is_running = False
+
+    def start(self):
+        if self.is_running or not AUDIO_AVAILABLE:
+            return
+        try:
+            self.p = pyaudio.PyAudio()
+            self.stream = self.p.open(
+                format=pyaudio.paInt16, channels=1, rate=44100,
+                input=True, frames_per_buffer=1024,
+            )
+            self.is_running = True
+            threading.Thread(target=self._monitor_noise, daemon=True).start()
+        except Exception:
+            self.is_running = False
 
     def _monitor_noise(self):
         while self.is_running and self.stream:
@@ -122,15 +130,17 @@ class AudioAnalyzer:
                 rms = audioop.rms(data, 2)
                 if rms > 0:
                     self.noise_db = min(120.0, max(0.0, 20 * math.log10(rms)))
-            except Exception: pass
+            except Exception:
+                pass
             time.sleep(0.1)
 
     def get_noise_level(self) -> float:
-        if not self.is_running: return round(random.uniform(30.0, 55.0), 2)
+        if not self.is_running:
+            return round(random.uniform(30.0, 55.0), 2)
         return round(self.noise_db, 2)
 
 
-audio_analyzer = AudioAnalyzer()
+audio_analyzer = AudioAnalyzer()  # thread boshlamaydi — start() kerak
 
 @dataclass
 class FaceRecognitionResult:
@@ -253,7 +263,7 @@ class CameraAnalyzer:
             self.face_mesh = self.mp_face_mesh.FaceMesh(max_num_faces=50, refine_landmarks=True)
             self.face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.3)
             self.pose_estimator = mp_pose.Pose()
-            self.hands_estimator = mp_hands.Hands(max_num_hands=100) # Qo'l kuzatish qo'shildi
+            self.hands_estimator = mp_hands.Hands(max_num_hands=2)
             
             self.blink_history = {}
             self.position_history = {}

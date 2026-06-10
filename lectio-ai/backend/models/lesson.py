@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Lesson(Base):
@@ -20,7 +20,7 @@ class Lesson(Base):
     professor_id = Column(Integer, ForeignKey("users.id"))
     is_template = Column(Boolean, default=False)
     use_count = Column(Integer, default=0)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     scheduled_at = Column(DateTime, nullable=True)
 
     professor = relationship("User", back_populates="lessons")

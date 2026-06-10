@@ -1,7 +1,8 @@
 import time
+import os
 import structlog
 from prometheus_client import Counter, Histogram, Gauge, generate_latest
-from fastapi import APIRouter, Request, Response
+from fastapi import APIRouter, Request, Response, HTTPException
 from pydantic import BaseModel
 
 # Prometheus Metrics
@@ -55,7 +56,7 @@ async def health_check():
     except Exception as e:
         redis_status = f"error: {str(e)}"
     
-    ai_status = "ok" # Could add a check for Anthropic API here if needed
+    ai_status = "ok"  # Gemini API
     
     overall_status = "healthy" if db_status == "ok" and redis_status == "ok" else "degraded"
     
@@ -68,8 +69,16 @@ async def health_check():
     }
 
 @monitoring_router.get("/metrics")
-async def metrics():
-    """Prometheus metrics endpoint."""
+async def metrics(request: Request):
+    """Prometheus metrics endpoint — METRICS_API_KEY env bilan himoyalangan."""
+    metrics_key = os.getenv("METRICS_API_KEY")
+    if metrics_key:
+        provided = (
+            request.headers.get("X-Metrics-Key")
+            or request.query_params.get("key")
+        )
+        if provided != metrics_key:
+            raise HTTPException(status_code=403, detail="Ruxsat yo'q")
     return Response(generate_latest(), media_type="text/plain")
 
 # Middleware for measuring request duration

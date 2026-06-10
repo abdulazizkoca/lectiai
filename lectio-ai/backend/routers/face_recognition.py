@@ -6,8 +6,9 @@ Handles face registration and recognition for students
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from database import get_db
-from models.user import User
+from models.user import User, UserRole
 from services.camera_service import FaceRecognitionService
+from routers.auth import get_current_user
 from pydantic import BaseModel
 from typing import List, Optional
 import base64
@@ -35,11 +36,16 @@ class KnownFacesResponse(BaseModel):
 @router.post("/register", response_model=dict)
 async def register_face(
     request: FaceRegistrationRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Register a student's face for recognition
     """
+    # Only allow registering own face; professors/admins can register anyone
+    if current_user.role not in (UserRole.professor, UserRole.admin) and current_user.id != request.user_id:
+        raise HTTPException(status_code=403, detail="Faqat o'z yuzingizni ro'yxatdan o'tkaza olasiz")
+
     # Check if user exists
     user = db.query(User).filter(User.id == request.user_id).first()
     if not user:
@@ -70,7 +76,8 @@ async def register_face(
 @router.post("/recognize", response_model=FaceRecognitionResponse)
 async def recognize_face(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Recognize faces in uploaded image
@@ -86,7 +93,7 @@ async def recognize_face(
     # Load known faces
     users = db.query(User).filter(
         User.face_encoding.isnot(None),
-        User.role == "student"
+        User.role == UserRole.student
     ).all()
 
     known_faces = []
@@ -110,7 +117,10 @@ async def recognize_face(
 
 
 @router.get("/known-faces", response_model=KnownFacesResponse)
-async def get_known_faces(db: Session = Depends(get_db)):
+async def get_known_faces(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Get all registered faces for recognition
     """

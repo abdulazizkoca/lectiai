@@ -35,24 +35,27 @@ export default function LoginPage() {
   // 1. Initialize and load standard accounts list on mount
   useEffect(() => {
     const defaultAccounts = [
-      { email: "professor@lectio.ai", role: "professor", name: "Prof. Aziz (Host)", password: "password123" },
-      { email: "student@lectio.ai", role: "student", name: "Sardor (Mehmon)", password: "password123" }
+      { email: "professor@lectio.ai", role: "professor", name: "Prof. Aziz (Host)" },
+      { email: "student@lectio.ai", role: "student", name: "Sardor (Mehmon)" }
     ];
     const stored = localStorage.getItem("lectio_saved_accounts");
     if (stored) {
-      setSavedAccounts(JSON.parse(stored));
+      // Eski yozuvlardan parol maydonini tozalash
+      const parsed = JSON.parse(stored);
+      const cleaned = parsed.map(({ password: _pw, ...rest }: any) => rest);
+      setSavedAccounts(cleaned);
     } else {
       localStorage.setItem("lectio_saved_accounts", JSON.stringify(defaultAccounts));
       setSavedAccounts(defaultAccounts);
     }
   }, []);
 
-  // Helper: Save account details to selection list
-  const saveToAccountsList = (userEmail: string, role: string, name: string, pass: string) => {
-    const newAccount = { email: userEmail, role, name, password: pass };
+  // Helper: Save account email/role/name (parol saqlanmaydi)
+  const saveToAccountsList = (userEmail: string, role: string, name: string) => {
+    const newAccount = { email: userEmail, role, name };
     const updated = [
-      ...savedAccounts.filter((acc) => acc.email !== userEmail),
-      newAccount
+      ...savedAccounts.filter((acc: any) => acc.email !== userEmail),
+      newAccount,
     ];
     localStorage.setItem("lectio_saved_accounts", JSON.stringify(updated));
     setSavedAccounts(updated);
@@ -82,8 +85,8 @@ export default function LoginPage() {
 
       const role = data.user?.role || "student";
       const name = data.user?.full_name || (role === "professor" ? "Professor (Host)" : "Talaba (Mehmon)");
-      
-      saveToAccountsList(email.trim(), role, name, password);
+
+      saveToAccountsList(email.trim(), role, name);
 
       addToast({
         title: lang === "uz" ? "Muvaffaqiyat" : "Успешно",
@@ -99,13 +102,13 @@ export default function LoginPage() {
     }
   };
 
-  // 3. Quick select account prefill and auto-submit
+  // 3. Quick select account — faqat email to'ldiriladi, parol qo'lda kiritiladi
   const handleSelectAccount = (account: any) => {
     setEmail(account.email);
-    setPassword(account.password || "password123");
+    setPassword("");
     addToast({
       title: "Akkaunt tanlandi",
-      description: `${account.email} ma'lumotlari to'ldirilmoqda...`,
+      description: `${account.email} — parolingizni kiriting`,
       type: "info"
     });
   };
@@ -123,57 +126,16 @@ export default function LoginPage() {
     });
   };
 
-  // 5. Host/Guest Quick Login (Auto register -> login -> local mock fallback)
-  const handleQuickLogin = async (role: "professor" | "student") => {
-    setError("");
-    setLoading(true);
+  // 5. Host/Guest Quick Login — email ni form ga to'ldiradi
+  const handleQuickLogin = (role: "professor" | "student") => {
     const mockEmail = role === "professor" ? "professor@lectio.ai" : "student@lectio.ai";
-    const mockPass = "password123";
-    const mockName = role === "professor" ? "Prof. J. Doe (Host)" : "Mehmon Talaba (Guest)";
-
-    try {
-      // First attempt: Standard login
-      const data = await authAPI.login(mockEmail, mockPass);
-      localStorage.setItem("lectio_token", data.access_token);
-      saveToAccountsList(mockEmail, role, data.user?.full_name || mockName, mockPass);
-      
-      addToast({
-        title: "Tezkor Kirish",
-        description: `Standart akkaunt orqali kirdingiz: ${mockEmail}`,
-        type: "success"
-      });
-      router.push(role === "professor" ? "/professor/dashboard" : "/student/dashboard");
-    } catch (err) {
-      // Second attempt: Auto-register default account
-      try {
-        const regData = await authAPI.register({
-          email: mockEmail,
-          full_name: mockName,
-          password: mockPass,
-          role
-        });
-        localStorage.setItem("lectio_token", regData.access_token);
-        saveToAccountsList(mockEmail, role, mockName, mockPass);
-        
-        addToast({
-          title: "Avto-ro'yxatdan o'tish",
-          description: `Yangi standart akkaunt generatsiya qilindi: ${mockEmail}`,
-          type: "success"
-        });
-        router.push(role === "professor" ? "/professor/dashboard" : "/student/dashboard");
-      } catch (regErr) {
-        // Third attempt: Direct client-side bypass for offline testing
-        localStorage.setItem("lectio_token", `mock_${role}_token`);
-        addToast({
-          title: "Bypass Rejim",
-          description: "Server offline bo'lganligi sababli mehmon rejimida kirdingiz",
-          type: "warning"
-        });
-        router.push(role === "professor" ? "/professor/dashboard" : "/student/dashboard");
-      }
-    } finally {
-      setLoading(false);
-    }
+    setEmail(mockEmail);
+    setPassword("");
+    addToast({
+      title: "Tezkor to'ldirish",
+      description: `${mockEmail} — parolingizni kiriting va Kirish tugmasini bosing`,
+      type: "info"
+    });
   };
 
   return (

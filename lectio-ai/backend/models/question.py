@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON, Enum
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 
 
@@ -34,7 +34,7 @@ class Question(Base):
     time_limit = Column(Integer, default=20)  # soniyada
     points = Column(Integer, default=100)
     image_url = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Bog'liqliklar
     lesson = relationship("Lesson", back_populates="questions")

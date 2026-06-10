@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Enum
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 
 
@@ -23,7 +23,7 @@ class LiveSession(Base):
     status = Column(Enum(SessionStatus), default=SessionStatus.waiting)
     started_at = Column(DateTime, nullable=True)
     ended_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Bog'liqliklar
     lesson = relationship("Lesson", back_populates="sessions")
@@ -41,7 +41,7 @@ class SessionParticipant(Base):
     student_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     nickname = Column(String)             # Anonim kirish uchun
     score = Column(Integer, default=0)
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    joined_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     session = relationship("LiveSession", back_populates="participants")
     student = relationship("User", back_populates="participations")

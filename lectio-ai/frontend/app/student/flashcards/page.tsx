@@ -57,7 +57,7 @@ export default function FlashcardsPage() {
       router.replace("/login");
       return;
     }
-    fetch(`${API_URL}/api/sr/due-cards/${id}`, {
+    fetch(`${API_URL}/api/chain/due-flashcards/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => {
@@ -76,8 +76,8 @@ export default function FlashcardsPage() {
     const card = cards[index];
     const { token } = getAuth();
 
-    // Fire-and-forget review submission with auth
-    fetch(`${API_URL}/api/sr/review`, {
+    // Fire-and-forget review submission with auth (FlashCard SM-2)
+    fetch(`${API_URL}/api/sr/review-flashcard`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ card_id: card.id, quality }),

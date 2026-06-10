@@ -45,12 +45,11 @@ export default function RegisterPage() {
       const data = await authAPI.register(formData);
       localStorage.setItem("lectio_token", data.access_token);
       
-      // Save this registered account to stored accounts list
+      // Save this registered account to stored accounts list (no password stored)
       const newAccount = {
         email: formData.email,
         role: formData.role,
         name: formData.full_name,
-        password: formData.password
       };
       const stored = localStorage.getItem("lectio_saved_accounts");
       const currentSaved = stored ? JSON.parse(stored) : [];

@@ -5,11 +5,15 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User, UserRole
+from services.analytics_service import LessonAnalyticsEngine
 import os
 import google.generativeai as genai
 from datetime import datetime
 
 router = APIRouter()
+
+# Per-session analytics engines (in-memory, keyed by session_id)
+_analytics_engines: dict = {}
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
@@ -55,20 +59,8 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     students = []
     
-    # Load known faces for recognition
-    known_faces = []
-    users_with_faces = db.query(User).filter(
-        User.face_encoding.isnot(None),
-        User.role == UserRole.student
-    ).all()
-    
-    for user in users_with_faces:
-        known_faces.append({
-            "id": user.id,
-            "full_name": user.full_name,
-            "face_encoding": user.face_encoding
-        })
-    
+    # Load known faces from cache (60 soniyada bir DB yangilanadi)
+    known_faces = _get_known_faces(db)
     face_recognizer = FaceRecognitionService()
     face_recognizer.load_known_faces(known_faces)
     
@@ -134,7 +126,7 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     
     overall = sum(s["attention"] for s in students) / max(len(students), 1)
     
-    # If attention is very low, use Claude to analyze what's happening
+    # If attention is very low, use Gemini to analyze what's happening
     recommendation = None
     session_id = data.get("session_id", "default_session")
     if overall < 60 and students:
@@ -186,10 +178,33 @@ def calculate_attention(landmarks, width: int, height: int) -> int:
     return max(0, min(100, round(attention)))
 
 
-# Track attention trends per session
+# Track attention trends and AI throttle per session
 from collections import defaultdict
+from typing import Dict, List
 import time
-session_history = defaultdict(list)
+session_history: Dict[str, list] = defaultdict(list)
+_last_rec_times: Dict[str, float] = {}
+
+# Known faces in-memory cache — 60 soniyada bir DB dan yangilanadi
+_known_faces_cache: List[dict] = []
+_known_faces_loaded_at: float = 0.0
+_KNOWN_FACES_TTL = 60.0
+
+
+def _get_known_faces(db) -> List[dict]:
+    global _known_faces_cache, _known_faces_loaded_at
+    if time.time() - _known_faces_loaded_at < _KNOWN_FACES_TTL:
+        return _known_faces_cache
+    users = db.query(User).filter(
+        User.face_encoding.isnot(None),
+        User.role == UserRole.student,
+    ).all()
+    _known_faces_cache = [
+        {"id": u.id, "full_name": u.full_name, "face_encoding": u.face_encoding}
+        for u in users
+    ]
+    _known_faces_loaded_at = time.time()
+    return _known_faces_cache
 
 async def get_ai_recommendation(attention: float, students_list: list, session_id: str) -> str:
     """Ask Claude what to do using deep classroom context"""
@@ -213,9 +228,8 @@ async def get_ai_recommendation(attention: float, students_list: list, session_i
     session_history[session_id] = [h for h in history if now - h["time"] <= 120]
     
     # Check if we should update recommendation (throttle to 30 seconds)
-    last_rec_time = getattr(get_ai_recommendation, f"last_rec_{session_id}", 0)
-    if now - last_rec_time < 30:
-        return None # Too soon to generate a new recommendation
+    if now - _last_rec_times.get(session_id, 0) < 30:
+        return None
     
     # Prepare trend analysis text
     trend = session_history[session_id]
@@ -237,7 +251,7 @@ async def get_ai_recommendation(attention: float, students_list: list, session_i
             prompt,
             generation_config=genai.types.GenerationConfig(max_output_tokens=150)
         )
-        setattr(get_ai_recommendation, f"last_rec_{session_id}", now)
+        _last_rec_times[session_id] = now
         return response.text
     except Exception:
         return None

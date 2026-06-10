@@ -18,6 +18,44 @@ def _gen_code():
     return f"LECTIO-{''.join(random.choices(string.ascii_uppercase+string.digits,k=4))}"
 
 
+_LETTERS = ["A", "B", "C", "D", "E"]
+
+
+def _check_answer_correct(student_answer: str, q) -> bool:
+    """
+    Javob to'g'riligini tekshiradi.
+    q.correct ikki formatda bo'lishi mumkin:
+      - Harf ("A") — questions.py orqali yaratilganda
+      - To'liq matn — material_parser orqali yaratilganda
+    Talaba ham harf, ham to'liq matn yuborishi mumkin.
+    """
+    sa = student_answer.strip()
+    correct = (q.correct or "").strip()
+    options = q.options or []
+
+    # 1. To'g'ridan-to'g'ri solishtirish (case-insensitive)
+    if sa.upper() == correct.upper():
+        return True
+
+    # 2. Talaba harf yuborgan, q.correct to'liq matn — options dan qidirish
+    if len(sa) == 1 and sa.upper() in _LETTERS and options:
+        idx = _LETTERS.index(sa.upper())
+        if idx < len(options):
+            option_text = str(options[idx]).strip()
+            if option_text.upper() == correct.upper():
+                return True
+
+    # 3. Talaba to'liq matn yuborgan, q.correct harf — options dan qidirish
+    if len(correct) == 1 and correct.upper() in _LETTERS and options:
+        idx = _LETTERS.index(correct.upper())
+        if idx < len(options):
+            option_text = str(options[idx]).strip()
+            if option_text.upper() == sa.upper():
+                return True
+
+    return False
+
+
 def _sanitize_nickname(nickname: str) -> str:
     """Laqabni tozalash va tekshirish"""
     nickname = nickname.strip()
@@ -266,7 +304,7 @@ async def submit_answer(
         time_taken = 0
     
     try:
-        correct = student_answer.upper().strip() == q.correct.upper().strip()
+        correct = _check_answer_correct(student_answer, q)
         base = q.points or 100
         tlimit = (q.time_limit or 20) * 1000
         bonus = max(0, 1 - time_taken/tlimit)

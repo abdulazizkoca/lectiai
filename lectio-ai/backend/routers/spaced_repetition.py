@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from services.spaced_repetition import calculate_next_review, get_due_cards
 from models.card import Card
+from models.flashcard import FlashCard
 from models.user import User
 from pydantic import BaseModel, Field
 from routers.auth import get_current_user
@@ -85,6 +86,44 @@ def review_card(
         "next_review": str(updated.next_review),
         "interval_days": updated.interval,
         "message": f"{updated.interval} kundan keyin takrorlanadi"
+    }
+
+
+@router.post("/review-flashcard")
+def review_flashcard(
+    request: ReviewRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """FlashCard (learning chain) kartasini ko'rib chiqish — SM-2 yangilash"""
+    card = db.query(FlashCard).filter(FlashCard.id == request.card_id).first()
+    if not card:
+        raise HTTPException(404, "Flashcard topilmadi")
+    if card.student_id != current_user.id and current_user.role.value not in ("admin", "professor"):
+        raise HTTPException(403, "Bu kartaga ruxsat yo'q")
+
+    from datetime import datetime, timedelta, timezone
+    q = request.quality
+    # SM-2
+    card.ease_factor = max(1.3, card.ease_factor + 0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+    if q < 3:
+        card.repetitions = 0
+        card.interval = 1
+    else:
+        if card.repetitions == 0:
+            card.interval = 1
+        elif card.repetitions == 1:
+            card.interval = 6
+        else:
+            card.interval = round(card.interval * card.ease_factor)
+        card.repetitions += 1
+    card.next_review = datetime.now(timezone.utc) + timedelta(days=card.interval)
+    db.commit()
+
+    return {
+        "next_review": card.next_review.isoformat(),
+        "interval_days": card.interval,
+        "message": f"{card.interval} kundan keyin takrorlanadi",
     }
 
 

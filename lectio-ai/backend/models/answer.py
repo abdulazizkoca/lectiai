@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Answer(Base):
@@ -16,7 +16,7 @@ class Answer(Base):
     is_correct = Column(Boolean, default=False)
     time_taken = Column(Integer)              # millisekund
     points_earned = Column(Integer, default=0)
-    answered_at = Column(DateTime, default=datetime.utcnow)
+    answered_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Bog'liqliklar
     session = relationship("LiveSession", back_populates="answers")

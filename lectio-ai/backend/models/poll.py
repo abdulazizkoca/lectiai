@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, JSON
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Poll(Base):
@@ -15,6 +15,6 @@ class Poll(Base):
     total_votes = Column(Integer, default=0)
     is_active = Column(Integer, default=1)    # 1=aktiv, 0=tugagan
     lesson_id = Column(Integer, ForeignKey("lessons.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     lesson = relationship("Lesson", back_populates="polls")

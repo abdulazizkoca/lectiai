@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 class StudentProgress(Base):
@@ -13,7 +13,7 @@ class StudentProgress(Base):
     
     mastery_level = Column(Float, default=0.0)  # 0-100
     sessions_count = Column(Integer, default=0)
-    last_studied = Column(DateTime, default=datetime.utcnow)
+    last_studied = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Stored as JSON strings
     weak_points = Column(String, default="[]")

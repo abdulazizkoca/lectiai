@@ -98,7 +98,7 @@ O'quvchi javobi: {student_answer}
         score_str = response.text.strip()
         score = float(score_str)
         return max(0.0, min(1.0, score))
-    except:
+    except Exception:
         return 0.0
 
 def calculate_score(q_data: dict, time_taken_ms: int, streak: int, correctness: float = 1.0) -> int:
@@ -141,8 +141,49 @@ def get_leaderboard(room: dict):
 
 @sio.event
 async def connect(sid, environ):
-    # JWT authentication logic can be implemented here
-    print(f"Connected: {sid}")
+    """
+    Token query string yoki Authorization header orqali yuboriladi.
+    Misol: io("ws://...", { auth: { token: "Bearer ..." } })
+    yoki   io("ws://...?token=...")
+    """
+    # 1) query string'dan token olish
+    qs = environ.get("QUERY_STRING", "")
+    token = None
+    for part in qs.split("&"):
+        if part.startswith("token="):
+            token = part[6:]
+            break
+
+    # 2) Authorization headerdan olish
+    if not token:
+        auth_header = environ.get("HTTP_AUTHORIZATION", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header[7:]
+
+    # 3) socket.io auth dict'dan olish (frontend auth: {token: "..."})
+    if not token:
+        http_auth = environ.get("HTTP_AUTH", "")
+        if http_auth:
+            import json as _json
+            try:
+                auth_obj = _json.loads(http_auth)
+                raw = auth_obj.get("token", "")
+                token = raw.replace("Bearer ", "") if raw else None
+            except Exception:
+                pass
+
+    if not token:
+        return False  # ulanishni rad etadi
+
+    try:
+        from jose import jwt, JWTError
+        SECRET_KEY = os.getenv("SECRET_KEY")
+        ALGORITHM = os.getenv("ALGORITHM", "HS256")
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        if not payload.get("sub"):
+            return False
+    except Exception:
+        return False
 
 @sio.event
 async def disconnect(sid):

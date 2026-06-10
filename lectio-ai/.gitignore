@@ -35,3 +35,10 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Cursor IDE debug logs
+.cursor/
+
+# Large binary files (use pip install instead)
+backend/face_recognition_models-*.tar.gz
+backend/*.db

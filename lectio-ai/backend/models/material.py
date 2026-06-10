@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Material(Base):
@@ -16,7 +16,7 @@ class Material(Base):
     analysis_data = Column(Text, nullable=True) # JSON — AI tahlil natijasi
     processed = Column(Boolean, default=False)
     professor_id = Column(Integer, ForeignKey("users.id"))
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Bog'liqliklar
     professor = relationship("User", back_populates="materials")

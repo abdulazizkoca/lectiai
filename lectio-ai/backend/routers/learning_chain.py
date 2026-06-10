@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from pydantic import BaseModel
 from typing import Optional
+from datetime import datetime, timezone
 from services.learning_chain import (
     generate_flashcards_from_topic,
     save_flashcards_to_db,
@@ -22,9 +23,19 @@ from services.learning_chain import (
 )
 from models.flashcard import FlashCard
 from models.student_progress import StudentProgress
+from models.user import User, UserRole
+from routers.auth import get_current_user
 import json
 
 router = APIRouter()
+
+
+def _check_student_access(current_user: User, target_student_id: int) -> None:
+    """Student faqat o'z ma'lumotlariga kirishi mumkin; professor/admin istalgan talabaga."""
+    if current_user.role in (UserRole.professor, UserRole.admin):
+        return
+    if current_user.id != target_student_id:
+        raise HTTPException(status_code=403, detail="Faqat o'z ma'lumotlaringizga kira olasiz")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -69,12 +80,15 @@ class CompleteChainRequest(BaseModel):
 @router.post("/flashcards")
 async def generate_flashcards(
     req: FlashcardGenRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     AI orqali mavzu bo'yicha flashcard yaratadi.
     Agar save_to_db=True bo'lsa, DB ga ham saqlaydi.
     """
+    _check_student_access(current_user, req.student_id)
+
     try:
         cards_data = await generate_flashcards_from_topic(
             topic=req.topic,
@@ -116,7 +130,10 @@ async def generate_flashcards(
 # ─────────────────────────────────────────────────────────────────────────────
 
 @router.post("/quiz-from-cards")
-async def generate_quiz(req: QuizGenRequest):
+async def generate_quiz(
+    req: QuizGenRequest,
+    current_user: User = Depends(get_current_user),
+):
     """
     Mavjud flashcardlar asosida test savollari yaratadi.
     """
@@ -148,7 +165,8 @@ async def generate_quiz(req: QuizGenRequest):
 @router.post("/complete")
 async def complete_chain(
     req: CompleteChainRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Quiz tugagandan keyin chaqiriladi:
@@ -156,6 +174,8 @@ async def complete_chain(
     2. StudentProgress ni yangilaydi
     3. Achievement tekshiradi va beradi
     """
+    _check_student_access(current_user, req.student_id)
+
     try:
         result = await complete_learning_chain(
             db=db,
@@ -183,9 +203,11 @@ async def complete_chain(
 @router.get("/progress/{student_id}")
 async def get_student_chain_progress(
     student_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Talabaning barcha mavzular bo'yicha progress ma'lumotlari."""
+    _check_student_access(current_user, student_id)
     progresses = db.query(StudentProgress).filter(
         StudentProgress.student_id == student_id
     ).all()
@@ -196,12 +218,10 @@ async def get_student_chain_progress(
 
     due_cards = 0
     try:
-        from datetime import datetime
-        from models.card import Card
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         due_cards = db.query(FlashCard).filter(
             FlashCard.student_id == student_id,
-            FlashCard.next_review <= now
+            FlashCard.next_review <= now,
         ).count()
     except Exception:
         pass
@@ -229,11 +249,12 @@ async def get_student_chain_progress(
 async def get_due_flashcards(
     student_id: int,
     limit: int = 20,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Bugun takrorlanishi kerak bo'lgan flashcardlar."""
-    from datetime import datetime
-    now = datetime.utcnow()
+    _check_student_access(current_user, student_id)
+    now = datetime.now(timezone.utc)
     cards = db.query(FlashCard).filter(
         FlashCard.student_id == student_id,
         FlashCard.next_review <= now

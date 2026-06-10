@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 class Achievement(Base):
@@ -21,7 +21,7 @@ class UserAchievement(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     achievement_id = Column(Integer, ForeignKey("achievements.id"), nullable=False)
-    earned_at = Column(DateTime, default=datetime.utcnow)
+    earned_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("User", backref="achievements")
     achievement = relationship("Achievement")

@@ -5,6 +5,8 @@ from database import get_db
 from models.card import Card
 from models.lesson import Lesson
 from models.user import User
+from models.session import LiveSession
+from models.attention_log import AttentionLog
 from datetime import datetime, timedelta, timezone
 from routers.auth import get_current_user
 
@@ -142,3 +144,51 @@ async def get_platform_overview(
         status_code=403,
         detail="Platforma statistikasini ko'rishga ruxsat yo'q"
     )
+
+
+@router.get("/professor/weekly")
+async def get_professor_weekly(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """So'nggi 7 kunlik dars va diqqat statistikasi (professor dashboard uchun)."""
+    if current_user.role.value not in ("professor", "admin"):
+        raise HTTPException(403, "Faqat professorlar uchun")
+
+    now = datetime.now(timezone.utc)
+    DAY_NAMES = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"]
+    result = []
+
+    for i in range(6, -1, -1):
+        day_start = (now - timedelta(days=i)).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
+        day_end = day_start + timedelta(days=1)
+
+        lessons_count = db.query(Lesson).filter(
+            Lesson.professor_id == current_user.id,
+            Lesson.created_at >= day_start,
+            Lesson.created_at < day_end,
+        ).count()
+
+        sessions = db.query(LiveSession).filter(
+            LiveSession.professor_id == current_user.id,
+            LiveSession.created_at >= day_start,
+            LiveSession.created_at < day_end,
+        ).all()
+
+        avg_att = 0
+        if sessions:
+            sid_list = [s.id for s in sessions]
+            avg_att_q = db.query(func.avg(AttentionLog.attention_avg)).filter(
+                AttentionLog.session_id.in_(sid_list)
+            ).scalar()
+            avg_att = round(float(avg_att_q or 0))
+
+        result.append({
+            "day": DAY_NAMES[day_start.weekday()],
+            "lessons": lessons_count,
+            "attention": avg_att,
+        })
+
+    return result

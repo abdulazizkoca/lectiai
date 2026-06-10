@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 class PeerQuestion(Base):
@@ -13,7 +13,7 @@ class PeerQuestion(Base):
     topic = Column(String, nullable=False)
     upvotes = Column(Integer, default=0)
     is_answered = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     asker = relationship("User", backref="asked_questions")
     answers = relationship("PeerAnswer", back_populates="question")
@@ -28,7 +28,7 @@ class PeerAnswer(Base):
     answer = Column(Text, nullable=False)
     upvotes = Column(Integer, default=0)
     is_accepted = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     question = relationship("PeerQuestion", back_populates="answers")
     answerer = relationship("User", backref="given_answers")
