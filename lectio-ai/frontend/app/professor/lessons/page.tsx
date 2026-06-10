@@ -113,14 +113,14 @@ export default function ProfessorLessonsPage() {
   }
 
   return (
-    <div className="min-h-full p-4 md:p-6 relative z-10 text-white">
+    <div className="min-h-full p-4 md:p-6 relative z-10 text-slate-900 dark:text-white">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold">Mening Darslarim</h1>
-          <p className="text-slate-400 text-sm mt-0.5">{lessons.length} ta dars yaratilgan</p>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">{lessons.length} ta dars yaratilgan</p>
         </div>
         <button
           onClick={() => router.push("/professor/create-lesson")}
@@ -138,7 +138,7 @@ export default function ProfessorLessonsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Darslarni qidirish..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F5A623] transition text-sm"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#F5A623] transition text-sm"
           />
         </div>
         <div className="flex gap-2">
@@ -146,7 +146,7 @@ export default function ProfessorLessonsPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${filter === f ? "bg-[#F5A623] text-black" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${filter === f ? "bg-[#F5A623] text-black" : "bg-black/[0.04] dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-black/8 dark:hover:bg-white/10"}`}
             >
               {f === "all" ? "Barchasi" : STATUSES[f as keyof typeof STATUSES]?.label || f}
             </button>
@@ -159,7 +159,7 @@ export default function ProfessorLessonsPage() {
         <div className="text-center py-16">
           <div className="text-6xl mb-4">📚</div>
           <h3 className="text-xl font-bold mb-2">{search ? "Dars topilmadi" : "Hali darslar yo'q"}</h3>
-          <p className="text-slate-400 mb-6">{search ? `"${search}" bo'yicha natija yo'q` : "Birinchi darsni yarating"}</p>
+          <p className="text-slate-500 dark:text-slate-400 mb-6">{search ? `"${search}" bo'yicha natija yo'q` : "Birinchi darsni yarating"}</p>
           <button onClick={() => router.push("/professor/create-lesson")}
             className="px-6 py-3 rounded-xl bg-[#F5A623] text-black font-bold hover:bg-[#f7b955] transition">
             ✨ Dars Yaratish
@@ -180,7 +180,7 @@ export default function ProfessorLessonsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 flex flex-col hover:border-white/20 transition-all group"
+              className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5 flex flex-col hover:border-black/15 dark:hover:border-white/20 transition-all group"
             >
               {/* Top row */}
               <div className="flex items-start justify-between mb-4">
@@ -193,8 +193,8 @@ export default function ProfessorLessonsPage() {
               </div>
 
               {/* Title */}
-              <h3 className="font-bold text-white mb-1 line-clamp-2 leading-snug">{lesson.title}</h3>
-              <p className="text-slate-400 text-sm mb-4 line-clamp-1">{lesson.topic}</p>
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1 line-clamp-2 leading-snug">{lesson.title}</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 line-clamp-1">{lesson.topic}</p>
 
               {/* Stats */}
               <div className="flex items-center gap-4 text-xs text-slate-500 mb-4">
@@ -215,7 +215,7 @@ export default function ProfessorLessonsPage() {
                   <div className="flex justify-between text-xs text-slate-500 mb-1">
                     <span>Progress</span><span>{lesson.progress || 0}%</span>
                   </div>
-                  <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                  <div className="h-1.5 rounded-full bg-black/8 dark:bg-white/10 overflow-hidden">
                     <div className="h-full rounded-full bg-[#F5A623] transition-all" style={{ width: `${lesson.progress || 0}%` }} />
                   </div>
                 </div>
@@ -239,7 +239,7 @@ export default function ProfessorLessonsPage() {
                 </button>
                 <button
                   onClick={() => setSelected(lesson)}
-                  className="py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:bg-white/10 hover:text-white transition"
+                  className="py-2.5 px-3 rounded-xl bg-black/[0.04] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-500 dark:text-slate-400 hover:bg-black/8 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white transition"
                 >
                   <ChevronRight size={14} />
                 </button>
@@ -259,12 +259,12 @@ export default function ProfessorLessonsPage() {
             <motion.div
               initial={{ x: "100%" }} animate={{ x: 0 }} exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-[#0F0F18] border-l border-white/10 shadow-2xl z-50 flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0F0F18] border-l border-black/10 dark:border-white/10 shadow-2xl z-50 flex flex-col"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-5 border-b border-white/10">
-                <h2 className="font-bold text-lg text-white line-clamp-1">{selected.title}</h2>
-                <button onClick={() => setSelected(null)} className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition">
+              <div className="flex items-center justify-between p-5 border-b border-black/8 dark:border-white/10">
+                <h2 className="font-bold text-lg text-slate-900 dark:text-white line-clamp-1">{selected.title}</h2>
+                <button onClick={() => setSelected(null)} className="p-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-slate-400 hover:text-slate-900 dark:hover:text-white transition">
                   <X size={18} />
                 </button>
               </div>
@@ -284,18 +284,18 @@ export default function ProfessorLessonsPage() {
 
                 {/* Info */}
                 <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                    <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">Mavzu</p>
-                    <p className="font-medium text-white">{selected.topic || "—"}</p>
+                  <div className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Mavzu</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{selected.topic || "—"}</p>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
                       <p className="text-xl font-bold text-[#F5A623]">{selected.students || 0}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Talaba</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Talaba</p>
                     </div>
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
                       <p className="text-xl font-bold text-[#1B4FD8]">{selected.duration_minutes || selected.duration || 45}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">Daqiqa</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daqiqa</p>
                     </div>
                   </div>
                 </div>
@@ -310,7 +310,7 @@ export default function ProfessorLessonsPage() {
 
                 {/* Summary */}
                 {(selected.summary || selected.presentation_data?.summary) && (
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10">
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">📋 Xulosa</p>
                     <p className="text-sm text-slate-300">{selected.summary || selected.presentation_data?.summary}</p>
                   </div>
@@ -318,7 +318,7 @@ export default function ProfessorLessonsPage() {
 
                 {/* Slides count */}
                 {(selected.presentation_data?.slides?.length > 0) && (
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10">
                     <p className="text-xs text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1"><FileText size={10} /> Slaydlar</p>
                     <p className="font-bold text-white">{selected.presentation_data.slides.length} ta slayd</p>
                   </div>
@@ -326,11 +326,11 @@ export default function ProfessorLessonsPage() {
               </div>
 
               {/* Footer */}
-              <div className="p-5 border-t border-white/10 space-y-2">
+              <div className="p-5 border-t border-black/8 dark:border-white/10 space-y-2">
                 {deletingId === selected.id ? (
                   <div className="flex gap-2">
                     <button onClick={() => setDeletingId(null)}
-                      className="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-400 font-bold text-sm hover:bg-white/10 transition">
+                      className="flex-1 py-3 rounded-xl bg-black/[0.04] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-500 dark:text-slate-400 font-bold text-sm hover:bg-black/8 dark:hover:bg-white/10 transition">
                       Bekor qilish
                     </button>
                     <button onClick={() => handleDelete(selected.id)}

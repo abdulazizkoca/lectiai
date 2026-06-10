@@ -27,7 +27,7 @@ class User(Base):
     xp_points = Column(Integer, default=0)
     streak_days = Column(Integer, default=0)
     last_active = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Bog'liqliklar
     lessons = relationship("Lesson", back_populates="professor")

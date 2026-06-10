@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Text, Float, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 class FlashCard(Base):
@@ -16,7 +16,7 @@ class FlashCard(Base):
     interval = Column(Integer, default=1)  # in days
     repetitions = Column(Integer, default=0)
     ease_factor = Column(Float, default=2.5)
-    next_review = Column(DateTime, default=datetime.utcnow)
+    next_review = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Metadata
     lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=True)

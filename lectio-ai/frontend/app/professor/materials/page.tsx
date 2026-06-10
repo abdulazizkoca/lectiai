@@ -96,12 +96,16 @@ export default function MaterialsPage() {
   function openSSE(url: string, onDone: () => void, onError: (msg: string) => void) {
     esRef.current?.close();
 
+    let retries = 0;
+    const MAX_RETRIES = 8;
+
     const connect = () => {
       const es = new EventSource(url);
       esRef.current = es;
       let lastPct = -1;
 
       es.onmessage = (e) => {
+        retries = 0; // muvaffaqiyatli xabar — qayta urinish hisoblagichini reset
         try {
           const d = JSON.parse(e.data);
           if (d.percent !== undefined && d.percent !== lastPct) {
@@ -115,12 +119,14 @@ export default function MaterialsPage() {
       };
 
       es.onerror = () => {
-        // SSE bağlantısı kesildi — 3 soniyadan keyin qayta urinish
         es.close();
-        retryRef.current = setTimeout(() => {
-          const prog = JSON.parse(localStorage.getItem(`_sse_stage_${url}`) || "{}");
-          if (!prog.done) connect();
-        }, 3000);
+        if (retries >= MAX_RETRIES) {
+          onError("Serverga ulanish uzildi. Sahifani yangilang va qayta urinib ko'ring.");
+          return;
+        }
+        retries++;
+        const delay = Math.min(1000 * 2 ** retries, 15000); // exponential backoff
+        retryRef.current = setTimeout(connect, delay);
       };
     };
     connect();
@@ -335,7 +341,7 @@ export default function MaterialsPage() {
 
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-full p-4 md:p-6 xl:p-8 text-white relative z-10">
+    <div className="min-h-full p-4 md:p-6 xl:p-8 text-slate-900 dark:text-white relative z-10">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
       <AnimatePresence mode="wait">
@@ -359,7 +365,7 @@ export default function MaterialsPage() {
               </div>
               {history.length > 0 && (
                 <button onClick={() => setShowHistory(!showHistory)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-sm font-bold">
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-black/[0.04] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-600 dark:text-slate-300 hover:bg-black/8 dark:hover:bg-white/10 transition text-sm font-bold">
                   <Clock size={14} /> Tarix ({history.length})
                 </button>
               )}
@@ -371,7 +377,7 @@ export default function MaterialsPage() {
               <div className="lg:col-span-2 space-y-4">
                 <motion.div
                   animate={{ scale: dragActive ? 1.02 : 1 }}
-                  className={`rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all ${dragActive ? "border-[#0D9373] bg-[#0D9373]/10 shadow-lg shadow-[#0D9373]/10" : "border-white/15 hover:border-white/30 hover:bg-white/[0.02]"}`}
+                  className={`rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all ${dragActive ? "border-[#0D9373] bg-[#0D9373]/10 shadow-lg shadow-[#0D9373]/10" : "border-black/15 dark:border-white/15 hover:border-black/25 dark:hover:border-white/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
                   onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                   onDragLeave={() => setDragActive(false)}
                   onDrop={handleDrop}
@@ -382,7 +388,7 @@ export default function MaterialsPage() {
                   <h3 className="text-xl font-bold mb-2">
                     {dragActive ? "Qo'yib yuboring!" : "Metodichkani bu yerga tashlang"}
                   </h3>
-                  <p className="text-slate-400 text-sm mb-6">Word (.docx), PDF, PowerPoint (.pptx), TXT — maksimum 50 MB</p>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Word (.docx), PDF, PowerPoint (.pptx), TXT — maksimum 50 MB</p>
 
                   <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#0D9373] to-[#0ba882] text-white font-bold cursor-pointer hover:shadow-lg hover:shadow-[#0D9373]/20 transition">
                     <Upload size={16} /> Fayl tanlash
@@ -403,7 +409,7 @@ export default function MaterialsPage() {
                 </motion.div>
 
                 {/* How it works */}
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Qanday ishlaydi?</p>
                   <div className="grid grid-cols-4 gap-3">
                     {[
@@ -449,7 +455,7 @@ export default function MaterialsPage() {
                     {showHistory ? "Tarix" : "So'nggi natijalar"}
                   </p>
                   {history.length === 0 ? (
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 text-center">
+                    <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-6 text-center">
                       <div className="text-4xl mb-2">📚</div>
                       <p className="text-slate-500 text-sm">Hali fayl yuklanmagan</p>
                     </div>
@@ -461,7 +467,7 @@ export default function MaterialsPage() {
                         return (
                           <button key={i}
                             onClick={() => { setResult(h.result); setSelectedTopic(h.topic); setStage("done"); setActiveTab("overview"); setSlideIdx(0); }}
-                            className="w-full flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/[0.03] hover:bg-white/[0.07] transition text-left group">
+                            className="w-full flex items-center gap-3 p-3 rounded-xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.04] dark:hover:bg-white/[0.07] transition text-left group">
                             <span className="text-xl shrink-0">{m.icon}</span>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-bold truncate group-hover:text-[#F5A623] transition">{h.topic}</p>
@@ -494,7 +500,7 @@ export default function MaterialsPage() {
                 </div>
 
                 {/* Qo'llab-quvvatlanadigan formatlar */}
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Format talablari</p>
                   <div className="space-y-2 text-xs text-slate-400">
                     <p>• <strong className="text-white">.docx</strong> — Word hujjati (tavsiya etiladi)</p>
@@ -514,7 +520,7 @@ export default function MaterialsPage() {
         ══════════════════════════════════════════════════════ */}
         {(stage === "uploading" || stage === "analyzing_topics" || stage === "analyzing_lesson") && (
           <motion.div key="progress" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-xl mx-auto">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8">
+            <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-8">
 
               {/* File info */}
               <div className="flex items-center gap-4 mb-6">
@@ -535,7 +541,7 @@ export default function MaterialsPage() {
 
               {/* Progress bar */}
               <div className="mb-2">
-                <div className="h-3 rounded-full bg-white/10 overflow-hidden">
+                <div className="h-3 rounded-full bg-black/8 dark:bg-white/10 overflow-hidden">
                   <motion.div
                     animate={{ width: `${progress}%` }}
                     transition={{ ease: "easeOut", duration: 0.5 }}
@@ -642,7 +648,7 @@ export default function MaterialsPage() {
 
               {/* Sidebar */}
               <div className="space-y-3">
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">AI yaratadi</p>
                   <div className="space-y-2">
                     {[
@@ -653,7 +659,7 @@ export default function MaterialsPage() {
                       { icon: "🎯", l: "Imtihon mavzulari" },
                       { icon: "🤯", l: "WOW faktlar" },
                     ].map((x) => (
-                      <div key={x.l} className="flex items-center gap-2 text-xs text-slate-300 p-2 rounded-lg bg-white/5">
+                      <div key={x.l} className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300 p-2 rounded-lg bg-black/[0.04] dark:bg-white/5">
                         <span>{x.icon}</span> {x.l}
                       </div>
                     ))}
@@ -719,7 +725,7 @@ export default function MaterialsPage() {
                 { icon: "🎯", l: "Imtihon",    v: examTopics.length, c: "#E84855" },
                 { icon: "🤯", l: "WOW Fakt",   v: result.wow_facts?.length || 0, c: "#F59E0B" },
               ].map((s) => (
-                <div key={s.l} className="rounded-xl border border-white/10 bg-white/[0.03] p-3 text-center">
+                <div key={s.l} className="rounded-xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-3 text-center">
                   <div className="text-lg mb-0.5">{s.icon}</div>
                   <p className="font-bold text-xl" style={{ color: s.c }}>{s.v}</p>
                   <p className="text-xs text-slate-500">{s.l}</p>
@@ -763,7 +769,7 @@ export default function MaterialsPage() {
                           <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">⚡ Qiziqarli faktlar</p>
                           <div className="space-y-2">
                             {result.wow_facts.map((f: string, i: number) => (
-                              <div key={i} className="flex items-start gap-2 text-sm text-slate-200 p-2.5 rounded-xl bg-white/5">
+                              <div key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl bg-black/[0.04] dark:bg-white/5">
                                 <span className="text-amber-400 shrink-0 mt-0.5">🤯</span> {f}
                               </div>
                             ))}
@@ -776,7 +782,7 @@ export default function MaterialsPage() {
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dars bo&apos;limlari</p>
                           <div className="space-y-2">
                             {result.main_topics.map((t: any, i: number) => (
-                              <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/5 border-l-4 border-l-[#F5A623]">
+                              <div key={i} className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border-l-4 border-l-[#F5A623] border border-black/5 dark:border-white/5">
                                 <p className="font-bold text-[#F5A623] mb-1">{t.title}</p>
                                 {t.subtopics?.length > 0 && <p className="text-xs text-slate-400 mb-1">{t.subtopics.slice(0, 3).join(" · ")}</p>}
                                 {t.key_concepts?.length > 0 && <p className="text-xs text-slate-500">🔑 {t.key_concepts.slice(0, 3).join(", ")}</p>}
@@ -796,7 +802,7 @@ export default function MaterialsPage() {
                       ) : (
                         <div className="space-y-3">
                           {/* Current slide viewer */}
-                          <div className="rounded-2xl border border-white/10 bg-white/[0.03] overflow-hidden">
+                          <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] overflow-hidden">
                             <div className="px-5 py-3 border-b border-white/5 flex items-center justify-between">
                               <span className="text-sm font-bold">{slideIdx + 1} / {slides.length}</span>
                               <div className="flex gap-2">
@@ -848,7 +854,7 @@ export default function MaterialsPage() {
                         const opts: string[] = q.options || [];
                         const correctLetter = q.correct || "A";
                         return (
-                          <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
+                          <div key={i} className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
                             <div className="flex items-start gap-3 mb-4">
                               <span className="w-8 h-8 rounded-xl bg-[#F5A623]/20 flex items-center justify-center text-sm font-bold text-[#F5A623] shrink-0 mt-0.5">{i + 1}</span>
                               <p className="font-bold leading-relaxed">{q.question}</p>
@@ -871,7 +877,7 @@ export default function MaterialsPage() {
                               })}
                             </div>
                             {q.explanation && (
-                              <div className="p-3 rounded-xl bg-[#1B4FD8]/10 border border-[#1B4FD8]/20 text-sm text-slate-300">
+                              <div className="p-3 rounded-xl bg-[#1B4FD8]/10 border border-[#1B4FD8]/20 text-sm text-slate-700 dark:text-slate-300">
                                 💡 <strong className="text-[#6B8FFF]">Izoh:</strong> {q.explanation}
                               </div>
                             )}
@@ -919,7 +925,7 @@ export default function MaterialsPage() {
                         <div className="space-y-2">
                           {glossary.map((g: any, i: number) => (
                             <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
-                              className="flex gap-4 p-4 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 transition">
+                              className="flex gap-4 p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 transition">
                               <span className="w-8 h-8 rounded-xl bg-[#7B2FBE]/20 flex items-center justify-center text-xs font-bold text-[#A78BFA] shrink-0 mt-0.5">{i + 1}</span>
                               <div>
                                 <p className="font-bold text-[#F5A623] mb-0.5">{g.term}</p>
@@ -983,12 +989,12 @@ export default function MaterialsPage() {
                   <Sparkles size={14} /> AI Dars Yaratish
                 </button>
                 <button onClick={reset}
-                  className="w-full py-3.5 rounded-xl bg-white/5 border border-white/10 text-slate-300 font-bold flex items-center justify-center gap-2 hover:bg-white/10 transition text-sm">
+                  className="w-full py-3.5 rounded-xl bg-black/[0.04] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-600 dark:text-slate-300 font-bold flex items-center justify-center gap-2 hover:bg-black/8 dark:hover:bg-white/10 transition text-sm">
                   <FilePlus size={14} /> Boshqa Metodichka
                 </button>
 
                 {/* Stats */}
-                <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-4">
                   <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dars statistikasi</p>
                   <div className="space-y-2">
                     {[
@@ -1007,7 +1013,7 @@ export default function MaterialsPage() {
                 </div>
 
                 {result.difficulty_distribution && (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+                  <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-4">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Qiyinlik darajasi</p>
                     {[
                       { l: "Oson",    v: result.difficulty_distribution.easy || 0,   c: "#0D9373" },

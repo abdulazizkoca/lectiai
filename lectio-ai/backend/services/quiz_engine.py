@@ -38,26 +38,47 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY") or "mock-key")
 gemini_model = genai.GenerativeModel('gemini-1.5-pro')
 
 def generate_room_code() -> str:
-    # 6 characters, readable (no O/0, I/1 confusion)
     chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     return "".join(random.choices(chars, k=6))
 
+# In-memory fallback when Redis is unavailable (development)
+_mem_rooms: dict = {}
+_mem_sid_room: dict = {}
+
 async def get_room(room_code: str):
-    if not redis_client:
-        return None
-    data = await redis_client.get(f"quiz:room:{room_code}")
-    return json.loads(data) if data else None
+    if redis_client:
+        data = await redis_client.get(f"quiz:room:{room_code}")
+        return json.loads(data) if data else None
+    return _mem_rooms.get(room_code)
 
 async def save_room(room_code: str, room_data: dict):
-    if not redis_client:
-        return
-    # Expire after 4 hours of inactivity
-    await redis_client.setex(f"quiz:room:{room_code}", 4 * 3600, json.dumps(room_data))
+    if redis_client:
+        await redis_client.setex(f"quiz:room:{room_code}", 4 * 3600, json.dumps(room_data))
+    else:
+        _mem_rooms[room_code] = room_data
 
 async def delete_room(room_code: str):
-    if not redis_client:
-        return
-    await redis_client.delete(f"quiz:room:{room_code}")
+    if redis_client:
+        await redis_client.delete(f"quiz:room:{room_code}")
+    else:
+        _mem_rooms.pop(room_code, None)
+
+async def get_sid_room(sid: str) -> str | None:
+    if redis_client:
+        return await redis_client.get(f"quiz:sid_room:{sid}")
+    return _mem_sid_room.get(sid)
+
+async def set_sid_room(sid: str, room_code: str):
+    if redis_client:
+        await redis_client.setex(f"quiz:sid_room:{sid}", 4 * 3600, room_code)
+    else:
+        _mem_sid_room[sid] = room_code
+
+async def del_sid_room(sid: str):
+    if redis_client:
+        await redis_client.delete(f"quiz:sid_room:{sid}")
+    else:
+        _mem_sid_room.pop(sid, None)
 
 async def ai_grade_short_answer(correct_answer: str, student_answer: str) -> float:
     # returns score between 0.0 and 1.0
@@ -125,9 +146,7 @@ async def connect(sid, environ):
 
 @sio.event
 async def disconnect(sid):
-    if not redis_client:
-        return
-    room_code = await redis_client.get(f"quiz:sid_room:{sid}")
+    room_code = await get_sid_room(sid)
     if not room_code:
         return
     room = await get_room(room_code)
@@ -139,7 +158,7 @@ async def disconnect(sid):
             "participant_count": len(room["participants"]),
             "nickname_list": nicknames
         }, room=room_code)
-    await redis_client.delete(f"quiz:sid_room:{sid}")
+    await del_sid_room(sid)
 
 # PROFESSOR EVENTS
 @sio.event
@@ -294,10 +313,7 @@ async def join_room(sid, data):
         
     await save_room(room_code, room)
     await sio.enter_room(sid, room_code)
-
-    # sid → room_code mapping (disconnect uchun kerak)
-    if redis_client:
-        await redis_client.setex(f"quiz:sid_room:{sid}", 4 * 3600, room_code)
+    await set_sid_room(sid, room_code)
 
     nicknames = [p["name"] for p in room["participants"].values()]
 
@@ -319,13 +335,15 @@ async def submit_answer(sid, data):
     if sid in room["answers"].get(q_idx, {}):
         return # Duplicate submission
         
-    # Deduplicate via Redis NX lock when available
+    # Duplicate submission check (in-memory fallback when Redis unavailable)
     if redis_client:
         nx_key = f"quiz:submit:{room_code}:{q_idx}:{sid}"
         is_first = await redis_client.setnx(nx_key, "1")
         if not is_first:
             return
         await redis_client.expire(nx_key, 60)
+    elif sid in room["answers"].get(q_idx, {}):
+        return
     
     answer = data["answer"]
     

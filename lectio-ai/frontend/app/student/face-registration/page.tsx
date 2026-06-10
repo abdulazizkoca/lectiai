@@ -1,13 +1,24 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { FaceRegistration } from "@/components/student/FaceRegistration";
+import { getStoredUserId } from "@/lib/api";
 
 export default function FaceRegistrationPage() {
   const router = useRouter();
   const [registrationComplete, setRegistrationComplete] = useState(false);
+  const [userId, setUserId] = useState<number>(0);
+
+  useEffect(() => {
+    const id = getStoredUserId();
+    if (!id) {
+      router.replace("/student/login");
+      return;
+    }
+    setUserId(id);
+  }, [router]);
 
   const handleRegistrationComplete = (success: boolean) => {
     setRegistrationComplete(success);
@@ -64,7 +75,7 @@ export default function FaceRegistrationPage() {
           )}
 
           <FaceRegistration
-            userId={1} // TODO: Get from auth context
+            userId={userId}
             onRegistrationComplete={handleRegistrationComplete}
           />
 

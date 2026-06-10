@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Sidebar } from "@/components/professor/Sidebar";
 import { Header } from "@/components/professor/Header";
 import { SearchModal } from "@/components/professor/SearchModal";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useLanguage } from "@/contexts/LanguageContext";
 import { Bell, CheckCircle2, X } from "lucide-react";
 
 export default function ProfessorLayout({ children }: { children: React.ReactNode }) {
@@ -17,31 +15,17 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
     { id: 2, title: "Diqqat pasaydi", body: "Sinf o'rtacha diqqat darajasi 68% ga tushdi.", read: false },
     { id: 3, title: "Material tayyor", body: "AI dars rejasi va quiz savollarini yaratdi.", read: true },
   ]);
-  const { isDark } = useTheme();
-  const { language } = useLanguage();
-
   return (
     <div className="flex h-[100dvh] bg-[#FAFAF7] dark:bg-[#050508] overflow-hidden relative">
-      {/* Background Layer */}
+      {/* Ambient Glows */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div 
-          className="absolute inset-0 transition-opacity duration-1000"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=1920&q=80')`,
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-            opacity: isDark ? 0.15 : 0.08,
-            filter: "grayscale(100%) contrast(1.2) brightness(0.7)",
-          }}
-        />
-        {/* Ambient Glows */}
         <div
-          className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full opacity-[0.1]"
-          style={{ background: "#1B4FD8", filter: "blur(120px)" }}
+          className="absolute top-[-10%] left-[-5%] w-[600px] h-[600px] rounded-full opacity-[0.07] dark:opacity-[0.12]"
+          style={{ background: "#1B4FD8", filter: "blur(140px)" }}
         />
         <div
-          className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full opacity-[0.1]"
-          style={{ background: "#F5A623", filter: "blur(120px)" }}
+          className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full opacity-[0.06] dark:opacity-[0.10]"
+          style={{ background: "#F5A623", filter: "blur(140px)" }}
         />
       </div>
 

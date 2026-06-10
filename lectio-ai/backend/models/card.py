@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime, Float
 from sqlalchemy.orm import relationship
 from database import Base
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class Card(Base):
@@ -14,7 +14,7 @@ class Card(Base):
     difficulty = Column(Float, default=2.5)   # SM-2 algoritmi uchun (EF)
     interval = Column(Integer, default=1)      # Kunlarda
     repetitions = Column(Integer, default=0)
-    next_review = Column(DateTime, default=datetime.utcnow)
+    next_review = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     student_id = Column(Integer, ForeignKey("users.id"))
     lesson_id = Column(Integer, ForeignKey("lessons.id"))

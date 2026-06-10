@@ -134,7 +134,7 @@ async def start_question(sid, data):
     
     room.current_q_index += 1
     if room.current_q_index >= len(room.questions):
-        await end_quiz(room_code, room)
+        await finish_quiz(room_code, room)
         return
     
     room.status = "active"
@@ -188,6 +188,22 @@ async def submit_answer(sid, data):
     
     await sio.emit("answer_count_update", {"answered": len(room.question_answers), "total": len(room.participants)}, to=room.professor_sid)
 
+@sio.event
+async def end_question(sid, data):
+    room_code = data.get("room_code")
+    room = rooms.get(room_code)
+    if not room or room.professor_sid != sid:
+        return
+    await show_question_results(room_code)
+
+@sio.on("end_quiz")
+async def handle_end_quiz(sid, data):
+    room_code = data.get("room_code")
+    room = rooms.get(room_code)
+    if not room or room.professor_sid != sid:
+        return
+    await finish_quiz(room_code, room)
+
 async def auto_end_question(room_code: str, time_limit: int):
     await asyncio.sleep(time_limit)
     room = rooms.get(room_code)
@@ -213,7 +229,7 @@ async def show_question_results(room_code: str):
         "option_counts": option_counts, "leaderboard": room.get_leaderboard()[:5],
     }, room=room_code)
 
-async def end_quiz(room_code: str, room: RoomState):
+async def finish_quiz(room_code: str, room: RoomState):
     room.status = "ended"
     await sio.emit("quiz_ended", {
         "final_leaderboard": room.get_leaderboard(), "team_leaderboard": room.get_team_leaderboard(), "total_participants": len(room.participants),

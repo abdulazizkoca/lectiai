@@ -85,7 +85,7 @@ export function Sidebar({ isMobileOpen, onCloseMobile }: { isMobileOpen?: boolea
 
   const navItems = [
     { name: t.dashboard, href: "/professor/dashboard", icon: <Home size={20} /> },
-    { name: t.myLessons, href: "/professor/lessons", icon: <BookOpen size={20} />, badge: "12" },
+    { name: t.myLessons, href: "/professor/lessons", icon: <BookOpen size={20} /> },
     { name: t.materials, href: "/professor/materials", icon: <FolderOpen size={20} /> },
     { name: t.createLesson, href: "/professor/create-lesson", icon: <PlusCircle size={20} className="text-[#F5A623]" />, highlight: true },
     { name: t.liveLesson, href: "/professor/live", icon: <Video size={20} />, live: true },
