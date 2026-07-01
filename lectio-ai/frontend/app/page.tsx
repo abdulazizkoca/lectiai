@@ -47,7 +47,7 @@ function HomeNav() {
           className="transition-transform duration-300 group-hover:scale-110"
         />
         <span className="font-bold text-xl tracking-tight" style={{ color: isDark ? "#fff" : "#0A0A0F" }}>
-          Lectio <span className="text-[#F5A623]">AI</span>
+          Lectio <span className="text-saffron">AI</span>
         </span>
       </motion.div>
 
@@ -70,7 +70,7 @@ function HomeNav() {
               onClick={() => setLanguage(l.code)}
               className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300"
               style={{
-                background: language === l.code ? "#F5A623" : "transparent",
+                background: language === l.code ? "var(--saffron)" : "transparent",
                 color: language === l.code ? "#000" : isDark ? "#888" : "#666",
                 boxShadow: language === l.code ? "0 2px 8px rgba(245,166,35,0.3)" : "none"
               }}
@@ -86,7 +86,7 @@ function HomeNav() {
           style={{
             background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
             border: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}`,
-            color: isDark ? "#F5A623" : "#1B4FD8",
+            color: isDark ? "var(--saffron)" : "var(--lapis)",
           }}
           aria-label="Toggle theme"
         >
@@ -216,7 +216,7 @@ export default function HomePage() {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold mb-8 shadow-lg backdrop-blur-md"
             style={{
               background: isDark ? "rgba(245,166,35,0.08)" : "rgba(245,166,35,0.12)",
-              color: "#F5A623",
+              color: "var(--saffron)",
               border: "1px solid rgba(245,166,35,0.3)",
             }}
           >
@@ -228,7 +228,7 @@ export default function HomePage() {
             className="text-5xl md:text-7xl lg:text-8xl font-black mb-4 md:mb-6 tracking-tight relative"
             style={{ color: isDark ? "#fff" : "#0A0A0F", lineHeight: 1.05 }}
           >
-            Lectio <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F5A623] to-[#FFD166] drop-shadow-lg">AI</span>
+            Lectio <span className="text-transparent bg-clip-text bg-gradient-to-r from-saffron to-[#FFD166] drop-shadow-lg">AI</span>
           </h1>
           
           <p

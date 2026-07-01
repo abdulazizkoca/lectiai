@@ -32,23 +32,23 @@ export default function FaceMonitor() {
   const trackedFacesRef = useRef<any[]>([]);
 
   const styles = `
-    @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Unbounded:wght@300;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
 
     :root {
-      --bg: #050508;
-      --surface: #0a0a0f;
-      --panel: #0d0d14;
-      --accent: #00ff88;
-      --accent2: #ff3366;
-      --text: #e8e8f0;
-      --text-dim: #555566;
-      --border: #1e1e2e;
+      --bg: #0A0A0F;
+      --surface: #18181F;
+      --panel: #18181F;
+      --accent: #0D9373;
+      --accent2: #E84855;
+      --text: #ffffff;
+      --text-dim: rgba(255,255,255,0.4);
+      --border: rgba(255,255,255,0.1);
     }
 
     .monitor-body {
       background: var(--bg);
       color: var(--text);
-      font-family: 'Space Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -69,26 +69,26 @@ export default function FaceMonitor() {
     }
 
     .logo {
-      font-family: 'Unbounded', sans-serif;
-      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
       font-size: 14px;
-      letter-spacing: 0.15em;
+      letter-spacing: 0.1em;
       color: var(--accent);
     }
-    .logo span { color: var(--text-dim); font-weight: 300; }
+    .logo span { color: var(--text-dim); font-weight: 400; }
 
     .status-bar { display: flex; align-items: center; gap: 24px; }
     .face-count-display { display: flex; align-items: baseline; gap: 8px; }
     .face-number {
-      font-family: 'Unbounded', sans-serif;
-      font-weight: 900;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
       font-size: 36px;
       color: var(--accent);
     }
     .face-label { font-size: 10px; color: var(--text-dim); }
 
     .toggle-btn {
-      font-family: 'Space Mono', monospace;
+      font-family: 'JetBrains Mono', monospace;
       font-size: 12px;
       font-weight: 700;
       padding: 12px 26px;
@@ -346,7 +346,7 @@ export default function FaceMonitor() {
             const rh = tf.h * ratioY;
             
             // Toza va sodda ramka (Oshiqcha effektlarsiz)
-            ctx!.strokeStyle = '#00ff88';
+            ctx!.strokeStyle = '#0D9373';
             ctx!.lineWidth = 2;
             ctx!.strokeRect(rx, ry, rw, rh);
         });

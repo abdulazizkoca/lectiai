@@ -7,7 +7,7 @@ class StudentProgress(Base):
     __tablename__ = "student_progress"
 
     id = Column(Integer, primary_key=True, index=True)
-    student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     subject = Column(String, nullable=False)
     topic = Column(String, nullable=False)
     

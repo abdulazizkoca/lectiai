@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Brain, Zap, ArrowLeft, Send, Loader2, ChevronRight,
-  RotateCcw, CheckCircle2, XCircle, Sun, Moon, Bot, BookOpen, Sparkles
+  RotateCcw, CheckCircle2, XCircle, Sun, Moon, Bot, BookOpen,
+  Sparkles, Star, Trophy, Target, MessageSquare
 } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -30,6 +31,7 @@ export default function IndependentStudyPage() {
   const router  = useRouter();
   const { isDark, toggleTheme } = useTheme();
   const [mode, setMode] = useState<Mode>("menu");
+  const [userName, setUserName] = useState("");
 
   // AI Cards state
   const [topic, setTopic]         = useState("");
@@ -55,9 +57,21 @@ export default function IndependentStudyPage() {
   const [genQuiz, setGenQuiz]     = useState(false);
 
   // Mentor state
+  const chatBottomRef = useRef<HTMLDivElement>(null);
   const [msgs, setMsgs]           = useState<{ role: "user" | "assistant"; content: string }[]>([]);
   const [chatIn, setChatIn]       = useState("");
   const [chatLoad, setChatLoad]   = useState(false);
+
+  useEffect(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem("lectio_user") || "{}");
+      if (u?.full_name) setUserName(u.full_name);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [msgs, chatLoad]);
 
   const getAuth = () => {
     try {
@@ -166,14 +180,14 @@ export default function IndependentStudyPage() {
   const border  = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.08)";
   const fg      = isDark ? "#fff" : "#0A0A0F";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
-  const input   = isDark
-    ? "bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-[#F5A623]"
-    : "bg-black/[0.03] border-black/10 text-[#0A0A0F] placeholder-slate-400 focus:border-[#F5A623]";
+  const inputCls = isDark
+    ? "bg-white/5 border-white/10 text-white placeholder-slate-500 focus:border-saffron"
+    : "bg-black/[0.03] border-black/10 text-[#0A0A0F] placeholder-slate-400 focus:border-saffron";
 
   const MODES = [
-    { id: "ai-cards", icon: Sparkles, label: "AI Flashcard Yaratish", desc: "Har qanday mavzu bo'yicha AI flashcard yaratsin", color: "#F5A623" },
-    { id: "mentor",   icon: Bot,      label: "AI Mentor",              desc: "Savollaringizni AI ustoza bering",              color: "#7B2FBE" },
-    { id: "study",    icon: BookOpen, label: "Kartalarni O'qish",      desc: "Yaratilgan kartalarni ko'rib chiqish",          color: "#0D9373", disabled: flashcards.length === 0 },
+    { id: "ai-cards", icon: Sparkles, label: "AI Flashcard Yaratish", desc: "Har qanday mavzu bo'yicha AI flashcard yaratsin", color: "var(--saffron)", hex: "#F5A623" },
+    { id: "mentor",   icon: Bot,      label: "AI Mentor",              desc: "Savollaringizni AI ustoza bering",              color: "var(--amethyst)", hex: "#7B2FBE" },
+    { id: "study",    icon: BookOpen, label: "Kartalarni O'qish",      desc: "Yaratilgan kartalarni ko'rib chiqish",          color: "var(--jade)", hex: "#0D9373", disabled: flashcards.length === 0 },
   ];
 
   const DIFFICULTIES = [["easy", "Oddiy 🌱"], ["medium", "O'rta 🌿"], ["hard", "Qiyin 🌳"]];
@@ -187,6 +201,8 @@ export default function IndependentStudyPage() {
     quiz:      "Test",
     mentor:    "AI Mentor",
   };
+
+  const firstName = userName.split(" ")[0];
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: bg }}>
@@ -203,54 +219,127 @@ export default function IndependentStudyPage() {
           )}
         </div>
         <button onClick={toggleTheme} className="p-2 rounded-xl transition" style={{ background: surf }}>
-          {isDark ? <Sun size={15} style={{ color: "#F5A623" }} /> : <Moon size={15} style={{ color: "#1B4FD8" }} />}
+          {isDark ? <Sun size={15} style={{ color: "var(--saffron)" }} /> : <Moon size={15} style={{ color: "var(--lapis)" }} />}
         </button>
       </header>
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 pb-8">
+      <div className="flex-1 max-w-2xl mx-auto w-full px-4 pb-10">
         <AnimatePresence mode="wait">
 
           {/* ── MENU ──────────────────────────────────────────────── */}
           {mode === "menu" && (
-            <motion.div key="menu" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-8">
-              <div className="text-center mb-8">
-                <div className="text-5xl mb-3">📖</div>
-                <h2 className="text-2xl font-bold mb-1" style={{ color: fg }}>Mustaqil O&apos;qish</h2>
-                <p className="text-sm" style={{ color: muted }}>O&apos;z tempingizda o&apos;rganing</p>
+            <motion.div key="menu" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-6">
+
+              {/* Hero card */}
+              <div className="relative rounded-3xl p-6 mb-6 overflow-hidden text-center"
+                style={{ background: isDark ? "rgba(245,166,35,0.05)" : "rgba(245,166,35,0.07)", border: "1px solid rgba(245,166,35,0.18)" }}>
+                <div className="absolute inset-0 pointer-events-none"
+                  style={{ background: "radial-gradient(ellipse 70% 60% at 50% 0%, rgba(245,166,35,0.15) 0%, transparent 70%)" }} />
+                <div className="relative">
+                  <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                    style={{ background: "linear-gradient(135deg, var(--saffron), #e8941a)", boxShadow: "0 8px 24px rgba(245,166,35,0.35)" }}>
+                    <BookOpen size={26} className="text-black" />
+                  </div>
+                  <h2 className="text-2xl font-bold mb-1" style={{ color: fg }}>
+                    {firstName ? `${firstName}ning Studiosi` : "Mustaqil O'qish"}
+                  </h2>
+                  <p className="text-sm" style={{ color: muted }}>AI bilan o&apos;z tempingizda o&apos;rganing</p>
+                </div>
               </div>
-              <div className="space-y-3">
-                {MODES.map((m) => {
+
+              {/* Session mini-stats — only when data exists */}
+              {(flashcards.length > 0 || msgs.length > 0) && (
+                <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                  className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{ background: "rgba(13,147,115,0.07)", border: "1px solid rgba(13,147,115,0.18)" }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(13,147,115,0.15)" }}>
+                      <Star size={15} style={{ color: "var(--jade)" }} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm leading-tight" style={{ color: fg }}>{flashcards.length} karta</p>
+                      <p className="text-xs" style={{ color: muted }}>Bu sessiya</p>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{ background: "rgba(123,47,190,0.07)", border: "1px solid rgba(123,47,190,0.18)" }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: "rgba(123,47,190,0.15)" }}>
+                      <MessageSquare size={15} style={{ color: "var(--amethyst)" }} />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm leading-tight" style={{ color: fg }}>{msgs.length} xabar</p>
+                      <p className="text-xs" style={{ color: muted }}>Mentor chat</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Mode cards */}
+              <div className="space-y-3 mb-6">
+                {MODES.map((m, i) => {
                   const Icon = m.icon;
                   return (
                     <motion.button
                       key={m.id}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.08 }}
                       whileHover={!m.disabled ? { x: 4 } : {}}
                       whileTap={!m.disabled ? { scale: 0.98 } : {}}
                       onClick={() => !m.disabled && setMode(m.id as Mode)}
                       disabled={m.disabled}
-                      className="w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all"
+                      className="w-full flex items-center gap-4 p-5 rounded-2xl text-left transition-all group"
                       style={{
-                        background: m.disabled ? surf : `${m.color}12`,
-                        border: `1px solid ${m.disabled ? border : `${m.color}30`}`,
-                        opacity: m.disabled ? 0.5 : 1,
+                        background: m.disabled ? surf : `${m.hex}0D`,
+                        border: `1px solid ${m.disabled ? border : `${m.hex}28`}`,
+                        opacity: m.disabled ? 0.65 : 1,
                         cursor: m.disabled ? "not-allowed" : "pointer",
                       }}
                     >
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-                        style={{ background: `${m.color}22` }}>
-                        <Icon size={22} style={{ color: m.color }} />
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-110"
+                        style={{ background: m.disabled ? (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.04)") : `${m.hex}22` }}>
+                        <Icon size={22} style={{ color: m.disabled ? muted : m.color }} />
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold" style={{ color: m.disabled ? muted : m.color }}>{m.label}</p>
-                        <p className="text-xs mt-0.5" style={{ color: muted }}>{m.desc}</p>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm mb-0.5" style={{ color: m.disabled ? muted : fg }}>{m.label}</p>
+                        <p className="text-xs leading-relaxed" style={{ color: muted }}>{m.desc}</p>
                         {m.id === "study" && m.disabled && (
-                          <p className="text-xs mt-0.5" style={{ color: muted }}>Avval flashcard yarating</p>
+                          <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--saffron)" }}>
+                            ↑ Avval "AI Flashcard Yaratish" ni bosing
+                          </p>
+                        )}
+                        {m.id === "study" && !m.disabled && (
+                          <p className="text-xs mt-1.5 font-semibold" style={{ color: "var(--jade)" }}>
+                            ✓ {flashcards.length} ta karta tayyor
+                          </p>
                         )}
                       </div>
-                      {!m.disabled && <ChevronRight size={16} style={{ color: muted }} />}
+                      {!m.disabled && (
+                        <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                          style={{ background: `${m.hex}18` }}>
+                          <ChevronRight size={15} style={{ color: m.color }} />
+                        </div>
+                      )}
                     </motion.button>
                   );
                 })}
+              </div>
+
+              {/* Tip / motivational card */}
+              <div className="rounded-2xl p-4 flex items-start gap-3"
+                style={{ background: isDark ? "rgba(27,79,216,0.06)" : "rgba(27,79,216,0.05)", border: "1px solid rgba(27,79,216,0.15)" }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ background: "rgba(27,79,216,0.12)" }}>
+                  <Brain size={16} style={{ color: "var(--lapis)" }} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold mb-1 uppercase tracking-wider" style={{ color: "var(--lapis)" }}>Bilimga asoslangan maslahat</p>
+                  <p className="text-sm leading-relaxed" style={{ color: muted }}>
+                    Har kuni 20-30 daqiqa takrorlash bilimni 80% uzoqroq saqlab qolishga yordam beradi — Spaced Repetition effekti.
+                  </p>
+                </div>
               </div>
             </motion.div>
           )}
@@ -259,12 +348,12 @@ export default function IndependentStudyPage() {
           {mode === "ai-cards" && (
             <motion.div key="ai-cards" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="pt-6">
               <h2 className="text-lg font-bold mb-5 flex items-center gap-2" style={{ color: fg }}>
-                <Sparkles size={18} style={{ color: "#F5A623" }} /> AI Flashcard Yaratish
+                <Sparkles size={18} style={{ color: "var(--saffron)" }} /> AI Flashcard Yaratish
               </h2>
 
               {genError && (
                 <div className="p-3 mb-4 rounded-xl text-sm"
-                  style={{ background: "rgba(232,72,85,0.1)", border: "1px solid rgba(232,72,85,0.2)", color: "#E84855" }}>
+                  style={{ background: "rgba(232,72,85,0.1)", border: "1px solid rgba(232,72,85,0.2)", color: "var(--coral)" }}>
                   {genError}
                 </div>
               )}
@@ -276,7 +365,7 @@ export default function IndependentStudyPage() {
                     value={topic}
                     onChange={(e) => { setTopic(e.target.value); setGenErr(""); }}
                     placeholder="Masalan: Integral hisob, Binary Search, Fotosintez…"
-                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${input}`}
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${inputCls}`}
                   />
                 </div>
                 <div>
@@ -285,7 +374,7 @@ export default function IndependentStudyPage() {
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
                     placeholder="Matematika, Biologiya, Ingliz tili…"
-                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${input}`}
+                    className={`w-full px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${inputCls}`}
                   />
                 </div>
                 <div>
@@ -295,7 +384,7 @@ export default function IndependentStudyPage() {
                       <button key={val} onClick={() => setDiff(val)}
                         className="flex-1 py-2.5 rounded-xl text-sm font-bold transition"
                         style={difficulty === val
-                          ? { background: "#F5A623", color: "#000" }
+                          ? { background: "var(--saffron)", color: "#000" }
                           : { background: surf, color: muted, border: `1px solid ${border}` }}>
                         {label}
                       </button>
@@ -309,7 +398,7 @@ export default function IndependentStudyPage() {
                   onClick={handleGenerate}
                   disabled={generating || !topic.trim()}
                   className="w-full py-4 rounded-xl font-bold text-black text-base disabled:opacity-50 flex items-center justify-center gap-2"
-                  style={{ background: "#F5A623" }}
+                  style={{ background: "var(--saffron)" }}
                 >
                   {generating
                     ? <><Loader2 size={18} className="animate-spin" /> AI yaratmoqda…</>
@@ -332,15 +421,14 @@ export default function IndependentStudyPage() {
                   </button>
                   <button onClick={handleStartQuiz} disabled={genQuiz}
                     className="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 font-bold transition"
-                    style={{ background: "rgba(13,147,115,0.15)", color: "#0D9373", border: "1px solid rgba(13,147,115,0.25)" }}>
+                    style={{ background: "rgba(13,147,115,0.15)", color: "var(--jade)", border: "1px solid rgba(13,147,115,0.25)" }}>
                     {genQuiz ? <Loader2 size={12} className="animate-spin" /> : <Zap size={12} />} Test
                   </button>
                 </div>
               </div>
 
               <div className="h-1.5 rounded-full mb-6 overflow-hidden" style={{ background: border }}>
-                <div className="h-full rounded-full bg-[#F5A623] transition-all"
-                  style={{ width: `${((cardIndex + 1) / flashcards.length) * 100}%` }} />
+                <div className="h-full rounded-full transition-all" style={{ background: "var(--saffron)", width: `${((cardIndex + 1) / flashcards.length) * 100}%` }} />
               </div>
 
               <motion.div
@@ -353,7 +441,7 @@ export default function IndependentStudyPage() {
                 <AnimatePresence mode="wait">
                   {!flipped ? (
                     <motion.div key="f" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <p className="text-xs text-[#F5A623] uppercase tracking-widest mb-3 font-bold">SAVOL</p>
+                      <p className="text-xs text-saffron uppercase tracking-widest mb-3 font-bold">SAVOL</p>
                       <p className="text-xl font-bold leading-relaxed" style={{ color: fg }}>{flashcards[cardIndex].front}</p>
                       {flashcards[cardIndex].hint && (
                         <p className="text-sm mt-4" style={{ color: muted }}>💡 {flashcards[cardIndex].hint}</p>
@@ -362,7 +450,7 @@ export default function IndependentStudyPage() {
                     </motion.div>
                   ) : (
                     <motion.div key="b" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                      <p className="text-xs text-[#0D9373] uppercase tracking-widest mb-3 font-bold">JAVOB</p>
+                      <p className="text-xs text-jade uppercase tracking-widest mb-3 font-bold">JAVOB</p>
                       <p className="text-lg leading-relaxed" style={{ color: fg }}>{flashcards[cardIndex].back}</p>
                     </motion.div>
                   )}
@@ -391,11 +479,10 @@ export default function IndependentStudyPage() {
                 <>
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-sm" style={{ color: muted }}>Savol {qIdx + 1}/{qs.length}</span>
-                    <span className="text-sm font-bold text-[#F5A623]">{score} to&apos;g&apos;ri</span>
+                    <span className="text-sm font-bold text-saffron">{score} to&apos;g&apos;ri</span>
                   </div>
                   <div className="h-1.5 rounded-full mb-5 overflow-hidden" style={{ background: border }}>
-                    <div className="h-full rounded-full bg-[#0D9373] transition-all"
-                      style={{ width: `${(qIdx / qs.length) * 100}%` }} />
+                    <div className="h-full rounded-full transition-all" style={{ background: "var(--jade)", width: `${(qIdx / qs.length) * 100}%` }} />
                   </div>
 
                   <div className="rounded-2xl p-5 mb-4" style={{ background: surf, border: `1px solid ${border}` }}>
@@ -406,22 +493,22 @@ export default function IndependentStudyPage() {
                     {qs[qIdx].options.map((opt, i) => {
                       const sel = chosen === i;
                       const cor = qs[qIdx].correct === i;
-                      let bg2 = surf, bdr = border, clr = fg;
+                      let bgCol = surf, bdrCol = border, clrCol = fg;
                       if (chosen !== null) {
-                        if (cor)       { bg2 = "rgba(13,147,115,0.12)"; bdr = "rgba(13,147,115,0.4)"; clr = "#0D9373"; }
-                        else if (sel)  { bg2 = "rgba(232,72,85,0.12)";  bdr = "rgba(232,72,85,0.4)";  clr = "#E84855"; }
+                        if (cor)       { bgCol = "rgba(13,147,115,0.12)"; bdrCol = "rgba(13,147,115,0.4)"; clrCol = "var(--jade)"; }
+                        else if (sel)  { bgCol = "rgba(232,72,85,0.12)";  bdrCol = "rgba(232,72,85,0.4)";  clrCol = "var(--coral)"; }
                       }
                       return (
                         <button key={i} onClick={() => handleAnswer(i)} disabled={chosen !== null}
                           className="w-full flex items-center gap-3 p-4 rounded-xl transition-all text-left disabled:cursor-not-allowed"
-                          style={{ background: bg2, border: `1px solid ${bdr}` }}>
+                          style={{ background: bgCol, border: `1px solid ${bdrCol}` }}>
                           <span className="w-7 h-7 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
                             style={{ background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.07)", color: fg }}>
                             {String.fromCharCode(65 + i)}
                           </span>
-                          <span className="flex-1 text-sm" style={{ color: clr }}>{opt}</span>
-                          {chosen !== null && cor && <CheckCircle2 size={16} className="text-[#0D9373] shrink-0" />}
-                          {chosen !== null && sel && !cor && <XCircle size={16} className="text-[#E84855] shrink-0" />}
+                          <span className="flex-1 text-sm" style={{ color: clrCol }}>{opt}</span>
+                          {chosen !== null && cor && <CheckCircle2 size={16} className="text-jade shrink-0" />}
+                          {chosen !== null && sel && !cor && <XCircle size={16} className="text-coral shrink-0" />}
                         </button>
                       );
                     })}
@@ -430,25 +517,29 @@ export default function IndependentStudyPage() {
                   {chosen !== null && qs[qIdx].explanation && (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                       className="mt-3 p-3 rounded-xl text-sm"
-                      style={{ background: "rgba(27,79,216,0.1)", border: "1px solid rgba(27,79,216,0.2)", color: isDark ? "#93c5fd" : "#1B4FD8" }}>
+                      style={{ background: "rgba(27,79,216,0.1)", border: "1px solid rgba(27,79,216,0.2)", color: isDark ? "#93c5fd" : "var(--lapis)" }}>
                       💡 {qs[qIdx].explanation}
                     </motion.div>
                   )}
                 </>
               ) : (
                 <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center mt-8">
-                  <div className="text-5xl mb-4">{score >= qs.length * 0.8 ? "🏆" : score >= qs.length * 0.5 ? "👍" : "📚"}</div>
+                  <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
+                    style={{ background: score >= qs.length * 0.8 ? "rgba(245,166,35,0.15)" : "rgba(27,79,216,0.12)", border: `2px solid ${score >= qs.length * 0.8 ? "rgba(245,166,35,0.4)" : "rgba(27,79,216,0.3)"}` }}>
+                    <Trophy size={32} style={{ color: score >= qs.length * 0.8 ? "var(--saffron)" : "var(--lapis)" }} />
+                  </div>
                   <h2 className="text-2xl font-bold mb-2" style={{ color: fg }}>Test tugadi!</h2>
-                  <p className="text-4xl font-bold text-[#F5A623] mb-1">{score}/{qs.length}</p>
+                  <p className="text-4xl font-bold mb-1 text-saffron">{score}/{qs.length}</p>
                   <p className="text-sm mb-8" style={{ color: muted }}>{Math.round((score / qs.length) * 100)}% to&apos;g&apos;ri</p>
                   <div className="flex flex-col gap-3">
                     <button onClick={() => { setMode("study"); setCardIdx(0); setFlipped(false); }}
                       className="py-3 rounded-xl font-bold transition"
-                      style={{ background: "rgba(13,147,115,0.15)", color: "#0D9373", border: "1px solid rgba(13,147,115,0.3)" }}>
+                      style={{ background: "rgba(13,147,115,0.15)", color: "var(--jade)", border: "1px solid rgba(13,147,115,0.3)" }}>
                       📚 Kartalarni qayta o&apos;qish
                     </button>
                     <button onClick={() => setMode("ai-cards")}
-                      className="py-3 rounded-xl font-bold text-black bg-[#F5A623] hover:bg-[#f7b955] transition">
+                      className="py-3 rounded-xl font-bold text-black transition hover:brightness-105"
+                      style={{ background: "var(--saffron)" }}>
                       ✨ Yangi mavzu o&apos;rganish
                     </button>
                   </div>
@@ -464,7 +555,10 @@ export default function IndependentStudyPage() {
               <div className="flex-1 overflow-y-auto space-y-3 pb-4">
                 {msgs.length === 0 && (
                   <div className="text-center py-10">
-                    <div className="text-5xl mb-3">🤖</div>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                      style={{ background: "rgba(123,47,190,0.12)", border: "1px solid rgba(123,47,190,0.2)" }}>
+                      <Bot size={28} style={{ color: "var(--amethyst)" }} />
+                    </div>
                     <p className="font-bold text-lg mb-1" style={{ color: fg }}>AI Mentor</p>
                     <p className="text-sm mb-5" style={{ color: muted }}>Har qanday savolingizni bering</p>
                     <div className="flex flex-col gap-2 max-w-xs mx-auto">
@@ -481,9 +575,11 @@ export default function IndependentStudyPage() {
                 {msgs.map((m, i) => (
                   <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-xs rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-                      m.role === "user" ? "bg-[#F5A623] text-black rounded-br-none" : ""
+                      m.role === "user" ? "text-black rounded-br-none" : ""
                     }`}
-                      style={m.role === "assistant" ? { background: surf, border: `1px solid ${border}`, color: fg, borderRadius: "16px 16px 16px 4px" } : {}}>
+                      style={m.role === "user"
+                        ? { background: "var(--saffron)" }
+                        : { background: surf, border: `1px solid ${border}`, color: fg, borderRadius: "16px 16px 16px 4px" }}>
                       {m.content}
                     </div>
                   </div>
@@ -500,6 +596,7 @@ export default function IndependentStudyPage() {
                     </div>
                   </div>
                 )}
+                <div ref={chatBottomRef} />
               </div>
 
               <div className="flex gap-2 pt-3" style={{ borderTop: `1px solid ${border}` }}>
@@ -508,10 +605,11 @@ export default function IndependentStudyPage() {
                   onChange={(e) => setChatIn(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleChat()}
                   placeholder="Savolingizni yozing…"
-                  className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${input}`}
+                  className={`flex-1 px-4 py-3 rounded-xl border focus:outline-none transition text-sm ${inputCls}`}
                 />
                 <button onClick={handleChat} disabled={!chatIn.trim() || chatLoad}
-                  className="p-3 rounded-xl font-bold text-black disabled:opacity-50 transition bg-[#F5A623] hover:bg-[#f7b955]">
+                  className="p-3 rounded-xl font-bold text-black disabled:opacity-50 transition hover:brightness-105"
+                  style={{ background: "var(--saffron)" }}>
                   <Send size={18} />
                 </button>
               </div>

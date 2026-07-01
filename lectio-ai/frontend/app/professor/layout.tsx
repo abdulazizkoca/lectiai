@@ -55,7 +55,7 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
           >
             <div className="flex items-center justify-between border-b border-black/5 dark:border-white/10 p-5">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#F5A623]/15 text-[#F5A623]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-saffron/15 text-saffron">
                   <Bell size={20} />
                 </div>
                 <div>
@@ -78,19 +78,19 @@ export default function ProfessorLayout({ children }: { children: React.ReactNod
                   onClick={() => setNotifications((prev) => prev.map((n) => n.id === item.id ? { ...n, read: true } : n))}
                   className="mb-2 flex w-full items-start gap-3 rounded-xl p-4 text-left transition hover:bg-slate-100 dark:hover:bg-white/5"
                 >
-                  <CheckCircle2 size={18} className={item.read ? "text-slate-400" : "text-[#0D9373]"} />
+                  <CheckCircle2 size={18} className={item.read ? "text-slate-400" : "text-jade"} />
                   <span className="flex-1">
                     <span className="block font-semibold text-slate-900 dark:text-white">{item.title}</span>
                     <span className="mt-1 block text-sm text-slate-500 dark:text-slate-400">{item.body}</span>
                   </span>
-                  {!item.read && <span className="mt-1 h-2 w-2 rounded-full bg-[#E84855]" />}
+                  {!item.read && <span className="mt-1 h-2 w-2 rounded-full bg-coral" />}
                 </button>
               ))}
             </div>
             <div className="border-t border-black/5 dark:border-white/10 p-3">
               <button
                 onClick={() => setNotifications((prev) => prev.map((item) => ({ ...item, read: true })))}
-                className="w-full rounded-xl bg-[#F5A623] px-4 py-3 text-sm font-bold text-black transition hover:bg-[#f7b955]"
+                className="w-full rounded-xl bg-saffron px-4 py-3 text-sm font-bold text-black transition hover:brightness-105"
               >
                 Hammasini o'qilgan qilish
               </button>

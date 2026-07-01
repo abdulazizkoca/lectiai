@@ -20,7 +20,7 @@ from services.material_parser import (
 
 router = APIRouter()
 
-MAX_FILE_SIZE = 50 * 1024 * 1024   # 50 MB
+MAX_FILE_SIZE = 20 * 1024 * 1024   # 20 MB (xotira muammolaridan saqlanish uchun)
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".txt"}
 
 
@@ -52,7 +52,7 @@ async def upload_material(
     # 2. Read and validate size
     file_bytes = await file.read()
     if len(file_bytes) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="Fayl hajmi 50MB dan oshmasligi kerak.")
+        raise HTTPException(status_code=400, detail="Fayl hajmi 20MB dan oshmasligi kerak.")
     if len(file_bytes) == 0:
         raise HTTPException(status_code=400, detail="Fayl bo'sh.")
 

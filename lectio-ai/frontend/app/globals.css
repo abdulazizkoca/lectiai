@@ -4,6 +4,16 @@
 /* Tailwind v4: class-based dark mode — matches html.dark and all descendants */
 @variant dark (&:where(.dark, .dark *));
 
+/* Tailwind v4: register brand colors as theme tokens → enables bg-saffron, text-lapis, etc. */
+@theme {
+  --color-saffron:   #F5A623;
+  --color-lapis:     #1B4FD8;
+  --color-jade:      #0D9373;
+  --color-coral:     #E84855;
+  --color-amethyst:  #7B2FBE;
+  --color-midnight:  #0f172a;
+}
+
 /* ==========================================
    THEME VARIABLES - CSS Custom Properties
    ========================================== */
@@ -15,7 +25,8 @@
   --jade:      #0D9373;
   --coral:     #E84855;
   --midnight:  #0f172a;
-  
+  --amethyst:  #7B2FBE;
+
   /* Fonts */
   --font-display: 'Playfair Display', serif;
   --font-body:    'DM Sans', sans-serif;

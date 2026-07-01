@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookOpen, Zap, Camera, Flame, Trophy, Clock, Sun, Moon, ArrowRight, RefreshCw } from "lucide-react";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { motion } from "framer-motion";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -149,21 +150,21 @@ export default function StudentDashboardPage() {
       value: statsLoading ? "—" : String(stats.total_flashcards),
       unit: { uz: " ta", ru: " шт", en: "" },
       Icon: BookOpen,
-      color: "#1B4FD8",
+      color: "var(--lapis)",
     },
     {
       label: { uz: "XP ball", ru: "XP очки", en: "XP Points" },
       value: statsLoading ? "—" : String(stats.xp),
       unit: { uz: "", ru: "", en: "" },
       Icon: Trophy,
-      color: "#F5A623",
+      color: "var(--saffron)",
     },
     {
       label: { uz: "Kunlik streak", ru: "Стрик", en: "Streak" },
       value: statsLoading ? "—" : String(stats.streak),
       unit: { uz: " kun", ru: " дней", en: " days" },
       Icon: Flame,
-      color: "#E84855",
+      color: "var(--coral)",
     },
   ];
 
@@ -180,7 +181,7 @@ export default function StudentDashboardPage() {
       >
         <div className="flex items-center gap-3">
           <Link href="/">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#F5A623] to-[#e8941a] flex items-center justify-center font-bold text-black shrink-0 shadow-lg shadow-[#F5A623]/20 cursor-pointer hover:scale-105 transition-transform">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-saffron to-[#e8941a] flex items-center justify-center font-bold text-black shrink-0 shadow-lg shadow-saffron/20 cursor-pointer hover:scale-105 transition-transform">
               L
             </div>
           </Link>
@@ -189,7 +190,7 @@ export default function StudentDashboardPage() {
               {lang === "uz" ? "O'quvchi" : lang === "ru" ? "Студент" : "Student"}
             </span>
             {stats.streak > 0 && !statsLoading && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "#E84855" }}>
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: "rgba(232,72,85,0.15)", color: "var(--coral)" }}>
                 <Flame size={10} className="inline mr-1" />
                 {stats.streak} {lang === "uz" ? "kun" : lang === "ru" ? "дней" : "days"}
               </span>
@@ -206,7 +207,7 @@ export default function StudentDashboardPage() {
                 onClick={() => setLanguage(l)}
                 className="px-2 py-1 text-[10px] font-bold rounded-md transition-all"
                 style={{
-                  background: language === l ? "#F5A623" : "transparent",
+                  background: language === l ? "var(--saffron)" : "transparent",
                   color: language === l ? "#000" : fgMuted,
                 }}
               >
@@ -219,7 +220,7 @@ export default function StudentDashboardPage() {
           <button
             onClick={toggleTheme}
             className="w-9 h-9 rounded-lg flex items-center justify-center transition-all"
-            style={{ background: surface, color: isDark ? "#F5A623" : "#1B4FD8", border: `1px solid ${surfaceBorder}` }}
+            style={{ background: surface, color: isDark ? "var(--saffron)" : "var(--lapis)", border: `1px solid ${surfaceBorder}` }}
             aria-label="Mavzuni o'zgartirish"
           >
             {isDark ? <Sun size={15} /> : <Moon size={15} />}
@@ -250,7 +251,7 @@ export default function StudentDashboardPage() {
                 ? "Добро пожаловать! 👋"
                 : "Welcome! 👋"}
             </h1>
-            <p className="text-lg" style={{ color: "#0D9373" }}>
+            <p className="text-lg" style={{ color: "var(--jade)" }}>
               {lang === "uz" ? "Bugun nima qilasiz?" : lang === "ru" ? "Что будем делать сегодня?" : "What will you do today?"}
             </p>
           </div>
@@ -267,10 +268,13 @@ export default function StudentDashboardPage() {
                 style={{ background: surface, border: `1px solid ${surfaceBorder}` }}
               >
                 <s.Icon size={18} className="mx-auto mb-1" style={{ color: s.color }} />
-                <p className="text-lg font-bold" style={{ color: statsLoading ? fgMuted : fg }}>
-                  {s.value}
-                  {!statsLoading && s.unit[lang]}
-                </p>
+                {statsLoading ? (
+                  <Skeleton className="w-12 h-5 mx-auto mt-1 mb-1" />
+                ) : (
+                  <p className="text-lg font-bold" style={{ color: fg }}>
+                    {s.value}{s.unit[lang]}
+                  </p>
+                )}
                 <p className="text-xs mt-0.5" style={{ color: fgMuted }}>
                   {s.label[lang]}
                 </p>
@@ -291,7 +295,7 @@ export default function StudentDashboardPage() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(245,166,35,0.2)" }}>
-                  <RefreshCw size={15} style={{ color: "#F5A623" }} />
+                  <RefreshCw size={15} style={{ color: "var(--saffron)" }} />
                 </div>
                 <p className="text-sm font-bold text-left" style={{ color: fg }}>
                   {lang === "uz"
@@ -301,7 +305,7 @@ export default function StudentDashboardPage() {
                     : `${stats.due_for_review} flashcards ready for review!`}
                 </p>
               </div>
-              <ArrowRight size={15} style={{ color: "#F5A623" }} className="shrink-0" />
+              <ArrowRight size={15} style={{ color: "var(--saffron)" }} className="shrink-0" />
             </motion.button>
           )}
 
@@ -365,7 +369,7 @@ export default function StudentDashboardPage() {
           >
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "rgba(27,79,216,0.15)" }}>
-                <Clock size={16} style={{ color: "#1B4FD8" }} />
+                <Clock size={16} style={{ color: "var(--lapis)" }} />
               </div>
               <div>
                 <p className="text-sm font-bold" style={{ color: fg }}>
@@ -386,7 +390,7 @@ export default function StudentDashboardPage() {
                 </p>
               </div>
             </div>
-            <ArrowRight size={16} className="text-[#F5A623] group-hover:translate-x-1 transition-transform shrink-0" />
+            <ArrowRight size={16} className="text-saffron group-hover:translate-x-1 transition-transform shrink-0" />
           </motion.button>
         </motion.div>
       </div>

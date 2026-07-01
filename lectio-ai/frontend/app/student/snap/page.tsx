@@ -5,10 +5,12 @@ import { Camera, Zap, Check, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useToast } from "@/contexts/ToastContext";
 
 export default function SnapAndLearnPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState<any[]>([]);
+  const { success } = useToast();
 
   const handleCapture = () => {
     setIsScanning(true);
@@ -24,7 +26,7 @@ export default function SnapAndLearnPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#0A0A0F] text-white flex flex-col font-body relative">
+    <div className="min-h-[100dvh] flex flex-col font-body relative" style={{ background: "var(--background)", color: "var(--foreground)" }}>
       
       {/* Top Bar */}
       <div className="p-4 flex items-center justify-between z-10 bg-gradient-to-b from-black/80 to-transparent absolute top-0 w-full">
@@ -38,10 +40,10 @@ export default function SnapAndLearnPage() {
       {results.length > 0 ? (
         <div className="flex-1 p-6 pt-24 max-w-2xl mx-auto w-full">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
-            <div className="w-16 h-16 bg-[#0D9373]/20 text-[#0D9373] rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-jade/20 text-jade rounded-full flex items-center justify-center mx-auto mb-4">
               <Check size={32} />
             </div>
-            <h2 className="text-2xl font-display font-bold text-[#0D9373]">Muvaffaqiyatli!</h2>
+            <h2 className="text-2xl font-display font-bold text-jade">Muvaffaqiyatli!</h2>
             <p className="text-slate-400 mt-2">Darslikdan {results.length} ta flashcard yaratildi.</p>
           </motion.div>
 
@@ -50,10 +52,10 @@ export default function SnapAndLearnPage() {
               <motion.div 
                 key={i}
                 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                className="bg-[#18181F] p-4 rounded-2xl border border-slate-800"
+                className="p-4 rounded-2xl border border-white/10" style={{ background: "var(--card)" }}
               >
-                <p className="font-bold mb-2 pb-2 border-b border-slate-800 text-[#F5A623]">Q: {card.q}</p>
-                <p className="text-slate-300">A: {card.a}</p>
+                <p className="font-bold mb-2 pb-2 border-b border-white/10 text-saffron">Q: {card.q}</p>
+                <p style={{ color: "var(--foreground)" }}>A: {card.a}</p>
               </motion.div>
             ))}
           </div>
@@ -62,10 +64,7 @@ export default function SnapAndLearnPage() {
             variant="premium" 
             size="lg" 
             className="w-full text-lg shadow-[0_0_30px_rgba(245,166,35,0.3)]"
-            onClick={() => {
-              const addToast = (window as any).__addToast;
-              if (addToast) addToast({ title: "Qo'shildi!", description: "Flashcardlar darsingizga saqlandi", type: "success" });
-            }}
+            onClick={() => success("Qo'shildi!", "Flashcardlar darsingizga saqlandi")}
           >
             Dasturga qo'shish
           </Button>
@@ -79,21 +78,21 @@ export default function SnapAndLearnPage() {
           </div>
 
           {/* Scanning Overlay */}
-          <div className="relative z-10 w-full max-w-sm aspect-[3/4] border-2 border-[#F5A623]/50 rounded-3xl flex items-center justify-center overflow-hidden">
+          <div className="relative z-10 w-full max-w-sm aspect-[3/4] border-2 border-saffron/50 rounded-3xl flex items-center justify-center overflow-hidden">
             {/* Corner Markers */}
-            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-[#F5A623] rounded-tl-3xl" />
-            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-[#F5A623] rounded-tr-3xl" />
-            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-[#F5A623] rounded-bl-3xl" />
-            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-[#F5A623] rounded-br-3xl" />
+            <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-saffron rounded-tl-3xl" />
+            <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-saffron rounded-tr-3xl" />
+            <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-saffron rounded-bl-3xl" />
+            <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-saffron rounded-br-3xl" />
 
             {isScanning ? (
               <motion.div 
-                className="absolute inset-0 bg-gradient-to-b from-transparent via-[#F5A623]/30 to-transparent"
+                className="absolute inset-0 bg-gradient-to-b from-transparent via-saffron/30 to-transparent"
                 animate={{ y: ["-100%", "100%"] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
               />
             ) : (
-              <p className="text-[#F5A623] font-bold text-center px-4 bg-black/50 py-2 rounded-lg backdrop-blur-md">
+              <p className="text-saffron font-bold text-center px-4 bg-black/50 py-2 rounded-lg backdrop-blur-md">
                 Darslik sahifasini shu ramkaga kiriting
               </p>
             )}

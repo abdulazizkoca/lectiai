@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 from database import get_db
 from services.spaced_repetition import calculate_next_review, get_due_cards
@@ -7,6 +7,8 @@ from models.flashcard import FlashCard
 from models.user import User
 from pydantic import BaseModel, Field
 from routers.auth import get_current_user
+from typing import Optional
+import os
 
 router = APIRouter()
 
@@ -43,12 +45,18 @@ def get_cards_to_review(
 
 
 @router.get("/due-cards-by-telegram/{telegram_id}")
-def get_cards_by_telegram(telegram_id: str, db: Session = Depends(get_db)):
-    """Telegram ID orqali kartalarni olish"""
+def get_cards_by_telegram(
+    telegram_id: str,
+    db: Session = Depends(get_db),
+    x_bot_secret: Optional[str] = Header(default=None),
+):
+    """Telegram bot orqali kartalarni olish. X-Bot-Secret header talab qilinadi."""
+    expected = os.getenv("TELEGRAM_BOT_SECRET", "")
+    if not expected or x_bot_secret != expected:
+        raise HTTPException(status_code=401, detail="Bot secret noto'g'ri")
     user = db.query(User).filter(User.telegram_id == telegram_id).first()
     if not user:
         return {"cards": [], "count": 0}
-    
     cards = get_due_cards(db, user.id)
     return {
         "cards": [
@@ -128,11 +136,17 @@ def review_flashcard(
 
 
 @router.get("/cards/{card_id}")
-def get_card(card_id: int, db: Session = Depends(get_db)):
+def get_card(
+    card_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Bitta kartani olish"""
     card = db.query(Card).filter(Card.id == card_id).first()
     if not card:
-        return {"error": "Karta topilmadi"}
+        raise HTTPException(status_code=404, detail="Karta topilmadi")
+    if card.student_id != current_user.id and current_user.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Bu kartaga ruxsat yo'q")
     return {
         "id": card.id,
         "question": card.question,

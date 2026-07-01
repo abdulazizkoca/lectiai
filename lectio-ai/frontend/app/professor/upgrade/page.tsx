@@ -81,7 +81,7 @@ export default function UpgradePage() {
 
       {/* Header */}
       <div className="text-center mb-12">
-        <div className="inline-flex items-center gap-2 bg-[#7B2FBE]/10 text-[#7B2FBE] px-4 py-2 rounded-full text-sm font-bold mb-4">
+        <div className="inline-flex items-center gap-2 bg-amethyst/10 text-amethyst px-4 py-2 rounded-full text-sm font-bold mb-4">
           <Crown size={16} />
           Premium Rejalar
         </div>
@@ -96,13 +96,13 @@ export default function UpgradePage() {
         <div className="flex items-center justify-center gap-4 mt-8">
           <button
             onClick={() => setBilling("monthly")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${billing === "monthly" ? "bg-[#F5A623] text-black" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${billing === "monthly" ? "bg-saffron text-black" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}
           >
             Oylik
           </button>
           <button
             onClick={() => setBilling("yearly")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${billing === "yearly" ? "bg-[#F5A623] text-black" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2 ${billing === "yearly" ? "bg-saffron text-black" : "text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}
           >
             Yillik
             <Badge color="jade" size="sm">20% tejam</Badge>
@@ -115,11 +115,11 @@ export default function UpgradePage() {
         {plans.map((plan) => (
           <Card
             key={plan.id}
-            className={`relative p-6 flex flex-col ${plan.id === "pro" ? "border-[#F5A623] border-2 shadow-xl shadow-[#F5A623]/10" : ""}`}
+            className={`relative p-6 flex flex-col ${plan.id === "pro" ? "border-saffron border-2 shadow-xl shadow-saffron/10" : ""}`}
           >
             {plan.badge && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <span className={`px-3 py-1 rounded-full text-xs font-bold ${plan.id === "pro" ? "bg-[#F5A623] text-black" : "bg-[#7B2FBE] text-white"}`}>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold ${plan.id === "pro" ? "bg-saffron text-black" : "bg-amethyst text-white"}`}>
                   {plan.badge}
                 </span>
               </div>
@@ -140,7 +140,7 @@ export default function UpgradePage() {
             <ul className="space-y-3 flex-1 mb-6">
               {plan.features.map((f, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
-                  <Check size={16} className="text-[#0D9373] mt-0.5 shrink-0" />
+                  <Check size={16} className="text-jade mt-0.5 shrink-0" />
                   {f}
                 </li>
               ))}
@@ -166,15 +166,15 @@ export default function UpgradePage() {
       {/* Features comparison */}
       <Card className="p-6">
         <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-          <Sparkles size={20} className="text-[#F5A623]" />
+          <Sparkles size={20} className="text-saffron" />
           Premium xususiyatlar
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: <Zap size={20} />, title: "AI Generatsiya", desc: "Mavzudan avtomatik slaydlar va testlar", color: "text-[#F5A623] bg-[#F5A623]/10" },
-            { icon: <Star size={20} />, title: "Kamera Kuzatuvi", desc: "Real vaqtda diqqat tahlili", color: "text-[#0D9373] bg-[#0D9373]/10" },
-            { icon: <Users size={20} />, title: "Telegram Bot", desc: "Talabalarga avtomatik xabarlar", color: "text-[#1B4FD8] bg-[#1B4FD8]/10" },
-            { icon: <BarChart2 size={20} />, title: "Chuqur Analitika", desc: "Har bir talabaning profili", color: "text-[#7B2FBE] bg-[#7B2FBE]/10" },
+            { icon: <Zap size={20} />, title: "AI Generatsiya", desc: "Mavzudan avtomatik slaydlar va testlar", color: "text-saffron bg-saffron/10" },
+            { icon: <Star size={20} />, title: "Kamera Kuzatuvi", desc: "Real vaqtda diqqat tahlili", color: "text-jade bg-jade/10" },
+            { icon: <Users size={20} />, title: "Telegram Bot", desc: "Talabalarga avtomatik xabarlar", color: "text-lapis bg-lapis/10" },
+            { icon: <BarChart2 size={20} />, title: "Chuqur Analitika", desc: "Har bir talabaning profili", color: "text-amethyst bg-amethyst/10" },
           ].map((item, i) => (
             <div key={i} className="p-4 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10">
               <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 ${item.color}`}>

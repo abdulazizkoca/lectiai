@@ -5,12 +5,15 @@ import random
 import string
 import time
 import os
+import logging
 import redis.asyncio as redis
 import google.generativeai as genai
 import cv2
 import numpy as np
 import base64
 from services.camera_service import camera
+
+logger = logging.getLogger("lectio.quiz")
 
 sio = AsyncServer(
     async_mode='asgi',
@@ -21,16 +24,15 @@ sio = AsyncServer(
 REDIS_URL = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
 try:
-    # Add timeouts for remote connection
     redis_client = redis.from_url(
-        REDIS_URL, 
+        REDIS_URL,
         decode_responses=True,
-        socket_timeout=5,
-        socket_connect_timeout=5,
-        retry_on_timeout=True
+        socket_timeout=3,
+        socket_connect_timeout=3,
+        retry_on_timeout=True,
     )
 except Exception as e:
-    print(f"Failed to connect to Redis at {REDIS_URL}: {e}")
+    logger.warning(f"Redis ulanmadi ({REDIS_URL}): {e} — xotira rejimi ishlatiladi")
     redis_client = None
 
 # Gemini for AI grading
@@ -47,38 +49,54 @@ _mem_sid_room: dict = {}
 
 async def get_room(room_code: str):
     if redis_client:
-        data = await redis_client.get(f"quiz:room:{room_code}")
-        return json.loads(data) if data else None
+        try:
+            data = await redis_client.get(f"quiz:room:{room_code}")
+            return json.loads(data) if data else None
+        except Exception as e:
+            logger.warning(f"Redis get_room xatosi, xotiradan olinadi: {e}")
     return _mem_rooms.get(room_code)
 
 async def save_room(room_code: str, room_data: dict):
     if redis_client:
-        await redis_client.setex(f"quiz:room:{room_code}", 4 * 3600, json.dumps(room_data))
-    else:
-        _mem_rooms[room_code] = room_data
+        try:
+            await redis_client.setex(f"quiz:room:{room_code}", 4 * 3600, json.dumps(room_data))
+            return
+        except Exception as e:
+            logger.warning(f"Redis save_room xatosi, xotiraga saqlanadi: {e}")
+    _mem_rooms[room_code] = room_data
 
 async def delete_room(room_code: str):
     if redis_client:
-        await redis_client.delete(f"quiz:room:{room_code}")
-    else:
-        _mem_rooms.pop(room_code, None)
+        try:
+            await redis_client.delete(f"quiz:room:{room_code}")
+        except Exception as e:
+            logger.warning(f"Redis delete_room xatosi: {e}")
+    _mem_rooms.pop(room_code, None)
 
 async def get_sid_room(sid: str) -> str | None:
     if redis_client:
-        return await redis_client.get(f"quiz:sid_room:{sid}")
+        try:
+            return await redis_client.get(f"quiz:sid_room:{sid}")
+        except Exception as e:
+            logger.warning(f"Redis get_sid_room xatosi: {e}")
     return _mem_sid_room.get(sid)
 
 async def set_sid_room(sid: str, room_code: str):
     if redis_client:
-        await redis_client.setex(f"quiz:sid_room:{sid}", 4 * 3600, room_code)
-    else:
-        _mem_sid_room[sid] = room_code
+        try:
+            await redis_client.setex(f"quiz:sid_room:{sid}", 4 * 3600, room_code)
+            return
+        except Exception as e:
+            logger.warning(f"Redis set_sid_room xatosi: {e}")
+    _mem_sid_room[sid] = room_code
 
 async def del_sid_room(sid: str):
     if redis_client:
-        await redis_client.delete(f"quiz:sid_room:{sid}")
-    else:
-        _mem_sid_room.pop(sid, None)
+        try:
+            await redis_client.delete(f"quiz:sid_room:{sid}")
+        except Exception as e:
+            logger.warning(f"Redis del_sid_room xatosi: {e}")
+    _mem_sid_room.pop(sid, None)
 
 async def ai_grade_short_answer(correct_answer: str, student_answer: str) -> float:
     # returns score between 0.0 and 1.0
@@ -495,5 +513,5 @@ async def camera_frame(sid, data):
         }, to=room["professor_sid"])
         
     except Exception as e:
-        print(f"Error processing camera frame: {e}")
+        logger.warning(f"Camera frame processing xatosi: {e}")
 

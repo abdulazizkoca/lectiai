@@ -60,15 +60,30 @@ async def get_knowledge_map(
     if not progresses:
         return {"topics": [], "subject": "Umumiy"}
 
-    topics = []
+    # Fanlar bo'yicha guruhlash: har bir fan → uning mavzulari children sifatida
+    subject_map: dict = {}
     for i, p in enumerate(progresses):
-        topics.append({
+        subj = p.subject or "Boshqa"
+        if subj not in subject_map:
+            subject_map[subj] = []
+        subject_map[subj].append({
             "id": f"t{i+1}",
             "name": p.topic,
-            "subject": p.subject,
             "mastery": round(p.mastery_level),
-            "children": [],
             "sessions": p.sessions_count,
+            "children": [],
+        })
+
+    topics = []
+    for j, (subj, sub_topics) in enumerate(subject_map.items()):
+        avg_mastery = round(sum(t["mastery"] for t in sub_topics) / len(sub_topics))
+        topics.append({
+            "id": f"s{j+1}",
+            "name": subj,
+            "subject": subj,
+            "mastery": avg_mastery,
+            "sessions": sum(t["sessions"] for t in sub_topics),
+            "children": sub_topics,
         })
 
     subject = progresses[0].subject if progresses else "Umumiy"

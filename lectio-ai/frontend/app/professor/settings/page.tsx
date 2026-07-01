@@ -568,11 +568,11 @@ export default function ProfessorSettingsPage() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all duration-300 ${
                     activeTab === tab.id
-                      ? "bg-[#F5A623] text-black font-bold shadow-lg shadow-[#F5A623]/25 scale-[1.02]"
+                      ? "bg-saffron text-black font-bold shadow-lg shadow-saffron/25 scale-[1.02]"
                       : "text-slate-400 hover:bg-white/5 hover:text-white"
                   }`}
                 >
-                  <span className={activeTab === tab.id ? "text-black" : "text-[#F5A623]"}>{tab.icon}</span>
+                  <span className={activeTab === tab.id ? "text-black" : "text-saffron"}>{tab.icon}</span>
                   <span className="text-sm font-medium">{tab.name}</span>
                 </button>
               ))}
@@ -598,10 +598,10 @@ export default function ProfessorSettingsPage() {
                     {/* Avatar Section */}
                     <div className="flex flex-col sm:flex-row items-center gap-5 p-4 rounded-2xl bg-white/5 border border-white/5">
                       <div className="relative group">
-                        <Avatar initials="JD" size="xl" className="w-24 h-24 border-2 border-[#F5A623] shadow-lg shadow-[#F5A623]/10" />
+                        <Avatar initials="JD" size="xl" className="w-24 h-24 border-2 border-saffron shadow-lg shadow-saffron/10" />
                         <button
                           onClick={handleChangePhoto}
-                          className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#F5A623] rounded-full flex items-center justify-center text-black hover:bg-[#e8941a] transition-transform active:scale-95 shadow-md shadow-[#F5A623]/20"
+                          className="absolute -bottom-1 -right-1 w-8 h-8 bg-saffron rounded-full flex items-center justify-center text-black hover:bg-[#e8941a] transition-transform active:scale-95 shadow-md shadow-saffron/20"
                         >
                           <Camera size={16} />
                         </button>
@@ -665,7 +665,7 @@ export default function ProfessorSettingsPage() {
                     {/* Sensitivity Selector */}
                     <div className="space-y-3">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Sliders size={16} className="text-[#F5A623]" />
+                        <Sliders size={16} className="text-saffron" />
                         {t.aiSection.sensitivity}
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -680,13 +680,13 @@ export default function ProfessorSettingsPage() {
                             onClick={() => setAiSensitivity(opt.id)}
                             className={`p-4 rounded-xl border-2 text-left transition-all duration-300 ${
                               aiSensitivity === opt.id
-                                ? "border-[#F5A623] bg-[#F5A623]/5 shadow-md shadow-[#F5A623]/5"
+                                ? "border-saffron bg-saffron/5 shadow-md shadow-saffron/5"
                                 : "border-white/5 hover:border-white/20 bg-slate-950/20"
                             }`}
                           >
                             <div className="flex items-center justify-between mb-2">
-                              <span className={`font-bold text-sm ${aiSensitivity === opt.id ? "text-[#F5A623]" : "text-white"}`}>{opt.label}</span>
-                              {aiSensitivity === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-[#F5A623]" />}
+                              <span className={`font-bold text-sm ${aiSensitivity === opt.id ? "text-saffron" : "text-white"}`}>{opt.label}</span>
+                              {aiSensitivity === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-saffron" />}
                             </div>
                             <p className="text-xs text-slate-400 leading-normal">{opt.desc}</p>
                           </button>
@@ -697,7 +697,7 @@ export default function ProfessorSettingsPage() {
                     {/* Camera Source Selector */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Video size={16} className="text-[#F5A623]" />
+                        <Video size={16} className="text-saffron" />
                         {t.aiSection.cameraSource}
                       </label>
                       <select 
@@ -716,7 +716,7 @@ export default function ProfessorSettingsPage() {
                       <div className="flex items-center justify-between py-4 border-b border-white/5">
                         <div className="max-w-[85%]">
                           <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-                            <Smartphone size={16} className="text-[#F5A623]" />
+                            <Smartphone size={16} className="text-saffron" />
                             {t.aiSection.phoneTrack}
                           </h3>
                           <p className="text-xs text-slate-400 mt-0.5">{t.aiSection.phoneTrackDesc}</p>
@@ -727,7 +727,7 @@ export default function ProfessorSettingsPage() {
                       <div className="flex items-center justify-between py-4 border-b border-white/5">
                         <div className="max-w-[85%]">
                           <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-                            <AlertTriangle size={16} className="text-[#F5A623]" />
+                            <AlertTriangle size={16} className="text-saffron" />
                             {t.aiSection.alertLow}
                           </h3>
                           <p className="text-xs text-slate-400 mt-0.5">{t.aiSection.alertLowDesc}</p>
@@ -739,7 +739,7 @@ export default function ProfessorSettingsPage() {
                     {/* Timeout Range Selector */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Eye size={16} className="text-[#F5A623]" />
+                        <Eye size={16} className="text-saffron" />
                         {t.aiSection.timeout}
                       </label>
                       <p className="text-xs text-slate-400 mb-2">{t.aiSection.timeoutDesc}</p>
@@ -752,7 +752,7 @@ export default function ProfessorSettingsPage() {
                           onChange={(e) => setDistractionTimeout(Number(e.target.value))}
                           className="flex-1 h-1.5 rounded-lg bg-slate-700 accent-[#F5A623] cursor-pointer"
                         />
-                        <span className="text-sm font-bold text-[#F5A623] shrink-0 bg-[#F5A623]/10 px-3 py-1.5 rounded-lg border border-[#F5A623]/20">
+                        <span className="text-sm font-bold text-saffron shrink-0 bg-saffron/10 px-3 py-1.5 rounded-lg border border-saffron/20">
                           {t.aiSection.timeoutSec.replace("{sec}", String(distractionTimeout))}
                         </span>
                       </div>
@@ -795,7 +795,7 @@ export default function ProfessorSettingsPage() {
                   <div className="space-y-8">
                     {/* Password change */}
                     <div className="space-y-4 pb-6 border-b border-white/5">
-                      <h3 className="font-bold text-md text-[#F5A623] flex items-center gap-2">
+                      <h3 className="font-bold text-md text-saffron flex items-center gap-2">
                         <Lock size={18} />
                         {t.securitySection.changePass}
                       </h3>
@@ -831,7 +831,7 @@ export default function ProfessorSettingsPage() {
 
                     {/* 2FA */}
                     <div className="space-y-4 pb-6 border-b border-white/5">
-                      <h3 className="font-bold text-md text-[#F5A623] flex items-center gap-2">
+                      <h3 className="font-bold text-md text-saffron flex items-center gap-2">
                         <Shield size={18} />
                         {t.securitySection.twoFactor}
                       </h3>
@@ -896,7 +896,7 @@ export default function ProfessorSettingsPage() {
                     {/* Language Settings */}
                     <div className="space-y-3">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Globe size={16} className="text-[#F5A623]" />
+                        <Globe size={16} className="text-saffron" />
                         {t.prefSection.langSelect}
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -910,7 +910,7 @@ export default function ProfessorSettingsPage() {
                             onClick={() => { setLanguage(lang.code as any); }}
                             className={`p-4 rounded-xl border-2 text-left flex items-center justify-between transition-all duration-300 ${
                               language === lang.code
-                                ? "border-[#F5A623] bg-[#F5A623]/5"
+                                ? "border-saffron bg-saffron/5"
                                 : "border-white/5 hover:border-white/20 bg-slate-950/20"
                             }`}
                           >
@@ -922,7 +922,7 @@ export default function ProfessorSettingsPage() {
                               </div>
                             </div>
                             {language === lang.code && (
-                              <div className="w-5 h-5 rounded-full bg-[#F5A623] flex items-center justify-center">
+                              <div className="w-5 h-5 rounded-full bg-saffron flex items-center justify-center">
                                 <Check size={12} className="text-black font-bold" />
                               </div>
                             )}
@@ -934,7 +934,7 @@ export default function ProfessorSettingsPage() {
                     {/* Timezone */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Monitor size={16} className="text-[#F5A623]" />
+                        <Monitor size={16} className="text-saffron" />
                         {t.prefSection.timezone}
                       </label>
                       <select className="w-full px-4 py-3 border border-white/10 rounded-xl bg-[#18181F] text-white focus:outline-none focus:ring-2 focus:ring-[#F5A623] cursor-pointer">
@@ -947,7 +947,7 @@ export default function ProfessorSettingsPage() {
                     {/* Theme Settings */}
                     <div className="space-y-3">
                       <label className="block text-sm font-semibold text-slate-300 flex items-center gap-2">
-                        <Palette size={16} className="text-[#F5A623]" />
+                        <Palette size={16} className="text-saffron" />
                         {t.prefSection.theme}
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -969,16 +969,16 @@ export default function ProfessorSettingsPage() {
                             }}
                             className={`p-4 rounded-xl border-2 text-left flex flex-col justify-between transition-all duration-300 ${
                               theme === themeOpt.value
-                                ? "border-[#F5A623] bg-[#F5A623]/5"
+                                ? "border-saffron bg-saffron/5"
                                 : "border-white/5 hover:border-white/20 bg-slate-950/20"
                             }`}
                           >
                             <div className="flex items-start justify-between w-full mb-3">
-                              <span className={theme === themeOpt.value ? "text-[#F5A623]" : "text-slate-400"}>
+                              <span className={theme === themeOpt.value ? "text-saffron" : "text-slate-400"}>
                                 {themeOpt.icon}
                               </span>
                               {theme === themeOpt.value && (
-                                <div className="w-5 h-5 rounded-full bg-[#F5A623] flex items-center justify-center">
+                                <div className="w-5 h-5 rounded-full bg-saffron flex items-center justify-center">
                                   <Check size={12} className="text-black font-bold" />
                                 </div>
                               )}
@@ -1006,7 +1006,7 @@ export default function ProfessorSettingsPage() {
                       <div className="flex items-start justify-between">
                         <div className="max-w-[80%]">
                           <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                            <MessageSquare size={16} className="text-[#F5A623]" />
+                            <MessageSquare size={16} className="text-saffron" />
                             {t.integrationsSection.telegram}
                           </h3>
                           <p className="text-xs text-slate-400 mt-1">{t.integrationsSection.telegramDesc}</p>
@@ -1017,13 +1017,13 @@ export default function ProfessorSettingsPage() {
                       {telegramNotifications && (
                         <div className="pt-3 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-3">
                           <div className="text-xs text-slate-400 bg-white/5 px-4 py-2.5 rounded-xl border border-white/5 w-full sm:w-auto">
-                            {t.integrationsSection.tgCode} <span className="font-mono font-bold text-[#F5A623] ml-1 bg-[#F5A623]/10 px-2 py-0.5 rounded border border-[#F5A623]/25">LECTIO_PROF_9921</span>
+                            {t.integrationsSection.tgCode} <span className="font-mono font-bold text-saffron ml-1 bg-saffron/10 px-2 py-0.5 rounded border border-saffron/25">LECTIO_PROF_9921</span>
                           </div>
                           <a 
                             href="https://t.me/lectio_ai_bot" 
                             target="_blank" 
                             rel="noreferrer"
-                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#F5A623] to-[#e8941a] px-4 py-2.5 text-xs font-bold text-black hover:scale-[1.02] active:scale-95 transition-transform"
+                            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-saffron to-[#e8941a] px-4 py-2.5 text-xs font-bold text-black hover:scale-[1.02] active:scale-95 transition-transform"
                           >
                             {t.integrationsSection.telegramBtn}
                             <ArrowRight size={12} />
@@ -1037,7 +1037,7 @@ export default function ProfessorSettingsPage() {
                       <div className="flex items-start justify-between">
                         <div className="max-w-[80%]">
                           <h3 className="font-bold text-white text-sm flex items-center gap-2">
-                            <Server size={16} className="text-[#F5A623]" />
+                            <Server size={16} className="text-saffron" />
                             {t.integrationsSection.lms}
                           </h3>
                           <p className="text-xs text-slate-400 mt-1">{t.integrationsSection.lmsDesc}</p>
@@ -1072,7 +1072,7 @@ export default function ProfessorSettingsPage() {
                     <div className="flex items-center justify-between py-4 border-b border-white/5">
                       <div className="max-w-[85%]">
                         <h3 className="font-semibold text-white text-sm flex items-center gap-2">
-                          <Globe size={16} className="text-[#F5A623]" />
+                          <Globe size={16} className="text-saffron" />
                           {t.integrationsSection.autoExport}
                         </h3>
                         <p className="text-xs text-slate-400 mt-0.5">{t.integrationsSection.autoExportDesc}</p>
@@ -1169,7 +1169,7 @@ export default function ProfessorSettingsPage() {
               </button>
 
               <div className="text-center space-y-4">
-                <div className="mx-auto w-12 h-12 rounded-2xl bg-[#F5A623]/10 flex items-center justify-center text-[#F5A623] border border-[#F5A623]/25 shadow-lg shadow-[#F5A623]/5">
+                <div className="mx-auto w-12 h-12 rounded-2xl bg-saffron/10 flex items-center justify-center text-saffron border border-saffron/25 shadow-lg shadow-saffron/5">
                   <Shield size={24} />
                 </div>
                 <div>
@@ -1178,7 +1178,7 @@ export default function ProfessorSettingsPage() {
                 </div>
 
                 {/* Mock QR Code representation */}
-                <div className="mx-auto w-40 h-40 bg-white p-3 rounded-2xl border-4 border-[#F5A623]/30 flex items-center justify-center shadow-inner relative group overflow-hidden">
+                <div className="mx-auto w-40 h-40 bg-white p-3 rounded-2xl border-4 border-saffron/30 flex items-center justify-center shadow-inner relative group overflow-hidden">
                   <div className="grid grid-cols-5 gap-2 w-full h-full opacity-90">
                     {Array.from({ length: 25 }).map((_, idx) => (
                       <div 

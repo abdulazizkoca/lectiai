@@ -4,25 +4,25 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useRouter } from "next/navigation";
 import {
-  ChevronLeft, ChevronRight, MessageCircle, Lightbulb, ThumbsUp,
-  HelpCircle, Flame, AlertTriangle, FileText, X, Send,
-  Users, Wifi, Clock, Maximize2, BookOpen
+  ChevronLeft, ChevronRight, HelpCircle, ThumbsUp,
+  AlertTriangle, FileText, X, Send,
+  Users, Wifi, Clock, BookOpen
 } from "lucide-react";
 import { useToast } from "@/contexts/ToastContext";
 
 const MOCK_SLIDES = [
-  { id: 1, title: "Kirish: Kvant mexanikasi", content: "Kvant mexanikasi — mikroolamdagi zarrachalar xatti-harakatini o'rganuvchi fizika bo'limi.", bg: "from-indigo-900 to-purple-900" },
-  { id: 2, title: "Tarix va kelib chiqishi", content: "1900-yilda Max Planck kvant gipotezasini taqdim etdi. Bu zamonaviy fizikaning boshlanishi bo'ldi.", bg: "from-blue-900 to-indigo-900" },
-  { id: 3, title: "Heyzenberg noaniqlik prinsipi", content: "Zarrachaning holati va tezligini bir vaqtda aniq o'lchab bo'lmaydi: Δx · Δp ≥ ℏ/2", bg: "from-purple-900 to-pink-900" },
-  { id: 4, title: "To'lqin-zarra ikkiligi", content: "Yorug'lik ham to'lqin, ham zarra xususiyatlarini namoyon etadi. De Broglie to'lqin uzunligi: λ = h/p", bg: "from-cyan-900 to-blue-900" },
-  { id: 5, title: "Shrödinger tenglamasi", content: "iℏ ∂ψ/∂t = Ĥψ — kvant holatini tasvirlovchi asosiy tenglama.", bg: "from-emerald-900 to-teal-900" },
+  { id: 1, title: "Kirish: Kvant mexanikasi",    content: "Kvant mexanikasi — mikroolamdagi zarrachalar xatti-harakatini o'rganuvchi fizika bo'limi.",     bg: "from-lapis/80 to-amethyst/60"   },
+  { id: 2, title: "Tarix va kelib chiqishi",      content: "1900-yilda Max Planck kvant gipotezasini taqdim etdi. Bu zamonaviy fizikaning boshlanishi bo'ldi.", bg: "from-amethyst/70 to-midnight/90" },
+  { id: 3, title: "Heyzenberg noaniqlik prinsipi",content: "Zarrachaning holati va tezligini bir vaqtda aniq o'lchab bo'lmaydi: Δx · Δp ≥ ℏ/2",              bg: "from-lapis/60 to-jade/70"       },
+  { id: 4, title: "To'lqin-zarra ikkiligi",       content: "Yorug'lik ham to'lqin, ham zarra xususiyatlarini namoyon etadi. λ = h/p",                         bg: "from-jade/70 to-lapis/60"       },
+  { id: 5, title: "Shrödinger tenglamasi",        content: "iℏ ∂ψ/∂t = Ĥψ — kvant holatini tasvirlovchi asosiy tenglama.",                                    bg: "from-amethyst/60 to-coral/50"   },
 ];
 
 const REACTIONS = [
   { emoji: "💡", label: "Tushundim", id: "lightbulb" },
-  { emoji: "👍", label: "Zo'r", id: "thumbsup" },
-  { emoji: "❓", label: "Savol", id: "question" },
-  { emoji: "🔥", label: "Ajoyib", id: "fire" },
+  { emoji: "👍", label: "Zo'r",     id: "thumbsup"  },
+  { emoji: "❓", label: "Savol",    id: "question"  },
+  { emoji: "🔥", label: "Ajoyib",   id: "fire"      },
 ];
 
 type Note = { id: number; text: string; slideId: number; slideTitle: string; time: string };
@@ -32,30 +32,29 @@ export default function LiveSessionPage() {
   const router = useRouter();
   const { success, info } = useToast();
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isNotesOpen, setIsNotesOpen] = useState(false);
-  const [noteText, setNoteText] = useState("");
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [currentSlide, setCurrentSlide]     = useState(0);
+  const [isNotesOpen, setIsNotesOpen]       = useState(false);
+  const [noteText, setNoteText]             = useState("");
+  const [notes, setNotes]                   = useState<Note[]>([]);
   const [confusionCount, setConfusionCount] = useState(0);
-  const [myConfused, setMyConfused] = useState(false);
+  const [myConfused, setMyConfused]         = useState(false);
   const [reactionStream, setReactionStream] = useState<{ id: number; emoji: string; x: number }[]>([]);
-  const [questions, setQuestions] = useState<{ id: number; text: string; votes: number; time: string }[]>([
-    { id: 1, text: "Kvant entanglement nima degani?", votes: 5, time: "10:03" },
-    { id: 2, text: "Bu fizikaning qaysi sohasiga kiradi?", votes: 3, time: "10:07" },
+  const [questions, setQuestions]           = useState([
+    { id: 1, text: "Kvant entanglement nima degani?",       votes: 5, time: "10:03" },
+    { id: 2, text: "Bu fizikaning qaysi sohasiga kiradi?",  votes: 3, time: "10:07" },
   ]);
   const [questionText, setQuestionText] = useState("");
-  const [showQA, setShowQA] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [studentCount] = useState(47);
+  const [showQA, setShowQA]             = useState(false);
+  const [elapsed, setElapsed]           = useState(0);
+  const [studentCount]                  = useState(47);
   const reactionIdRef = useRef(0);
-  const noteIdRef = useRef(1);
+  const noteIdRef     = useRef(1);
 
   useEffect(() => {
     const t = setInterval(() => setElapsed(e => e + 1), 1000);
     return () => clearInterval(t);
   }, []);
 
-  // Auto-remove reactions
   useEffect(() => {
     if (reactionStream.length === 0) return;
     const t = setTimeout(() => setReactionStream(r => r.slice(1)), 2000);
@@ -64,8 +63,7 @@ export default function LiveSessionPage() {
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60).toString().padStart(2, "0");
-    const sec = (s % 60).toString().padStart(2, "0");
-    return `${m}:${sec}`;
+    return `${m}:${(s % 60).toString().padStart(2, "0")}`;
   };
 
   const sendReaction = (emoji: string) => {
@@ -102,74 +100,95 @@ export default function LiveSessionPage() {
   const submitQuestion = () => {
     if (!questionText.trim()) return;
     setQuestions(q => [...q, {
-      id: Date.now(),
-      text: questionText.trim(),
-      votes: 0,
+      id: Date.now(), text: questionText.trim(), votes: 0,
       time: new Date().toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" }),
     }]);
     setQuestionText("");
     success("Savol yuborildi", "Savolingiz anonim ravishda professor devorida ko'rinadi");
   };
 
-  const voteQuestion = (id: number) => {
-    setQuestions(q => q.map(qu => qu.id === id ? { ...qu, votes: qu.votes + 1 } : qu));
-  };
-
-  const endLesson = () => {
-    router.push(`/student/live/session/${code}/summary`);
-  };
-
   const slide = MOCK_SLIDES[currentSlide];
 
   return (
-    <div className="min-h-screen text-white flex flex-col" style={{ background: "#0A0A0F" }}>
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0" style={{ background: "rgba(10,10,20,0.95)", backdropFilter: "blur(20px)" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: "var(--background)", color: "var(--foreground)" }}
+    >
+      {/* ── Top Bar ─────────────────────────────────────────────── */}
+      <div
+        className="flex items-center justify-between px-4 py-3 border-b border-white/10 flex-shrink-0"
+        style={{ background: "rgba(10,10,15,0.95)", backdropFilter: "blur(20px)" }}
+      >
         <div className="flex items-center gap-3">
-          <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors text-slate-400">
+          <button onClick={() => router.back()} className="p-1.5 rounded-lg hover:bg-white/10 transition-colors" style={{ color: "var(--muted-foreground)" }}>
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="font-mono font-bold text-yellow-400 text-sm">{String(code).toUpperCase()}</span>
+            <div className="w-2 h-2 rounded-full bg-jade animate-pulse" />
+            <span className="font-mono font-bold text-saffron text-sm">{String(code).toUpperCase()}</span>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-slate-400 text-sm">
+          <div className="hidden md:flex items-center gap-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
             <Users size={14} />
-            <span>{studentCount} o'quvchi</span>
+            <span>{studentCount} o&apos;quvchi</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: "rgba(16,185,129,0.15)", color: "#10B981" }}>
-            <Wifi size={12} />
-            JONLI EFIR
+          {/* Live badge */}
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+            style={{ background: "rgba(13,147,115,0.18)", color: "var(--jade)" }}
+          >
+            <Wifi size={12} /> JONLI EFIR
           </div>
-          <div className="flex items-center gap-1 text-slate-400 text-sm">
+
+          {/* Timer */}
+          <div className="flex items-center gap-1 text-sm" style={{ color: "var(--muted-foreground)" }}>
             <Clock size={14} />
             <span className="font-mono">{formatTime(elapsed)}</span>
           </div>
+
+          {/* Notes toggle */}
           <button
             onClick={() => setIsNotesOpen(o => !o)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${isNotesOpen ? "bg-blue-500/20 text-blue-400" : "bg-white/8 text-slate-400 hover:text-white"}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: isNotesOpen ? "rgba(27,79,216,0.2)" : "rgba(255,255,255,0.06)",
+              color: isNotesOpen ? "var(--lapis)" : "var(--muted-foreground)",
+            }}
           >
             <FileText size={14} />
             <span className="hidden md:inline">Eslatmalar</span>
-            {notes.length > 0 && <span className="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center">{notes.length}</span>}
+            {notes.length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-lapis text-white text-xs flex items-center justify-center">
+                {notes.length}
+              </span>
+            )}
           </button>
+
+          {/* Q&A toggle */}
           <button
             onClick={() => setShowQA(o => !o)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${showQA ? "bg-purple-500/20 text-purple-400" : "bg-white/8 text-slate-400 hover:text-white"}`}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+            style={{
+              background: showQA ? "rgba(123,47,190,0.2)" : "rgba(255,255,255,0.06)",
+              color: showQA ? "var(--amethyst)" : "var(--muted-foreground)",
+            }}
           >
             <HelpCircle size={14} />
             <span className="hidden md:inline">Savollar</span>
-            {questions.length > 0 && <span className="w-4 h-4 rounded-full bg-purple-500 text-white text-xs flex items-center justify-center">{questions.length}</span>}
+            {questions.length > 0 && (
+              <span className="w-4 h-4 rounded-full bg-amethyst text-white text-xs flex items-center justify-center">
+                {questions.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* ── Main Content ─────────────────────────────────────────── */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Slide Area */}
+        {/* Slide area */}
         <div className="flex-1 flex flex-col relative">
           {/* Slide */}
           <div className="flex-1 relative overflow-hidden">
@@ -186,7 +205,7 @@ export default function LiveSessionPage() {
                   <div className="text-xs font-bold text-white/50 uppercase tracking-widest mb-4">
                     Slayd {currentSlide + 1} / {MOCK_SLIDES.length}
                   </div>
-                  <h2 className="text-3xl md:text-5xl font-bold mb-6 leading-tight">{slide.title}</h2>
+                  <h2 className="text-3xl md:text-5xl font-bold font-display mb-6 leading-tight text-white">{slide.title}</h2>
                   <p className="text-lg md:text-xl text-white/80 leading-relaxed">{slide.content}</p>
                 </div>
               </motion.div>
@@ -212,8 +231,11 @@ export default function LiveSessionPage() {
             </div>
           </div>
 
-          {/* Slide Controls */}
-          <div className="flex items-center justify-between px-6 py-3 border-t border-white/10" style={{ background: "rgba(10,10,20,0.9)" }}>
+          {/* Slide navigation controls */}
+          <div
+            className="flex items-center justify-between px-6 py-3 border-t border-white/10"
+            style={{ background: "rgba(10,10,15,0.9)" }}
+          >
             <button
               onClick={() => setCurrentSlide(s => Math.max(0, s - 1))}
               disabled={currentSlide === 0}
@@ -227,7 +249,11 @@ export default function LiveSessionPage() {
                 <button
                   key={i}
                   onClick={() => setCurrentSlide(i)}
-                  className={`w-2 h-2 rounded-full transition-all ${i === currentSlide ? "w-6 bg-yellow-400" : "bg-white/20 hover:bg-white/40"}`}
+                  className="h-2 rounded-full transition-all"
+                  style={{
+                    width: i === currentSlide ? 24 : 8,
+                    background: i === currentSlide ? "var(--saffron)" : "rgba(255,255,255,0.2)",
+                  }}
                 />
               ))}
             </div>
@@ -241,33 +267,44 @@ export default function LiveSessionPage() {
               </button>
             ) : (
               <button
-                onClick={endLesson}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all text-yellow-400 hover:bg-yellow-400/10"
+                onClick={() => router.push(`/student/live/session/${code}/summary`)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-sm transition-all text-saffron hover:bg-saffron/10"
               >
                 Dars yakunlandi <BookOpen size={18} />
               </button>
             )}
           </div>
 
-          {/* Bottom Action Bar */}
-          <div className="flex items-center justify-center gap-3 px-6 py-3 border-t border-white/10" style={{ background: "rgba(10,10,20,0.95)" }}>
-            {/* Confusion */}
+          {/* Bottom action bar */}
+          <div
+            className="flex items-center justify-center gap-3 px-6 py-3 border-t border-white/10"
+            style={{ background: "rgba(10,10,15,0.95)" }}
+          >
+            {/* Confusion button */}
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={toggleConfusion}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all ${myConfused ? "bg-orange-500/25 text-orange-400 border border-orange-500/40" : "bg-white/8 text-slate-400 hover:text-orange-400 hover:bg-orange-500/10"}`}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm transition-all"
+              style={
+                myConfused
+                  ? { background: "rgba(232,72,85,0.2)", color: "var(--coral)", border: "1px solid rgba(232,72,85,0.35)" }
+                  : { background: "rgba(255,255,255,0.06)", color: "var(--muted-foreground)" }
+              }
             >
               <AlertTriangle size={16} />
               {myConfused ? "Tushundim!" : "Tushunmadim"}
               {confusionCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded text-xs" style={{ background: "rgba(249,115,22,0.3)" }}>
+                <span
+                  className="px-1.5 py-0.5 rounded text-xs"
+                  style={{ background: "rgba(232,72,85,0.3)" }}
+                >
                   {confusionCount}
                 </span>
               )}
             </motion.button>
 
-            {/* Reactions */}
+            {/* Reaction buttons */}
             {REACTIONS.map(r => (
               <motion.button
                 key={r.id}
@@ -283,7 +320,7 @@ export default function LiveSessionPage() {
           </div>
         </div>
 
-        {/* Notes Panel */}
+        {/* ── Notes Panel ────────────────────────────────────────── */}
         <AnimatePresence>
           {isNotesOpen && (
             <motion.div
@@ -292,57 +329,64 @@ export default function LiveSessionPage() {
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="flex-shrink-0 border-l border-white/10 flex flex-col overflow-hidden"
-              style={{ background: "rgba(15,15,30,0.98)" }}
+              style={{ background: "var(--card)" }}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-2 font-bold">
-                  <FileText size={16} style={{ color: "#3B82F6" }} />
+                  <FileText size={16} style={{ color: "var(--lapis)" }} />
                   Eslatmalarim
-                  <span className="text-xs text-slate-500 font-normal">({notes.length} ta)</span>
+                  <span className="text-xs font-normal" style={{ color: "var(--muted-foreground)" }}>
+                    ({notes.length} ta)
+                  </span>
                 </div>
-                <button onClick={() => setIsNotesOpen(false)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">
+                <button onClick={() => setIsNotesOpen(false)} className="p-1 rounded-lg hover:bg-white/10 transition-colors" style={{ color: "var(--muted-foreground)" }}>
                   <X size={16} />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {notes.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500 text-sm">
+                  <div className="text-center py-8 text-sm" style={{ color: "var(--muted-foreground)" }}>
                     <FileText size={32} className="mx-auto mb-2 opacity-30" />
-                    <p>Hali eslatma yo'q</p>
-                    <p className="text-xs mt-1">Yozing — AI har bir eslatmani mavzuga bog'laydi</p>
+                    <p>Hali eslatma yo&apos;q</p>
+                    <p className="text-xs mt-1">Yozing — AI har bir eslatmani mavzuga bog&apos;laydi</p>
                   </div>
                 ) : (
                   notes.map(note => (
-                    <div key={note.id} className="rounded-xl p-3 border border-white/8" style={{ background: "rgba(59,130,246,0.08)" }}>
-                      <div className="text-xs text-blue-400 font-medium mb-1 flex justify-between">
+                    <div
+                      key={note.id}
+                      className="rounded-xl p-3 border border-lapis/20"
+                      style={{ background: "rgba(27,79,216,0.08)" }}
+                    >
+                      <div className="text-xs font-medium mb-1 flex justify-between text-lapis">
                         <span>📌 {note.slideTitle}</span>
-                        <span className="text-slate-500">{note.time}</span>
+                        <span style={{ color: "var(--muted-foreground)" }}>{note.time}</span>
                       </div>
-                      <p className="text-sm text-slate-200">{note.text}</p>
+                      <p className="text-sm" style={{ color: "var(--foreground)" }}>{note.text}</p>
                     </div>
                   ))
                 )}
               </div>
 
               <div className="p-4 border-t border-white/10">
-                <div className="text-xs text-slate-500 mb-2">
-                  Hozir: <span className="text-blue-400 font-medium">{slide.title}</span>
+                <div className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
+                  Hozir: <span className="text-lapis font-medium">{slide.title}</span>
                 </div>
                 <div className="flex gap-2">
                   <textarea
                     value={noteText}
                     onChange={e => setNoteText(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addNote(); } }}
-                    placeholder="Eslatma yozing... (Enter tugmasi)"
+                    placeholder="Eslatma yozing... (Enter)"
                     rows={3}
-                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-blue-400/50 resize-none"
+                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm placeholder-slate-500 focus:outline-none focus:border-lapis/40 resize-none"
+                    style={{ color: "var(--foreground)" }}
                   />
                   <button
                     onClick={addNote}
                     disabled={!noteText.trim()}
                     className="px-3 rounded-xl text-white font-bold disabled:opacity-40 transition-all flex items-center"
-                    style={{ background: "linear-gradient(135deg,#1B4FD8,#3B82F6)" }}
+                    style={{ background: "linear-gradient(135deg,var(--lapis),#2563eb)" }}
                   >
                     <Send size={16} />
                   </button>
@@ -352,7 +396,7 @@ export default function LiveSessionPage() {
           )}
         </AnimatePresence>
 
-        {/* Q&A Panel */}
+        {/* ── Q&A Panel ──────────────────────────────────────────── */}
         <AnimatePresence>
           {showQA && (
             <motion.div
@@ -361,29 +405,35 @@ export default function LiveSessionPage() {
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="flex-shrink-0 border-l border-white/10 flex flex-col overflow-hidden"
-              style={{ background: "rgba(15,15,30,0.98)" }}
+              style={{ background: "var(--card)" }}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-2 font-bold">
-                  <HelpCircle size={16} style={{ color: "#8B5CF6" }} />
+                  <HelpCircle size={16} style={{ color: "var(--amethyst)" }} />
                   Savollar devori
-                  <span className="text-xs text-slate-500 font-normal">({questions.length})</span>
+                  <span className="text-xs font-normal" style={{ color: "var(--muted-foreground)" }}>
+                    ({questions.length})
+                  </span>
                 </div>
-                <button onClick={() => setShowQA(false)} className="p-1 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white">
+                <button onClick={() => setShowQA(false)} className="p-1 rounded-lg hover:bg-white/10 transition-colors" style={{ color: "var(--muted-foreground)" }}>
                   <X size={16} />
                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {questions.sort((a, b) => b.votes - a.votes).map(q => (
-                  <div key={q.id} className="rounded-xl p-3 border border-white/8" style={{ background: "rgba(139,92,246,0.08)" }}>
-                    <p className="text-sm text-slate-200 mb-2">{q.text}</p>
+                  <div
+                    key={q.id}
+                    className="rounded-xl p-3 border border-amethyst/20"
+                    style={{ background: "rgba(123,47,190,0.08)" }}
+                  >
+                    <p className="text-sm mb-2" style={{ color: "var(--foreground)" }}>{q.text}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-500">{q.time}</span>
+                      <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>{q.time}</span>
                       <button
-                        onClick={() => voteQuestion(q.id)}
-                        className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-all hover:bg-purple-500/20"
-                        style={{ color: "#8B5CF6" }}
+                        onClick={() => setQuestions(prev => prev.map(qu => qu.id === q.id ? { ...qu, votes: qu.votes + 1 } : qu))}
+                        className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg transition-all hover:bg-amethyst/20"
+                        style={{ color: "var(--amethyst)" }}
                       >
                         <ThumbsUp size={12} /> {q.votes}
                       </button>
@@ -393,20 +443,23 @@ export default function LiveSessionPage() {
               </div>
 
               <div className="p-4 border-t border-white/10">
-                <p className="text-xs text-slate-500 mb-2">Savolingiz anonim yuboriladi</p>
+                <p className="text-xs mb-2" style={{ color: "var(--muted-foreground)" }}>
+                  Savolingiz anonim yuboriladi
+                </p>
                 <div className="flex gap-2">
                   <input
                     value={questionText}
                     onChange={e => setQuestionText(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && submitQuestion()}
                     placeholder="Savolingizni yozing..."
-                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-purple-400/50"
+                    className="flex-1 px-3 py-2 rounded-xl border border-white/10 bg-white/5 text-sm placeholder-slate-500 focus:outline-none focus:border-amethyst/40"
+                    style={{ color: "var(--foreground)" }}
                   />
                   <button
                     onClick={submitQuestion}
                     disabled={!questionText.trim()}
                     className="px-3 rounded-xl text-white font-bold disabled:opacity-40 transition-all"
-                    style={{ background: "linear-gradient(135deg,#7C3AED,#8B5CF6)" }}
+                    style={{ background: "linear-gradient(135deg,var(--amethyst),#9333ea)" }}
                   >
                     <Send size={16} />
                   </button>

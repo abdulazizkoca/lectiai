@@ -14,7 +14,7 @@ export default function FaceRegistrationPage() {
   useEffect(() => {
     const id = getStoredUserId();
     if (!id) {
-      router.replace("/student/login");
+      router.replace("/login");
       return;
     }
     setUserId(id);
@@ -23,7 +23,6 @@ export default function FaceRegistrationPage() {
   const handleRegistrationComplete = (success: boolean) => {
     setRegistrationComplete(success);
     if (success) {
-      // Redirect back to dashboard after successful registration
       setTimeout(() => {
         router.push("/student/dashboard");
       }, 3000);
@@ -32,19 +31,25 @@ export default function FaceRegistrationPage() {
 
   return (
     <div
-      className="min-h-screen text-white flex flex-col"
-      style={{ background: "linear-gradient(135deg,#0f172a 0%,#1e1b4b 50%,#0f172a 100%)", backgroundAttachment: "fixed" }}
+      className="min-h-screen flex flex-col"
+      style={{ background: "var(--background)", color: "var(--foreground)" }}
     >
       {/* Top bar */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-white/8">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
         <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+          className="flex items-center gap-2 transition-colors hover:text-saffron"
+          style={{ color: "var(--muted-foreground)" }}
         >
           <ArrowLeft size={20} />
           <span>Orqaga</span>
         </button>
-        <span className="text-xs font-bold tracking-widest text-slate-500 uppercase">O'quvchi</span>
+        <span
+          className="text-xs font-bold tracking-widest uppercase"
+          style={{ color: "var(--muted-foreground)" }}
+        >
+          O&apos;quvchi
+        </span>
       </div>
 
       {/* Main content */}
@@ -56,19 +61,19 @@ export default function FaceRegistrationPage() {
         >
           {!registrationComplete ? (
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                Yuzni ro'yxatdan o'tkazish
+              <h1 className="text-3xl md:text-4xl font-bold font-display mb-3">
+                Yuzni ro&apos;yxatdan o&apos;tkazish
               </h1>
-              <p className="text-lg text-slate-400">
-                Darsda sizni avtomatik taniy olish uchun yuzingizni ro'yxatdan o'tkazing
+              <p className="text-lg" style={{ color: "var(--muted-foreground)" }}>
+                Darsda sizni avtomatik taniy olish uchun yuzingizni ro&apos;yxatdan o&apos;tkazing
               </p>
             </div>
           ) : (
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-bold mb-3 text-green-400">
-                Muvaffaqiyatli ro'yxatdan o'tdingiz! 🎉
+              <h1 className="text-3xl md:text-4xl font-bold font-display mb-3 text-jade">
+                Muvaffaqiyatli ro&apos;yxatdan o&apos;tdingiz! 🎉
               </h1>
-              <p className="text-lg text-slate-400">
+              <p className="text-lg" style={{ color: "var(--muted-foreground)" }}>
                 Endi darsda sizni avtomatik taniydi
               </p>
             </div>
@@ -80,14 +85,14 @@ export default function FaceRegistrationPage() {
           />
 
           {/* Privacy notice */}
-          <div className="mt-8 p-4 rounded-lg border border-yellow-400/20 bg-yellow-400/5">
-            <h3 className="text-sm font-semibold text-yellow-400 mb-2">
+          <div className="mt-8 p-4 rounded-xl border border-saffron/20 bg-saffron/5">
+            <h3 className="text-sm font-semibold text-saffron mb-2">
               Maxfiylik haqida
             </h3>
-            <p className="text-xs text-slate-400">
-              Sizning yuz ma'lumotlaringiz faqat darsda sizni taniy olish uchun ishlatiladi.
-              Ma'lumotlar xavfsiz saqlanadi va uchinchi shaxslarga berilmaydi.
-              Istalgan vaqtda ro'yxatdan o'chirishingiz mumkin.
+            <p className="text-xs" style={{ color: "var(--muted-foreground)" }}>
+              Sizning yuz ma&apos;lumotlaringiz faqat darsda sizni taniy olish uchun ishlatiladi.
+              Ma&apos;lumotlar xavfsiz saqlanadi va uchinchi shaxslarga berilmaydi.
+              Istalgan vaqtda ro&apos;yxatdan o&apos;chirishingiz mumkin.
             </p>
           </div>
         </motion.div>

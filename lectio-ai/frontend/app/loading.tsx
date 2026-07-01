@@ -20,13 +20,13 @@ export default function GlobalLoading() {
 
         <div className="flex flex-col items-center gap-2">
           <h3 className="font-bold text-lg text-white tracking-tight">
-            Lectio <span className="text-[#F5A623]">AI</span>
+            Lectio <span className="text-saffron">AI</span>
           </h3>
           {/* Bouncing dots */}
           <div className="flex gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-[#1B4FD8] animate-[bounce_1s_infinite_0ms]" />
-            <div className="w-2 h-2 rounded-full bg-[#0D9373] animate-[bounce_1s_infinite_200ms]" />
-            <div className="w-2 h-2 rounded-full bg-[#F5A623] animate-[bounce_1s_infinite_400ms]" />
+            <div className="w-2 h-2 rounded-full bg-lapis animate-[bounce_1s_infinite_0ms]" />
+            <div className="w-2 h-2 rounded-full bg-jade animate-[bounce_1s_infinite_200ms]" />
+            <div className="w-2 h-2 rounded-full bg-saffron animate-[bounce_1s_infinite_400ms]" />
           </div>
         </div>
       </div>

@@ -63,27 +63,11 @@ Faqat JSON. Boshqa narsa yozma.
             raise ValueError("AI response is not a valid dictionary")
         
         return result
-        
+
     except json.JSONDecodeError as e:
-        print(f"JSON parsing error: {e}")
-        return {
-            "title": topic,
-            "wow_fact": "O'zbekistonda bu texnologiya rivojlanmoqda.",
-            "slides": [],
-            "quiz": [],
-            "flashcards": [],
-            "summary": "Dars xulosasi."
-        }
+        raise ValueError(f"AI javobi noto'g'ri JSON formatida: {e}")
     except Exception as e:
-        print(f"Gemini API error: {e}")
-        return {
-            "title": topic,
-            "wow_fact": "O'zbekistonda bu texnologiya rivojlanmoqda.",
-            "slides": [],
-            "quiz": [],
-            "flashcards": [],
-            "summary": "Dars xulosasi."
-        }
+        raise RuntimeError(f"Gemini API xatosi (generate_lesson): {e}")
 
 async def analyze_material(text: str) -> Dict[str, Any]:
     """Parse uploaded metodichka"""
@@ -131,24 +115,8 @@ Faqat JSON.
             raise ValueError("AI response is not a valid dictionary")
         
         return result
-        
+
     except json.JSONDecodeError as e:
-        print(f"JSON parsing error in material analysis: {e}")
-        return {
-            "title": "Noma'lum",
-            "subject": "Noma'lum",
-            "topics": [],
-            "suggested_lessons": 0,
-            "wow_facts": [],
-            "exam_topics": []
-        }
+        raise ValueError(f"AI javobi noto'g'ri JSON formatida: {e}")
     except Exception as e:
-        print(f"Gemini API error in material analysis: {e}")
-        return {
-            "title": "Noma'lum",
-            "subject": "Noma'lum",
-            "topics": [],
-            "suggested_lessons": 0,
-            "wow_facts": [],
-            "exam_topics": []
-        }
+        raise RuntimeError(f"Gemini API xatosi (analyze_material): {e}")

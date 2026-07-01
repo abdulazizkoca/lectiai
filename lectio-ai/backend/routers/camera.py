@@ -3,14 +3,23 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional
 from database import get_db
 from models.user import User, UserRole
 from services.analytics_service import LessonAnalyticsEngine
+from routers.auth import get_current_user
 import os
 import google.generativeai as genai
 from datetime import datetime
 
 router = APIRouter()
+
+_MAX_FRAME_BYTES = 10 * 1024 * 1024  # 10 MB
+
+class AnalyzeFrameRequest(BaseModel):
+    frame: str
+    session_id: Optional[str] = "default_session"
 
 # Per-session analytics engines (in-memory, keyed by session_id)
 _analytics_engines: dict = {}
@@ -36,19 +45,24 @@ except (ImportError, AttributeError):
     face_mesh = None
 
 @router.post("/analyze")
-async def analyze_frame(data: dict, db: Session = Depends(get_db)):
+async def analyze_frame(
+    data: AnalyzeFrameRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """
     Receives camera frame → analyzes faces → returns attention data.
     All processing is LOCAL. No data stored.
     """
-    frame_raw = data.get("frame") if isinstance(data, dict) else None
-    if not frame_raw:
-        raise HTTPException(status_code=400, detail="frame field is missing")
+    frame_raw = data.frame
+    session_id = data.session_id or "default_session"
 
     if "," not in frame_raw:
         raise HTTPException(status_code=400, detail="frame field is not a valid base64 data URI")
 
     frame_b64 = frame_raw.split(",", 1)[1]
+    if len(frame_b64) > _MAX_FRAME_BYTES * 4 // 3:
+        raise HTTPException(status_code=413, detail="Frame hajmi juda katta (max 10 MB)")
     frame_bytes = base64.b64decode(frame_b64)
     nparr = np.frombuffer(frame_bytes, np.uint8)
     frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -128,13 +142,24 @@ async def analyze_frame(data: dict, db: Session = Depends(get_db)):
     
     # If attention is very low, use Gemini to analyze what's happening
     recommendation = None
-    session_id = data.get("session_id", "default_session")
     if overall < 60 and students:
         try:
             recommendation = await get_ai_recommendation(overall, students, session_id)
         except Exception:
             pass
     
+    # Feed per-frame data into session analytics engine
+    session_id_key = str(session_id)
+    if session_id_key not in _analytics_engines:
+        _analytics_engines[session_id_key] = LessonAnalyticsEngine(session_id=session_id_key)
+    _analytics_engines[session_id_key].process_realtime_data({
+        "attention": overall,
+        "behaviors": [
+            {"student_id": s["id"], "attention_score": s["attention"], "needs_screenshot": s["attention"] < 40}
+            for s in students
+        ],
+    })
+
     return {
         "students": students,
         "overall_attention": round(overall),
@@ -264,7 +289,7 @@ async def auto_snapshot(student_id: str, frame_b64: str, session_id: str, curren
     if "," in frame_b64:
         frame_b64 = frame_b64.split(",")[1]
     img_bytes = base64.b64decode(frame_b64)
-    
+
     # Send to professor via WebSocket (NOT stored in DB)
     await sio.emit("student_snapshot", {
         "student_id": student_id,
@@ -272,3 +297,61 @@ async def auto_snapshot(student_id: str, frame_b64: str, session_id: str, curren
         "timestamp": datetime.now().isoformat(),
         "attention_score": current_attention,
     }, room=f"professor_{session_id}")
+
+
+@router.get("/analytics/{session_id}")
+async def get_session_analytics(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Real-time analytics dashboard data for an active session."""
+    if current_user.role not in (UserRole.professor, UserRole.admin):
+        raise HTTPException(status_code=403, detail="Faqat professorlar ko'ra oladi")
+    engine = _analytics_engines.get(session_id)
+    if not engine:
+        return {
+            "active_students_count": 0,
+            "absent_students_count": 0,
+            "notifications": [],
+            "latest_timeline_data": [],
+        }
+    return engine.get_realtime_dashboard_data()
+
+
+@router.post("/analytics/{session_id}/end")
+async def end_session_analytics(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Finish a session, persist summary to AttentionLog, return full report."""
+    if current_user.role not in (UserRole.professor, UserRole.admin):
+        raise HTTPException(status_code=403, detail="Faqat professorlar tugatishi mumkin")
+    engine = _analytics_engines.pop(session_id, None)
+    if not engine:
+        raise HTTPException(status_code=404, detail="Aktiv sessiya topilmadi")
+
+    summary = engine.finish_lesson_and_generate_summary()
+
+    # Persist aggregate metrics to AttentionLog
+    try:
+        from models.attention_log import AttentionLog
+        session_id_int = int(session_id)
+        timeline = summary.get("attention_graph_data", [])
+        if timeline:
+            total_att = sum(t.get("avg_attention", 0) for t in timeline)
+            avg_att = total_att / len(timeline)
+            low_events = len(summary.get("low_attention_events", []))
+            total_frames = len(timeline) or 1
+            distracted_pct = round(low_events / total_frames * 100, 1)
+            log = AttentionLog(
+                session_id=session_id_int,
+                attention_avg=round(avg_att, 1),
+                distracted_pct=distracted_pct,
+            )
+            db.add(log)
+            db.commit()
+    except (ValueError, Exception):
+        pass  # session_id int emas yoki DB xatosi — summary'ni qaytarishni bloklamasin
+
+    return summary

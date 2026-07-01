@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, ArrowRight, Sun, Moon, Trash2, User, Users, ShieldAlert, Sparkles } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Sun, Moon, Trash2, User, Users, ShieldAlert, Sparkles, KeyRound, X } from "lucide-react";
 import Logo from "@/components/Logo";
 import { authAPI } from "@/lib/api";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -25,6 +25,10 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [savedAccounts, setSavedAccounts] = useState<any[]>([]);
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotDone, setForgotDone] = useState(false);
 
   const fg = isDark ? "#fff" : "#0A0A0F";
   const fgMuted = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
@@ -126,7 +130,24 @@ export default function LoginPage() {
     });
   };
 
-  // 5. Host/Guest Quick Login — email ni form ga to'ldiradi
+  // 5. Forgot password
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.includes("@")) return;
+    setForgotLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      await fetch(`${API_URL}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+    } catch {}
+    setForgotLoading(false);
+    setForgotDone(true);
+  };
+
+  // 6. Host/Guest Quick Login — email ni form ga to'ldiradi
   const handleQuickLogin = (role: "professor" | "student") => {
     const mockEmail = role === "professor" ? "professor@lectio.ai" : "student@lectio.ai";
     setEmail(mockEmail);
@@ -141,7 +162,7 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden"
-      style={{ background: isDark ? "#0A0A0F" : "#F8FAFC" }}
+      style={{ background: "var(--background)" }}
     >
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
@@ -156,8 +177,8 @@ export default function LoginPage() {
       {/* Theme toggle */}
       <button
         onClick={toggleTheme}
-        className="fixed top-4 right-4 z-50 w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-white/5 border border-white/10 text-[#F5A623] hover:scale-105 active:scale-95"
-        style={{ color: isDark ? "#F5A623" : "#1B4FD8" }}
+        className="fixed top-4 right-4 z-50 w-10 h-10 rounded-xl flex items-center justify-center transition-all bg-white/5 border border-white/10 hover:scale-105 active:scale-95"
+        style={{ color: isDark ? "var(--saffron)" : "var(--lapis)" }}
       >
         {isDark ? <Sun size={16} /> : <Moon size={16} />}
       </button>
@@ -173,7 +194,7 @@ export default function LoginPage() {
         >
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Users className="text-[#F5A623] w-5 h-5" />
+              <Users className="text-saffron w-5 h-5" />
               <h2 className="text-lg font-bold text-white uppercase tracking-wider">Eslab qolinganlar</h2>
             </div>
             <p className="text-xs text-slate-400 mb-6">
@@ -193,7 +214,7 @@ export default function LoginPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold ${
-                        acc.role === "professor" ? "bg-indigo-500/20 text-indigo-300" : "bg-[#0D9373]/20 text-[#0D9373]"
+                        acc.role === "professor" ? "bg-lapis/20 text-lapis" : "bg-jade/20 text-jade"
                       }`}>
                         {acc.role === "professor" ? "Host" : "Guest"}
                       </div>
@@ -220,19 +241,19 @@ export default function LoginPage() {
 
           <div className="mt-8 border-t border-white/10 pt-6">
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Sparkles size={12} className="text-[#F5A623]" /> Tezkor Mehmon Rejimi
+              <Sparkles size={12} className="text-saffron" /> Tezkor Mehmon Rejimi
             </h3>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => handleQuickLogin("professor")}
-                className="flex flex-col items-center justify-center p-3 rounded-xl border border-indigo-500/20 bg-indigo-500/5 hover:bg-indigo-500/15 hover:border-indigo-500/40 text-indigo-300 text-xs font-bold transition active:scale-95"
+                className="flex flex-col items-center justify-center p-3 rounded-xl border border-lapis/20 bg-lapis/5 hover:bg-lapis/15 hover:border-lapis/40 text-lapis text-xs font-bold transition active:scale-95"
               >
                 <User size={16} className="mb-1" />
                 Host (Professor)
               </button>
               <button
                 onClick={() => handleQuickLogin("student")}
-                className="flex flex-col items-center justify-center p-3 rounded-xl border border-cyan-500/20 bg-cyan-500/5 hover:bg-cyan-500/15 hover:border-cyan-500/40 text-cyan-300 text-xs font-bold transition active:scale-95"
+                className="flex flex-col items-center justify-center p-3 rounded-xl border border-jade/20 bg-jade/5 hover:bg-jade/15 hover:border-jade/40 text-jade text-xs font-bold transition active:scale-95"
               >
                 <Users size={16} className="mb-1" />
                 Guest (Talaba)
@@ -253,7 +274,7 @@ export default function LoginPage() {
             <Link href="/" className="inline-flex items-center gap-2.5 mb-4 group justify-center lg:justify-start">
               <Logo size={40} className="transition-transform duration-300 group-hover:scale-110" />
               <span className="text-2xl font-bold" style={{ color: fg }}>
-                Lectio <span className="text-[#F5A623]">AI</span>
+                Lectio <span className="text-saffron">AI</span>
               </span>
             </Link>
             <h1 className="text-2xl sm:text-3xl font-bold mb-1" style={{ color: fg }}>
@@ -317,7 +338,7 @@ export default function LoginPage() {
                   onChange={(e) => { setPassword(e.target.value); setError(""); }}
                   className="w-full px-4 py-3 pr-12 rounded-xl text-sm outline-none transition-all"
                   style={{ background: inputBg, border: `1px solid ${surfaceBorder}`, color: fg }}
-                  onFocus={(e) => { e.target.style.borderColor = "#F5A623"; e.target.style.boxShadow = "0 0 0 3px rgba(245,166,35,0.12)"; }}
+                  onFocus={(e) => { e.target.style.borderColor = "var(--saffron)"; e.target.style.boxShadow = "0 0 0 3px rgba(245,166,35,0.12)"; }}
                   onBlur={(e) => { e.target.style.borderColor = surfaceBorder; e.target.style.boxShadow = "none"; }}
                 />
                 <button
@@ -333,12 +354,13 @@ export default function LoginPage() {
             {/* Actions: Remember & Forgot */}
             <div className="flex items-center justify-between text-xs">
               <label className="flex items-center gap-2 cursor-pointer text-slate-400">
-                <input type="checkbox" className="rounded bg-black/40 border-white/10" style={{ accentColor: "#F5A623" }} defaultChecked />
+                <input type="checkbox" className="rounded bg-black/40 border-white/10" style={{ accentColor: "var(--saffron)" }} defaultChecked />
                 {lang === "uz" ? "Eslab qolish" : "Запомнить"}
               </label>
-              <Link href="#" className="font-semibold hover:underline text-[#1B4FD8]">
+              <button type="button" onClick={() => { setShowForgotModal(true); setForgotDone(false); setForgotEmail(""); }}
+                className="font-semibold hover:underline text-lapis">
                 {lang === "uz" ? "Parolni unutdingizmi?" : "Забыли пароль?"}
-              </Link>
+              </button>
             </div>
 
             {/* Submit button */}
@@ -373,6 +395,57 @@ export default function LoginPage() {
         </motion.div>
 
       </div>
+      {/* Forgot Password Modal */}
+      <AnimatePresence>
+        {showForgotModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-sm rounded-3xl border border-white/10 p-6 shadow-2xl"
+              style={{ background: "var(--card)" }}>
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <KeyRound size={18} className="text-saffron" />
+                  <h3 className="text-lg font-bold" style={{ color: fg }}>Parolni tiklash</h3>
+                </div>
+                <button onClick={() => setShowForgotModal(false)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white transition">
+                  <X size={16} />
+                </button>
+              </div>
+              {forgotDone ? (
+                <div className="text-center py-4">
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Agar bu email ro&apos;yxatdan o&apos;tgan bo&apos;lsa, tiklash havolasi yuborildi.<br />
+                    Emailingizni tekshiring.
+                  </p>
+                  <button onClick={() => setShowForgotModal(false)}
+                    className="mt-4 px-6 py-2 rounded-xl bg-saffron text-black font-bold text-sm">
+                    Yopish
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword} className="space-y-4">
+                  <p className="text-sm text-slate-400">Emailingizni kiriting — parolni tiklash havolasi yuboriladi.</p>
+                  <input
+                    type="email"
+                    required
+                    placeholder="email@example.com"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all"
+                    style={{ background: inputBg, border: `1px solid ${surfaceBorder}`, color: fg }}
+                  />
+                  <button type="submit" disabled={forgotLoading}
+                    className="w-full py-3 rounded-xl font-bold text-black text-sm flex items-center justify-center gap-2 disabled:opacity-50"
+                    style={{ background: "linear-gradient(135deg,#F5A623,#e8941a)" }}>
+                    {forgotLoading ? <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" /> : "Yuborish"}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -18,7 +18,7 @@ export default function GlobalError({
     <html lang="uz">
       <body className="bg-[#0A0A0F] text-white flex items-center justify-center min-h-[100dvh] p-4 font-sans">
         <div className="bg-[#18181F] p-8 rounded-3xl border border-slate-800 max-w-md w-full text-center shadow-2xl">
-          <div className="w-16 h-16 bg-[#E84855]/10 text-[#E84855] rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-coral/10 text-coral rounded-full flex items-center justify-center mx-auto mb-6">
             <AlertCircle size={32} />
           </div>
           <h2 className="text-2xl font-bold mb-2">Kritik xatolik</h2>

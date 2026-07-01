@@ -335,7 +335,7 @@ function SetupModal({ onStart }: { onStart: (lesson: any | null) => void }) {
             <button
               onClick={() => pptxRef.current?.click()}
               disabled={uploading}
-              className="px-6 py-3 rounded-xl bg-[#F5A623] text-black font-bold flex items-center gap-2 hover:bg-amber-400 transition disabled:opacity-50"
+              className="px-6 py-3 rounded-xl bg-[#F5A623] text-black font-bold flex items-center gap-2 hover:opacity-90 transition disabled:opacity-50"
             >
               {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
               {uploading ? "Slaydlar tayyorlanmoqda..." : "PPTX Faylni Tanlash"}

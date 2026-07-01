@@ -267,7 +267,6 @@ async def get_results(
 class SubmitAnswerRequest(BaseModel):
     question_id: int
     student_answer: str
-    participant_id: int
     time_taken: int = 5000
 
 
@@ -275,11 +274,11 @@ class SubmitAnswerRequest(BaseModel):
 async def submit_answer(
     session_id: int,
     body: SubmitAnswerRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     question_id = body.question_id
     student_answer = body.student_answer
-    participant_id = body.participant_id
     time_taken = body.time_taken
 
     if not student_answer or len(student_answer.strip()) == 0:
@@ -292,12 +291,16 @@ async def submit_answer(
         raise HTTPException(400, "Sessiya faol emas yoki allaqachon tugagan")
 
     q = db.query(Question).filter(Question.id == question_id).first()
-    if not q: 
+    if not q:
         raise HTTPException(404, "Savol topilmadi")
-    
-    p = db.query(SessionParticipant).filter(SessionParticipant.id == participant_id).first()
-    if not p: 
-        raise HTTPException(404, "Qatnashchi topilmadi")
+
+    # participant_id ni body'dan emas, token'dan aniqlanadi
+    p = db.query(SessionParticipant).filter(
+        SessionParticipant.session_id == session_id,
+        SessionParticipant.student_id == current_user.id,
+    ).first()
+    if not p:
+        raise HTTPException(404, "Siz bu sessiyaga qo'shilmagansiz")
     
     # Vaqt tekshiruvi
     if time_taken < 0:

@@ -134,7 +134,7 @@ export default function FlashcardsPage() {
           <div className="text-5xl mb-4">⚠️</div>
           <p className="font-bold mb-2" style={{ color: fg }}>{error}</p>
           <button onClick={() => router.push("/student/dashboard")}
-            className="mt-4 px-6 py-3 rounded-xl font-bold text-black bg-[#F5A623]">
+            className="mt-4 px-6 py-3 rounded-xl font-bold text-black bg-saffron">
             Orqaga
           </button>
         </div>
@@ -197,7 +197,7 @@ export default function FlashcardsPage() {
 
           <div className="flex flex-col gap-3">
             <button onClick={() => router.push("/student/independent")}
-              className="w-full py-3 rounded-xl font-bold text-black bg-[#F5A623] hover:bg-[#f7b955] transition">
+              className="w-full py-3 rounded-xl font-bold text-black bg-saffron hover:brightness-105 transition">
               Yangi mavzu o'rganish
             </button>
             <button onClick={() => router.push("/student/dashboard")}
@@ -249,7 +249,7 @@ export default function FlashcardsPage() {
           <button onClick={toggleTheme}
             className="p-2 rounded-xl transition"
             style={{ background: surface }}>
-            {isDark ? <Sun size={15} style={{ color: "#F5A623" }} /> : <Moon size={15} style={{ color: "#1B4FD8" }} />}
+            {isDark ? <Sun size={15} style={{ color: "var(--saffron)" }} /> : <Moon size={15} style={{ color: "var(--lapis)" }} />}
           </button>
         </div>
       </header>
@@ -277,7 +277,7 @@ export default function FlashcardsPage() {
       {/* Progress bar */}
       <div className="h-1 w-full" style={{ background: isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.07)" }}>
         <motion.div
-          className="h-full bg-[#F5A623]"
+          className="h-full bg-saffron"
           animate={{ width: `${progress}%` }}
           transition={{ duration: 0.4 }}
         />
@@ -313,7 +313,7 @@ export default function FlashcardsPage() {
                 WebkitBackfaceVisibility: "hidden",
               }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-widest mb-4 text-[#F5A623]">SAVOL</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-4 text-saffron">SAVOL</p>
               <p className="text-xl font-bold leading-relaxed" style={{ color: fg }}>{card.question}</p>
               {card.hint && (
                 <p className="text-xs mt-5 px-3 py-2 rounded-xl" style={{ background: "rgba(245,166,35,0.1)", color: "#F5A623" }}>
@@ -337,7 +337,7 @@ export default function FlashcardsPage() {
                 transform: "rotateY(180deg)",
               }}
             >
-              <p className="text-[11px] font-bold uppercase tracking-widest mb-4 text-[#0D9373]">JAVOB</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest mb-4 text-jade">JAVOB</p>
               <p className="text-lg leading-relaxed font-medium" style={{ color: fg }}>{card.answer}</p>
             </div>
           </motion.div>

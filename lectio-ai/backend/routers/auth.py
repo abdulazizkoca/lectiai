@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
 from models.user import User, UserRole
+from models.password_reset import PasswordResetToken
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
 from pydantic import BaseModel, field_validator
@@ -11,6 +12,7 @@ import os
 import hashlib
 import re
 import logging
+import secrets
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -250,3 +252,72 @@ async def get_me(current_user: User = Depends(get_current_user)):
         is_active=current_user.is_active,
         created_at=current_user.created_at
     )
+
+
+# ═══ Parolni tiklash ═══
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        if len(v) < 6:
+            raise ValueError("Parol kamida 6 belgidan iborat bo'lishi kerak")
+        if len(v) > 128:
+            raise ValueError("Parol juda uzun")
+        return v
+
+
+@router.post("/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Parolni tiklash havolasini email orqali yuborish."""
+    # Muddati o'tgan tokenlarni tozalash
+    now = datetime.now(timezone.utc)
+    db.query(PasswordResetToken).filter(PasswordResetToken.expires_at < now).delete()
+    db.commit()
+
+    user = db.query(User).filter(User.email == data.email.strip().lower()).first()
+    if user:
+        # Eski tokenlarni o'chirish
+        db.query(PasswordResetToken).filter(PasswordResetToken.email == user.email).delete()
+        token = secrets.token_urlsafe(32)
+        db.add(PasswordResetToken(
+            token=token,
+            email=user.email,
+            expires_at=now + timedelta(minutes=15),
+        ))
+        db.commit()
+        frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+        reset_link = f"{frontend_url}/reset-password?token={token}"
+        try:
+            from services.notification import notification_service
+            await notification_service.send_password_reset(user.email, reset_link)
+        except Exception:
+            logger.warning(f"Password reset email failed for {user.email}")
+    return {"message": "Agar bu email ro'yxatdan o'tgan bo'lsa, tiklash havolasi yuborildi"}
+
+
+@router.post("/reset-password")
+async def reset_password(data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Yangi parolni belgilash."""
+    now = datetime.now(timezone.utc)
+    entry = db.query(PasswordResetToken).filter(
+        PasswordResetToken.token == data.token,
+        PasswordResetToken.expires_at > now,
+    ).first()
+    if not entry:
+        raise HTTPException(status_code=400, detail="Token noto'g'ri yoki muddati tugagan (15 daqiqa)")
+    user = db.query(User).filter(User.email == entry.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
+    user.hashed_password = _hash_password(data.new_password)
+    db.delete(entry)
+    db.commit()
+    logger.info(f"Password reset successful for {user.email}")
+    return {"message": "Parol muvaffaqiyatli yangilandi. Endi yangi parol bilan kirishingiz mumkin."}

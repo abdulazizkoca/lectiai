@@ -76,15 +76,15 @@ export default function AnalyticsDashboard() {
   }, []);
 
   const getHeatColor = (v: number) => {
-    if (v >= 80) return "#0D9373";
-    if (v >= 60) return "#F5A623";
+    if (v >= 80) return "var(--jade)";
+    if (v >= 60) return "var(--saffron)";
     if (v >= 40) return "#E8485580";
     return "rgba(255,255,255,0.05)";
   };
   const getHeatmapBg = (v: number) => {
-    if (v >= 80) return "rgba(13,147,115,0.2) text-[#0D9373]";
-    if (v >= 60) return "rgba(245,166,35,0.2) text-[#F5A623]";
-    return "rgba(232,72,85,0.15) text-[#E84855]";
+    if (v >= 80) return "bg-jade/20 text-jade";
+    if (v >= 60) return "bg-saffron/20 text-saffron";
+    return "bg-coral/15 text-coral";
   };
 
   const metricCards = [
@@ -110,7 +110,7 @@ export default function AnalyticsDashboard() {
           <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10 transition text-sm font-bold">
             <Filter size={14} /> Filtr
           </button>
-          <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#1B4FD8]/20 border border-[#1B4FD8]/30 text-[#6B8FFF] hover:bg-[#1B4FD8]/30 transition text-sm font-bold">
+          <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-lapis/20 border border-lapis/30 text-[#6B8FFF] hover:bg-lapis/30 transition text-sm font-bold">
             <Download size={14} /> PDF
           </button>
         </div>
@@ -125,7 +125,7 @@ export default function AnalyticsDashboard() {
               <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${m.color}22`, color: m.color }}>
                 {m.icon}
               </div>
-              <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-0.5 ${m.up ? "bg-[#0D9373]/20 text-[#0D9373]" : "bg-[#E84855]/20 text-[#E84855]"}`}>
+              <span className={`text-xs font-bold px-2 py-1 rounded-full flex items-center gap-0.5 ${m.up ? "bg-jade/20 text-jade" : "bg-coral/20 text-coral"}`}>
                 {m.up ? <TrendingUp size={10} /> : <TrendingDown size={10} />} {m.trend}
               </span>
             </div>
@@ -221,10 +221,10 @@ export default function AnalyticsDashboard() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="mt-3 p-3 rounded-xl bg-[#E84855]/10 border border-[#E84855]/20 flex gap-3 items-start">
-              <Brain size={16} className="text-[#E84855] shrink-0 mt-0.5" />
+            <div className="mt-3 p-3 rounded-xl bg-coral/10 border border-coral/20 flex gap-3 items-start">
+              <Brain size={16} className="text-coral shrink-0 mt-0.5" />
               <p className="text-xs text-slate-300">
-                <strong className="text-[#E84855]">AI Tavsiya:</strong> Q-12 va Q-08 savollarida talabalar qiynalmoqda. Bu mavzularni qayta tushuntirish tavsiya etiladi.
+                <strong className="text-coral">AI Tavsiya:</strong> Q-12 va Q-08 savollarida talabalar qiynalmoqda. Bu mavzularni qayta tushuntirish tavsiya etiladi.
               </p>
             </div>
           </div>
@@ -258,7 +258,7 @@ export default function AnalyticsDashboard() {
                 <div key={c} className="w-5 h-4 rounded" style={{ background: c }} />
               ))}
               <span>Ko'p</span>
-              <span className="ml-auto text-[#F5A623] font-bold">💡 Chorshanba 10:00-12:00 — eng yuqori faollik</span>
+              <span className="ml-auto text-saffron font-bold">💡 Chorshanba 10:00-12:00 — eng yuqori faollik</span>
             </div>
           </div>
         </div>
@@ -284,13 +284,13 @@ export default function AnalyticsDashboard() {
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
                 {/* Avatar + Name */}
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#1B4FD8] to-[#7B2FBE] flex items-center justify-center text-xl font-bold text-white border-2 border-[#1B4FD8]/50">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-lapis to-amethyst flex items-center justify-center text-xl font-bold text-white border-2 border-lapis/50">
                     {selectedStudent.name.split(" ").map((n: string) => n[0]).join("")}
                   </div>
                   <div>
                     <h3 className="text-xl font-bold">{selectedStudent.name}</h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-[#0D9373]/20 text-[#0D9373]">Faol</span>
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-jade/20 text-jade">Faol</span>
                       <span className="text-xs text-slate-400">🔥 {selectedStudent.streak} kunlik streak</span>
                     </div>
                   </div>
@@ -303,7 +303,7 @@ export default function AnalyticsDashboard() {
                     <p className="text-xs text-slate-400 mt-0.5">O'rtacha ball</p>
                   </div>
                   <div className="p-4 rounded-xl bg-white/5 border border-white/10 text-center">
-                    <p className="text-2xl font-bold text-[#F5A623]">{selectedStudent.streak}</p>
+                    <p className="text-2xl font-bold text-saffron">{selectedStudent.streak}</p>
                     <p className="text-xs text-slate-400 mt-0.5">Streak kun</p>
                   </div>
                 </div>
@@ -344,10 +344,10 @@ export default function AnalyticsDashboard() {
 
                 {/* AI Recommendation */}
                 {selectedStudent.avg < 70 && (
-                  <div className="p-4 rounded-xl bg-[#1B4FD8]/10 border border-[#1B4FD8]/20">
+                  <div className="p-4 rounded-xl bg-lapis/10 border border-lapis/20">
                     <div className="flex items-center gap-2 mb-2">
-                      <Brain size={14} className="text-[#1B4FD8]" />
-                      <span className="text-xs font-bold text-[#1B4FD8] uppercase">AI Tavsiya</span>
+                      <Brain size={14} className="text-lapis" />
+                      <span className="text-xs font-bold text-lapis uppercase">AI Tavsiya</span>
                     </div>
                     <p className="text-sm text-slate-300">
                       {selectedStudent.name} bir nechta mavzuda qiynalmoqda (o'rtacha {selectedStudent.avg}%). Alohida dars o'tkazish yoki qo'shimcha materiallar yuborish tavsiya etiladi.
@@ -356,7 +356,7 @@ export default function AnalyticsDashboard() {
                 )}
               </div>
               <div className="p-5 border-t border-white/10">
-                <button className="w-full py-3 rounded-xl bg-[#1B4FD8]/20 border border-[#1B4FD8]/30 text-[#6B8FFF] font-bold flex items-center justify-center gap-2 hover:bg-[#1B4FD8]/30 transition">
+                <button className="w-full py-3 rounded-xl bg-lapis/20 border border-lapis/30 text-[#6B8FFF] font-bold flex items-center justify-center gap-2 hover:bg-lapis/30 transition">
                   <MessageSquare size={16} /> Telegram orqali xabar
                 </button>
               </div>

@@ -9,9 +9,9 @@ class Answer(Base):
     __tablename__ = "answers"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(Integer, ForeignKey("live_sessions.id"))
-    question_id = Column(Integer, ForeignKey("questions.id"))
-    student_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    session_id = Column(Integer, ForeignKey("live_sessions.id"), index=True)
+    question_id = Column(Integer, ForeignKey("questions.id"), index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
     answer = Column(String)
     is_correct = Column(Boolean, default=False)
     time_taken = Column(Integer)              # millisekund

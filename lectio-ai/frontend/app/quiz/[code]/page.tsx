@@ -167,7 +167,7 @@ export default function QuizRoomPage() {
           <div className="text-5xl mb-4">❌</div>
           <h2 className="text-xl font-bold mb-2" style={{ color: fg }}>Xatolik yuz berdi</h2>
           <p className="mb-6 text-sm" style={{ color: muted }}>{error}</p>
-          <button onClick={() => router.push("/join")} className="px-6 py-3 bg-[#F5A623] text-black rounded-xl font-bold">
+          <button onClick={() => router.push("/join")} className="px-6 py-3 bg-saffron text-black rounded-xl font-bold">
             Orqaga qaytish
           </button>
         </div>
@@ -186,7 +186,7 @@ export default function QuizRoomPage() {
           <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-black shrink-0"
             style={{ background: "linear-gradient(135deg,#F5A623,#e8941a)" }}>L</div>
           <div>
-            <span className="font-mono font-bold text-[#F5A623] text-sm">{roomCode}</span>
+            <span className="font-mono font-bold text-saffron text-sm">{roomCode}</span>
             <div className="flex items-center gap-1 text-xs mt-0.5" style={{ color: muted }}>
               <Users size={10} /> {participantCount} ishtirokchi
             </div>
@@ -225,7 +225,7 @@ export default function QuizRoomPage() {
               <h2 className="text-2xl font-bold mb-2" style={{ color: fg }}>Dars boshlanishini kuting</h2>
               <p className="text-sm mb-6" style={{ color: muted }}>Professor test boshlaydi</p>
               <div className="inline-flex items-center gap-3 px-5 py-3 rounded-2xl" style={{ background: surf, border: `1px solid ${border}` }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-[#F5A623]" style={{ background: "rgba(245,166,35,0.15)" }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center font-bold text-saffron" style={{ background: "rgba(245,166,35,0.15)" }}>
                   {nickname[0]?.toUpperCase()}
                 </div>
                 <span className="font-bold" style={{ color: fg }}>{nickname}</span>
@@ -310,7 +310,7 @@ export default function QuizRoomPage() {
                   </p>
                   {lastPoints > 0 && (
                     <p className="text-sm mt-1" style={{ color: muted }}>
-                      <Zap size={12} className="inline text-[#F5A623]" /> +{lastPoints} ball
+                      <Zap size={12} className="inline text-saffron" /> +{lastPoints} ball
                       {streak > 1 && <span className="ml-2">🔥 {streak} ketma-ket</span>}
                     </p>
                   )}
@@ -331,7 +331,7 @@ export default function QuizRoomPage() {
           {status === "results" && (
             <motion.div key="results" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full">
               <div className="rounded-2xl p-5 mb-4" style={{ background: surf, border: `1px solid ${border}` }}>
-                <h3 className="font-bold text-[#F5A623] mb-2">✅ To&apos;g&apos;ri javob</h3>
+                <h3 className="font-bold text-saffron mb-2">✅ To&apos;g&apos;ri javob</h3>
                 <p className="font-bold text-lg" style={{ color: fg }}>{correctAnswer}</p>
                 {explanation && <p className="text-sm mt-2" style={{ color: muted }}>{explanation}</p>}
               </div>
@@ -349,7 +349,7 @@ export default function QuizRoomPage() {
                           {p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : p.rank}
                         </span>
                         <span className="flex-1 text-sm font-medium" style={{ color: fg }}>{p.name}</span>
-                        <span className="font-mono font-bold text-sm text-[#F5A623]">{p.score}</span>
+                        <span className="font-mono font-bold text-sm text-saffron">{p.score}</span>
                       </div>
                     ))}
                   </div>
@@ -365,7 +365,7 @@ export default function QuizRoomPage() {
               <div className="text-6xl mb-4">🏆</div>
               <h2 className="text-3xl font-bold mb-1" style={{ color: fg }}>Test tugadi!</h2>
               <p className="text-sm mb-2" style={{ color: muted }}>Yakuniy natijangiz:</p>
-              <p className="text-4xl font-bold text-[#F5A623] mb-6">
+              <p className="text-4xl font-bold text-saffron mb-6">
                 {myScore} <span className="text-lg" style={{ color: muted }}>ball</span>
               </p>
 
@@ -386,7 +386,7 @@ export default function QuizRoomPage() {
                           {p.rank === 1 ? "🥇" : p.rank === 2 ? "🥈" : p.rank === 3 ? "🥉" : `#${p.rank}`}
                         </span>
                         <span className="flex-1 font-medium" style={{ color: fg }}>{p.name}</span>
-                        <span className="font-mono font-bold text-[#F5A623]">{p.score}</span>
+                        <span className="font-mono font-bold text-saffron">{p.score}</span>
                       </motion.div>
                     ))}
                   </div>
@@ -394,7 +394,7 @@ export default function QuizRoomPage() {
               )}
 
               <button onClick={() => router.push("/student/dashboard")}
-                className="px-8 py-4 rounded-2xl font-bold text-lg text-black hover:bg-[#f7b955] transition bg-[#F5A623]">
+                className="px-8 py-4 rounded-2xl font-bold text-lg text-black hover:brightness-105 transition bg-saffron">
                 Dashboard ga qaytish
               </button>
             </motion.div>

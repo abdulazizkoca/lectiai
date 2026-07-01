@@ -54,7 +54,7 @@ def bulk_create(
     current_user: User = Depends(get_current_user),
 ):
     _require_professor(current_user)
-    ids = []
+    objs = []
     for data in questions:
         q = Question(
             lesson_id=data.lesson_id, material_id=data.material_id,
@@ -63,8 +63,12 @@ def bulk_create(
             explanation=data.explanation, difficulty=Difficulty(data.difficulty),
             time_limit=data.time_limit, points=data.points,
         )
-        db.add(q); db.commit(); db.refresh(q); ids.append(q.id)
-    return {"success": True, "question_ids": ids, "count": len(ids)}
+        db.add(q)
+        objs.append(q)
+    db.commit()
+    for q in objs:
+        db.refresh(q)
+    return {"success": True, "question_ids": [q.id for q in objs], "count": len(objs)}
 
 
 @router.get("/lesson/{lesson_id}")

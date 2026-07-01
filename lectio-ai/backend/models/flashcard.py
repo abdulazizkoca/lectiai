@@ -4,6 +4,11 @@ from datetime import datetime, timezone
 from database import Base
 
 class FlashCard(Base):
+    """
+    Learning chain flashcard — SM-2 algoritmi (YANGI model, `flash_cards` jadvali).
+    Eski SR kartalari uchun Card (cards jadvali) ishlatiladi.
+    Texnik qarz: ikki model birlashtirilishi kerak.
+    """
     __tablename__ = "flash_cards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -19,8 +24,8 @@ class FlashCard(Base):
     next_review = Column(DateTime, default=lambda: datetime.now(timezone.utc))
     
     # Metadata
-    lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=True)
-    student_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    lesson_id = Column(Integer, ForeignKey("lessons.id"), nullable=True, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     subject = Column(String, nullable=True)
     
     # Tags can be stored as JSON or ARRAY (SQLite fallback using JSON/String often, but let's use String for simple mock)

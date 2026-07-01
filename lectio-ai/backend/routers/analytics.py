@@ -4,7 +4,7 @@ from sqlalchemy import func
 from database import get_db
 from models.card import Card
 from models.lesson import Lesson
-from models.user import User
+from models.user import User, UserRole
 from models.session import LiveSession
 from models.attention_log import AttentionLog
 from datetime import datetime, timedelta, timezone
@@ -21,7 +21,7 @@ async def get_student_analytics(
 ):
     """Talaba o'qish statistikasi"""
     # Faqat o'zi yoki admin ko'rishi mumkin
-    if student_id != current_user.id and current_user.role.value != "admin":
+    if student_id != current_user.id and current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=403,
             detail="Bu statistikani ko'rishga ruxsat yo'q"
@@ -80,7 +80,7 @@ async def get_lesson_analytics(
         raise HTTPException(status_code=404, detail="Dars topilmadi")
     
     # Faqat professor o'zi yaratgan darsni ko'rishi mumkin (admin ham)
-    if lesson.professor_id != current_user.id and current_user.role.value != "admin":
+    if lesson.professor_id != current_user.id and current_user.role != UserRole.admin:
         raise HTTPException(
             status_code=403,
             detail="Bu dars statistikasini ko'rishga ruxsat yo'q"
@@ -116,7 +116,7 @@ async def get_platform_overview(
     current_user: User = Depends(get_current_user)
 ):
     """Platforma umumiy ko'rsatkichlari. Admin: barchasi, Professor: o'z darslari."""
-    if current_user.role.value == "admin":
+    if current_user.role == UserRole.admin:
         total_users = db.query(User).count()
         total_lessons = db.query(Lesson).count()
         total_cards = db.query(Card).count()
@@ -129,7 +129,7 @@ async def get_platform_overview(
             "platform": "Lectio AI"
         }
 
-    if current_user.role.value == "professor":
+    if current_user.role == UserRole.professor:
         professor_lessons = db.query(Lesson).filter(
             Lesson.professor_id == current_user.id
         ).count()
@@ -152,43 +152,61 @@ async def get_professor_weekly(
     current_user: User = Depends(get_current_user),
 ):
     """So'nggi 7 kunlik dars va diqqat statistikasi (professor dashboard uchun)."""
-    if current_user.role.value not in ("professor", "admin"):
+    if current_user.role not in (UserRole.professor, UserRole.admin):
         raise HTTPException(403, "Faqat professorlar uchun")
 
     now = datetime.now(timezone.utc)
+    week_start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
     DAY_NAMES = ["Du", "Se", "Ch", "Pa", "Ju", "Sh", "Ya"]
+
+    # Batch query: barcha 7 kunlik darslar
+    lessons_rows = db.query(
+        func.date(Lesson.created_at).label("day"),
+        func.count(Lesson.id).label("cnt"),
+    ).filter(
+        Lesson.professor_id == current_user.id,
+        Lesson.created_at >= week_start,
+    ).group_by(func.date(Lesson.created_at)).all()
+    lessons_by_day = {str(r.day): r.cnt for r in lessons_rows}
+
+    # Batch query: 7 kun ichidagi sessiyalar va diqqat o'rtachalari
+    sessions_rows = db.query(
+        LiveSession.id,
+        func.date(LiveSession.created_at).label("day"),
+    ).filter(
+        LiveSession.professor_id == current_user.id,
+        LiveSession.created_at >= week_start,
+    ).all()
+    session_to_day = {r.id: str(r.day) for r in sessions_rows}
+
+    avg_att_by_day: dict = {}
+    if session_to_day:
+        att_rows = db.query(
+            AttentionLog.session_id,
+            func.avg(AttentionLog.attention_avg).label("avg"),
+        ).filter(
+            AttentionLog.session_id.in_(list(session_to_day.keys()))
+        ).group_by(AttentionLog.session_id).all()
+        day_att_sums: dict = {}
+        day_att_counts: dict = {}
+        for r in att_rows:
+            day = session_to_day.get(r.session_id)
+            if day:
+                day_att_sums[day] = day_att_sums.get(day, 0.0) + float(r.avg or 0)
+                day_att_counts[day] = day_att_counts.get(day, 0) + 1
+        avg_att_by_day = {
+            d: round(day_att_sums[d] / day_att_counts[d])
+            for d in day_att_sums
+        }
+
     result = []
-
     for i in range(6, -1, -1):
-        day_start = (now - timedelta(days=i)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        day_end = day_start + timedelta(days=1)
-
-        lessons_count = db.query(Lesson).filter(
-            Lesson.professor_id == current_user.id,
-            Lesson.created_at >= day_start,
-            Lesson.created_at < day_end,
-        ).count()
-
-        sessions = db.query(LiveSession).filter(
-            LiveSession.professor_id == current_user.id,
-            LiveSession.created_at >= day_start,
-            LiveSession.created_at < day_end,
-        ).all()
-
-        avg_att = 0
-        if sessions:
-            sid_list = [s.id for s in sessions]
-            avg_att_q = db.query(func.avg(AttentionLog.attention_avg)).filter(
-                AttentionLog.session_id.in_(sid_list)
-            ).scalar()
-            avg_att = round(float(avg_att_q or 0))
-
+        day = (now - timedelta(days=i)).replace(hour=0, minute=0, second=0, microsecond=0)
+        day_str = day.date().isoformat()
         result.append({
-            "day": DAY_NAMES[day_start.weekday()],
-            "lessons": lessons_count,
-            "attention": avg_att,
+            "day": DAY_NAMES[day.weekday()],
+            "lessons": lessons_by_day.get(day_str, 0),
+            "attention": avg_att_by_day.get(day_str, 0),
         })
 
     return result

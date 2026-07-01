@@ -87,7 +87,7 @@ function QuestionEditor({
         exit={{ opacity: 0, scale: 0.94 }}
         transition={{ type: "spring", stiffness: 350, damping: 30 }}
         className="w-full max-w-xl rounded-2xl border border-white/10 overflow-hidden"
-        style={{ background: "linear-gradient(145deg, #0f1118, #141720)" }}
+        style={{ background: "var(--card)" }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-white/8">
@@ -200,7 +200,7 @@ function QuestionEditor({
           <button
             onClick={() => canSave && onSave(draft)}
             disabled={!canSave}
-            className="flex-1 py-2.5 rounded-xl bg-[#F5A623] text-black font-bold text-sm disabled:opacity-40 hover:bg-amber-400 transition flex items-center justify-center gap-1.5"
+            className="flex-1 py-2.5 rounded-xl bg-[#F5A623] text-black font-bold text-sm disabled:opacity-40 hover:opacity-90 transition flex items-center justify-center gap-1.5"
           >
             <Check size={14} /> Saqlash
           </button>
@@ -537,14 +537,14 @@ export default function ProfessorQuizPage() {
                       {/* Load from local lessons */}
                       <button
                         onClick={() => setShowLessonPicker(!showLessonPicker)}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#1B4FD8]/15 text-[#6B8FFF] hover:bg-[#1B4FD8]/25 font-bold transition"
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-lapis/15 text-lapis hover:bg-lapis/25 font-bold transition"
                       >
                         <BookOpen size={12} /> Darsdan yuklash
                       </button>
                       {/* AI generate */}
                       <button
                         onClick={() => setShowAIPanel(!showAIPanel)}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-[#7B2FBE]/15 text-[#A855F7] hover:bg-[#7B2FBE]/25 font-bold transition"
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-amethyst/15 text-amethyst hover:bg-amethyst/25 font-bold transition"
                       >
                         <Sparkles size={12} /> AI
                       </button>
@@ -563,8 +563,8 @@ export default function ProfessorQuizPage() {
                     {showLessonPicker && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden mb-4">
-                        <div className="p-4 rounded-xl bg-[#1B4FD8]/8 border border-[#1B4FD8]/20">
-                          <p className="text-sm font-bold text-[#6B8FFF] mb-3 flex items-center gap-1.5">
+                        <div className="p-4 rounded-xl bg-lapis/8 border border-lapis/20">
+                          <p className="text-sm font-bold text-lapis mb-3 flex items-center gap-1.5">
                             <BookOpen size={14} /> AI Darslaringizdan Savollar
                           </p>
                           {localLessons.length === 0 ? (
@@ -576,8 +576,8 @@ export default function ProfessorQuizPage() {
                                 return (
                                   <button key={l.id} onClick={() => loadFromLesson(l)}
                                     className="w-full flex items-center gap-3 p-3 rounded-xl border border-white/8 bg-white/5 hover:bg-white/10 hover:border-white/20 text-left transition">
-                                    <div className="w-8 h-8 rounded-lg bg-[#1B4FD8]/20 flex items-center justify-center shrink-0">
-                                      <span className="text-xs font-bold text-[#6B8FFF]">{(l.title || "D")[0]}</span>
+                                    <div className="w-8 h-8 rounded-lg bg-lapis/20 flex items-center justify-center shrink-0">
+                                      <span className="text-xs font-bold text-lapis">{(l.title || "D")[0]}</span>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="font-bold text-sm truncate">{l.title || l.presentation_data?.title || "Dars"}</p>
@@ -602,7 +602,7 @@ export default function ProfessorQuizPage() {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden mb-4">
                         <div className="p-4 rounded-xl bg-[#7B2FBE]/8 border border-[#7B2FBE]/20">
-                          <p className="text-sm font-bold text-[#A855F7] mb-2 flex items-center gap-1.5">
+                          <p className="text-sm font-bold text-amethyst mb-2 flex items-center gap-1.5">
                             <Sparkles size={14} /> AI Savol Generatsiyasi
                           </p>
                           <div className="flex gap-2">
@@ -961,15 +961,15 @@ export default function ProfessorQuizPage() {
             {finalLeaderboard.length > 0 && (
               <div className="rounded-2xl border border-white/10 bg-white/[0.025] p-6 mb-6 text-left">
                 <h3 className="font-black text-center mb-5 flex items-center justify-center gap-2 text-lg">
-                  <Crown size={18} className="text-amber-400" /> Yakuniy Reyting
+                  <Crown size={18} className="text-saffron" /> Yakuniy Reyting
                 </h3>
                 <div className="space-y-2">
                   {finalLeaderboard.map((p, i) => (
                     <motion.div key={p.name} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.07 }}
                       className={`flex items-center gap-4 p-4 rounded-xl border ${
-                        i === 0 ? "border-amber-500/30 bg-amber-500/8" :
+                        i === 0 ? "border-saffron/30 bg-saffron/8" :
                         i === 1 ? "border-slate-400/20 bg-slate-400/5" :
-                        i === 2 ? "border-orange-700/20 bg-orange-700/5" :
+                        i === 2 ? "border-coral/20 bg-coral/5" :
                         "border-white/8 bg-white/[0.025]"
                       }`}>
                       <span className="text-2xl w-9 text-center">
@@ -994,7 +994,7 @@ export default function ProfessorQuizPage() {
                 <RotateCcw size={16} /> Yangi Quiz
               </button>
               <button onClick={() => router.push("/professor/analytics")}
-                className="flex-1 py-3.5 rounded-xl bg-[#1B4FD8]/15 border border-[#1B4FD8]/25 text-[#6B8FFF] font-bold hover:bg-[#1B4FD8]/25 transition flex items-center justify-center gap-2">
+                className="flex-1 py-3.5 rounded-xl bg-lapis/15 border border-[#1B4FD8]/25 text-lapis font-bold hover:bg-lapis/25 transition flex items-center justify-center gap-2">
                 <BarChart2 size={16} /> Analitika
               </button>
             </div>

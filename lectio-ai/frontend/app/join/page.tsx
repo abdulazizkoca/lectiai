@@ -113,8 +113,8 @@ export default function QuizJoinPage() {
   const fg      = isDark ? "#fff" : "#0A0A0F";
   const muted   = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
   const inputCls = isDark
-    ? "bg-white/10 border-white/20 text-white placeholder-slate-500 focus:border-[#F5A623]"
-    : "bg-black/[0.04] border-black/12 text-[#0A0A0F] placeholder-slate-400 focus:border-[#F5A623]";
+    ? "bg-white/10 border-white/20 text-white placeholder-slate-500 focus:border-saffron"
+    : "bg-black/[0.04] border-black/12 text-[#0A0A0F] placeholder-slate-400 focus:border-saffron";
 
   return (
     <main className="min-h-screen flex items-center justify-center p-6 relative" style={{ background: bg }}>

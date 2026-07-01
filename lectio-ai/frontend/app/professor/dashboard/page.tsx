@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/useToast";
 import { ToastContainer } from "@/components/ui/Toast";
 import { authAPI, lessonsAPI, sessionsAPI } from "@/lib/api";
 import { AreaChart, Area, ResponsiveContainer, Tooltip } from "recharts";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -44,6 +45,8 @@ export default function ProfessorDashboardPage() {
   const [tipIdx, setTipIdx] = useState(0);
   const [startingId, setStartingId] = useState<number | null>(null);
   const [stats, setStats] = useState({ lessons: 0, students: 0, attention: 76, week: 0 });
+  const [weekData, setWeekData] = useState(WEEK_DATA);
+  const [weekDataError, setWeekDataError] = useState(false);
 
   const router = useRouter();
   const { toasts, addToast, removeToast } = useToast();
@@ -60,7 +63,7 @@ export default function ProfessorDashboardPage() {
       const stored = localStorage.getItem("lectio_active_session");
       if (stored) setActiveSession(JSON.parse(stored));
 
-      if (!token || token.startsWith("mock_")) { setLoading(false); return; }
+      if (!token) { setLoading(false); return; }
       try {
         const me = await authAPI.getMe(token);
         setUser(me);
@@ -81,6 +84,11 @@ export default function ProfessorDashboardPage() {
           const a = await fetch(`${API_URL}/api/analytics/overview`, { headers: { Authorization: `Bearer ${token}` } });
           if (a.ok) { const d = await a.json(); setStats((s) => ({ ...s, students: d.active_students || s.students, attention: d.avg_attention || s.attention })); }
         } catch {}
+        try {
+          const wr = await fetch(`${API_URL}/api/analytics/professor/weekly`, { headers: { Authorization: `Bearer ${token}` } });
+          if (wr.ok) { const wd = await wr.json(); if (Array.isArray(wd) && wd.length > 0) setWeekData(wd); }
+          else setWeekDataError(true);
+        } catch { setWeekDataError(true); }
       } catch {}
       setLoading(false);
     };
@@ -89,7 +97,7 @@ export default function ProfessorDashboardPage() {
 
   const handleStart = async (lessonId: number, title: string) => {
     const token = localStorage.getItem("lectio_token");
-    if (!token || token.startsWith("mock_")) { setShowModal(true); return; }
+    if (!token) { setShowModal(true); return; }
     setStartingId(lessonId);
     try {
       const res = await sessionsAPI.create(lessonId, token);
@@ -113,10 +121,28 @@ export default function ProfessorDashboardPage() {
   };
 
   if (loading) return (
-    <div className="min-h-full flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-10 h-10 text-[#F5A623] animate-spin mx-auto mb-3" />
-        <p className="text-slate-500 dark:text-slate-400 text-sm">Yuklanmoqda...</p>
+    <div className="min-h-full p-4 md:p-6 xl:p-8 flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="space-y-2">
+          <Skeleton variant="heading" className="w-52" />
+          <Skeleton variant="text" className="w-36" />
+        </div>
+        <Skeleton className="w-32 h-9 rounded-xl" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[...Array(4)].map((_, i) => <Skeleton key={i} variant="card" className="h-28" />)}
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {[...Array(6)].map((_, i) => <Skeleton key={i} variant="card" className="h-24" />)}
+          </div>
+          <Skeleton variant="card" className="h-48" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton variant="card" className="h-40" />
+          <Skeleton variant="card" className="h-36" />
+        </div>
       </div>
     </div>
   );
@@ -138,19 +164,19 @@ export default function ProfessorDashboardPage() {
   const tip = AI_TIPS[tipIdx];
 
   const MAIN_ACTIONS = [
-    { title: "Jonli Dars", desc: "Kamera + real-time kuzatuv", icon: <Video size={22} />, color: "#E84855", bg: "rgba(232,72,85,0.12)", href: "/professor/live", badge: activeSession ? "FAOL" : null, glow: !!activeSession },
-    { title: "Dars Yaratish", desc: "AI bilan slayd va testlar", icon: <Sparkles size={22} />, color: "#1B4FD8", bg: "rgba(27,79,216,0.12)", href: "/professor/create-lesson" },
-    { title: "Metodichka", desc: "PDF/Word → AI dars", icon: <FolderOpen size={22} />, color: "#0D9373", bg: "rgba(13,147,115,0.12)", href: "/professor/materials" },
-    { title: "Jonli Quiz", desc: "Real-time test va reyting", icon: <Radio size={22} />, color: "#F5A623", bg: "rgba(245,166,35,0.12)", href: "/professor/quiz", badge: "AI" },
+    { title: "Jonli Dars", desc: "Kamera + real-time kuzatuv", icon: <Video size={22} />, color: "var(--coral)", bg: "rgba(232,72,85,0.12)", href: "/professor/live", badge: activeSession ? "FAOL" : null, glow: !!activeSession },
+    { title: "Dars Yaratish", desc: "AI bilan slayd va testlar", icon: <Sparkles size={22} />, color: "var(--lapis)", bg: "rgba(27,79,216,0.12)", href: "/professor/create-lesson" },
+    { title: "Metodichka", desc: "PDF/Word → AI dars", icon: <FolderOpen size={22} />, color: "var(--jade)", bg: "rgba(13,147,115,0.12)", href: "/professor/materials" },
+    { title: "Jonli Quiz", desc: "Real-time test va reyting", icon: <Radio size={22} />, color: "var(--saffron)", bg: "rgba(245,166,35,0.12)", href: "/professor/quiz", badge: "AI" },
     { title: "Analitika", desc: "Statistika va tahlillar", icon: <BarChart2 size={22} />, color: "#06B6D4", bg: "rgba(6,182,212,0.12)", href: "/professor/analytics" },
-    { title: "Talabalar", desc: "Guruh va monitoring", icon: <Users size={22} />, color: "#7B2FBE", bg: "rgba(123,47,190,0.12)", href: "/professor/students" },
+    { title: "Talabalar", desc: "Guruh va monitoring", icon: <Users size={22} />, color: "var(--amethyst)", bg: "rgba(123,47,190,0.12)", href: "/professor/students" },
   ];
 
   const QUICK_STATS = [
-    { label: "Jami darslar", value: String(stats.lessons || displayLessons.length), icon: <BookOpen size={16} />, color: "#1B4FD8", chart: WEEK_DATA.map(d => ({ v: d.lessons })) },
-    { label: "Talabalar", value: stats.students > 0 ? String(stats.students) : "—", icon: <Users size={16} />, color: "#0D9373", chart: WEEK_DATA.map(d => ({ v: d.attention })) },
-    { label: "O'rt. diqqat", value: `${stats.attention}%`, icon: <Eye size={16} />, color: "#F5A623", chart: WEEK_DATA.map(d => ({ v: d.attention })) },
-    { label: "Bu hafta", value: `${stats.week} dars`, icon: <Activity size={16} />, color: "#7B2FBE", chart: WEEK_DATA.map(d => ({ v: d.lessons })) },
+    { label: "Jami darslar", value: String(stats.lessons || displayLessons.length), icon: <BookOpen size={16} />, color: "#1B4FD8", chart: weekData.map(d => ({ v: d.lessons })) },
+    { label: "Talabalar", value: stats.students > 0 ? String(stats.students) : "—", icon: <Users size={16} />, color: "#0D9373", chart: weekData.map(d => ({ v: d.attention })) },
+    { label: "O'rt. diqqat", value: `${stats.attention}%`, icon: <Eye size={16} />, color: "#F5A623", chart: weekData.map(d => ({ v: d.attention })) },
+    { label: "Bu hafta", value: `${stats.week} dars`, icon: <Activity size={16} />, color: "#7B2FBE", chart: weekData.map(d => ({ v: d.lessons })) },
   ];
 
   return (
@@ -161,7 +187,7 @@ export default function ProfessorDashboardPage() {
       <header className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-2xl sm:text-3xl font-bold tracking-tight">
-            {greeting}, <span className="text-[#F5A623]">{firstName}</span> 👋
+            {greeting}, <span className="text-saffron">{firstName}</span> 👋
           </motion.h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 flex items-center gap-2">
             {new Date().toLocaleDateString("uz-UZ", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
@@ -182,7 +208,7 @@ export default function ProfessorDashboardPage() {
             </motion.button>
           )}
           <button onClick={() => router.push("/professor/create-lesson")}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F5A623] text-black font-bold text-sm hover:bg-[#f7b955] transition shadow-lg shadow-[#F5A623]/20">
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-saffron text-black font-bold text-sm hover:brightness-110 transition shadow-lg shadow-saffron/20">
             <Plus size={16} /> Dars yaratish
           </button>
         </div>
@@ -240,7 +266,7 @@ export default function ProfessorDashboardPage() {
                       {a.badge && (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{
                           background: a.badge === "FAOL" ? "rgba(232,72,85,0.2)" : "rgba(245,166,35,0.2)",
-                          color: a.badge === "FAOL" ? "#E84855" : "#F5A623"
+                          color: a.badge === "FAOL" ? "var(--coral)" : "var(--saffron)"
                         }}>{a.badge}</span>
                       )}
                     </div>
@@ -259,7 +285,7 @@ export default function ProfessorDashboardPage() {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">So&apos;nggi darslar</h2>
-              <Link href="/professor/lessons" className="text-xs text-slate-500 dark:text-slate-400 hover:text-[#F5A623] transition flex items-center gap-1 font-bold">
+              <Link href="/professor/lessons" className="text-xs text-slate-500 dark:text-slate-400 hover:text-saffron transition flex items-center gap-1 font-bold">
                 Barchasi <ChevronRight size={12} />
               </Link>
             </div>
@@ -270,8 +296,8 @@ export default function ProfessorDashboardPage() {
                 return (
                   <motion.div key={l.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.06 }}
                     className={`flex items-center gap-4 p-4 hover:bg-black/[0.03] dark:hover:bg-white/5 transition group ${i < displayLessons.length - 1 ? "border-b border-black/5 dark:border-white/5" : ""}`}>
-                    <div className="w-9 h-9 rounded-xl bg-[#1B4FD8]/15 flex items-center justify-center shrink-0 group-hover:bg-[#1B4FD8]/25 transition">
-                      <BookOpen size={15} className="text-[#1B4FD8]" />
+                    <div className="w-9 h-9 rounded-xl bg-lapis/15 flex items-center justify-center shrink-0 group-hover:bg-lapis/25 transition">
+                      <BookOpen size={15} className="text-lapis" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-bold text-sm text-slate-900 dark:text-white truncate">{l.title}</p>
@@ -283,7 +309,7 @@ export default function ProfessorDashboardPage() {
                       </span>
                       {l.status !== "completed" && (
                         <button onClick={() => handleStart(l.id, l.title)} disabled={startingId === l.id}
-                          className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-[#0D9373]/15 text-[#0D9373] hover:bg-[#0D9373]/25 transition disabled:opacity-50">
+                          className="flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-jade/15 text-jade hover:bg-jade/25 transition disabled:opacity-50">
                           {startingId === l.id ? <Loader2 size={10} className="animate-spin" /> : <Play size={10} />}
                           Boshlash
                         </button>
@@ -296,7 +322,7 @@ export default function ProfessorDashboardPage() {
                 <div className="p-8 text-center">
                   <BookOpen size={32} className="text-slate-600 mx-auto mb-2" />
                   <p className="text-slate-400 text-sm">Hali darslar yaratilmagan</p>
-                  <button onClick={() => router.push("/professor/create-lesson")} className="mt-3 text-xs text-[#F5A623] font-bold hover:underline">+ Dars yaratish</button>
+                  <button onClick={() => router.push("/professor/create-lesson")} className="mt-3 text-xs text-saffron font-bold hover:underline">+ Dars yaratish</button>
                 </div>
               )}
             </div>
@@ -307,15 +333,17 @@ export default function ProfessorDashboardPage() {
             <h2 className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Haftalik faollik</h2>
             <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
               <div className="flex items-end gap-2 h-20">
-                {WEEK_DATA.map((d, i) => (
+                {weekData.map((d, i) => (
                   <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                     <motion.div initial={{ height: 0 }} animate={{ height: d.lessons * 16 }} transition={{ delay: i * 0.05, duration: 0.4 }}
-                      className="w-full rounded-t-md" style={{ background: d.lessons > 0 ? "#F5A623" : "rgba(0,0,0,0.06)", minHeight: 4 }} />
+                      className="w-full rounded-t-md" style={{ background: d.lessons > 0 ? "var(--saffron)" : "rgba(0,0,0,0.06)", minHeight: 4 }} />
                     <span className="text-xs text-slate-500">{d.day}</span>
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-slate-500 mt-3 text-center">Bu hafta {WEEK_DATA.reduce((a, d) => a + d.lessons, 0)} ta dars o&apos;tkazildi</p>
+              <p className="text-xs text-slate-500 mt-3 text-center">
+                {weekDataError ? "Ma'lumot yuklanmadi" : `Bu hafta ${weekData.reduce((a, d) => a + d.lessons, 0)} ta dars o’tkazildi`}
+              </p>
             </div>
           </section>
         </div>
@@ -326,10 +354,10 @@ export default function ProfessorDashboardPage() {
           {/* AI Daily Tip */}
           <AnimatePresence mode="wait">
             <motion.div key={tipIdx} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-              className="rounded-2xl border border-[#7B2FBE]/30 p-5"
+              className="rounded-2xl border border-amethyst/30 p-5"
               style={{ background: "linear-gradient(135deg, rgba(27,79,216,0.08), rgba(123,47,190,0.12))" }}>
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-[#7B2FBE]/20 flex items-center justify-center text-base">
+                <div className="w-8 h-8 rounded-xl bg-amethyst/20 flex items-center justify-center text-base">
                   {tip.icon}
                 </div>
                 <span className="text-xs font-bold text-[#A78BFA] uppercase tracking-wider">AI Tavsiya</span>
@@ -352,7 +380,7 @@ export default function ProfessorDashboardPage() {
           {/* Today's Goals */}
           <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Target size={16} className="text-[#F5A623]" />
+              <Target size={16} className="text-saffron" />
               <h3 className="font-bold text-sm">Bugungi maqsadlar</h3>
             </div>
             <div className="space-y-3">
@@ -363,7 +391,7 @@ export default function ProfessorDashboardPage() {
                 { label: "Talabalar tahlilini ko'rish", done: false },
               ].map((goal, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${goal.done ? "bg-[#0D9373] border-[#0D9373]" : "border-black/15 dark:border-white/20"}`}>
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${goal.done ? "bg-jade border-jade" : "border-black/15 dark:border-white/20"}`}>
                     {goal.done && <CheckCircle2 size={10} className="text-white" />}
                   </div>
                   <span className={`text-sm transition ${goal.done ? "line-through text-slate-400" : "text-slate-600 dark:text-slate-300"}`}>{goal.label}</span>
@@ -373,10 +401,10 @@ export default function ProfessorDashboardPage() {
             <div className="mt-4 pt-3 border-t border-black/5 dark:border-white/5">
               <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
                 <span>Progress</span>
-                <span className="font-bold text-[#F5A623]">{Math.round(([!!activeSession, false, false, false].filter(Boolean).length / 4) * 100)}%</span>
+                <span className="font-bold text-saffron">{Math.round(([!!activeSession, false, false, false].filter(Boolean).length / 4) * 100)}%</span>
               </div>
               <div className="h-1.5 rounded-full bg-black/8 dark:bg-white/10 overflow-hidden">
-                <div className="h-full rounded-full bg-[#F5A623]" style={{ width: `${([!!activeSession, false, false, false].filter(Boolean).length / 4) * 100}%` }} />
+                <div className="h-full rounded-full bg-saffron" style={{ width: `${([!!activeSession, false, false, false].filter(Boolean).length / 4) * 100}%` }} />
               </div>
             </div>
           </div>
@@ -384,15 +412,15 @@ export default function ProfessorDashboardPage() {
           {/* Professor Stats */}
           <div className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
             <div className="flex items-center gap-2 mb-4">
-              <Award size={16} className="text-amber-400" />
+              <Award size={16} className="text-saffron" />
               <h3 className="font-bold text-sm">Profil statistikasi</h3>
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { label: "XP Ball", value: "2,450", icon: <Star size={14} />, color: "#F5A623" },
-                { label: "Streak", value: "7 kun", icon: <Flame size={14} />, color: "#E84855" },
-                { label: "Darslar", value: String(stats.lessons || displayLessons.length), icon: <BookOpen size={14} />, color: "#1B4FD8" },
-                { label: "Reyting", value: "#12", icon: <TrendingUp size={14} />, color: "#0D9373" },
+                { label: "XP Ball", value: "2,450", icon: <Star size={14} />, color: "var(--saffron)" },
+                { label: "Streak", value: "7 kun", icon: <Flame size={14} />, color: "var(--coral)" },
+                { label: "Darslar", value: String(stats.lessons || displayLessons.length), icon: <BookOpen size={14} />, color: "var(--lapis)" },
+                { label: "Reyting", value: "#12", icon: <TrendingUp size={14} />, color: "var(--jade)" },
               ].map((s) => (
                 <div key={s.label} className="p-3 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/6 dark:border-white/5">
                   <div className="flex items-center gap-1.5 mb-1" style={{ color: s.color }}>
@@ -410,9 +438,9 @@ export default function ProfessorDashboardPage() {
             <h3 className="font-bold text-sm mb-3">Tezkor yaratish</h3>
             <div className="space-y-2">
               {[
-                { label: "✨ AI bilan dars yaratish", href: "/professor/create-lesson", color: "#F5A623" },
-                { label: "📄 Metodichka yuklash", href: "/professor/materials", color: "#0D9373" },
-                { label: "🎮 Quiz boshlash", href: "/professor/quiz", color: "#1B4FD8" },
+                { label: "✨ AI bilan dars yaratish", href: "/professor/create-lesson", color: "var(--saffron)" },
+                { label: "📄 Metodichka yuklash", href: "/professor/materials", color: "var(--jade)" },
+                { label: "🎮 Quiz boshlash", href: "/professor/quiz", color: "var(--lapis)" },
               ].map((item) => (
                 <button key={item.href} onClick={() => router.push(item.href)}
                   className="w-full text-left px-4 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 hover:border-black/15 dark:hover:border-white/25 hover:bg-black/[0.06] dark:hover:bg-white/10 transition text-sm font-bold flex items-center justify-between"
@@ -432,7 +460,7 @@ export default function ProfessorDashboardPage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
               className="w-full max-w-sm rounded-3xl border border-black/10 dark:border-white/10 bg-white dark:bg-[#0F0F16] p-6 text-center shadow-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-[#F5A623]/10 border border-[#F5A623]/25 flex items-center justify-center text-[#F5A623] mx-auto mb-4">
+              <div className="w-14 h-14 rounded-2xl bg-saffron/10 border border-saffron/25 flex items-center justify-center text-saffron mx-auto mb-4">
                 <ShieldAlert size={28} />
               </div>
               <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Kirish talab qilinadi</h3>

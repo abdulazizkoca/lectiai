@@ -51,16 +51,17 @@ app = FastAPI(
 )
 
 
-# CORS — frontend bilan ishlash uchun
+# CORS — CORS_ORIGINS env var dan olinadi (vergul bilan ajratilgan)
+_cors_origins = os.getenv(
+    "CORS_ORIGINS",
+    "http://localhost:3000,https://lectioai.uz"
+).split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://lectioai.uz",
-    ],
+    allow_origins=[o.strip() for o in _cors_origins],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "X-Requested-With"],
+    allow_headers=["Content-Type", "Authorization", "X-Requested-With", "X-Bot-Secret"],
 )
 
 # Xavfsizlik sarlavhalari

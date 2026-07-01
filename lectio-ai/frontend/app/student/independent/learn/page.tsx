@@ -128,7 +128,7 @@ export default function LearnPage() {
           {MODES.map((m) => (
             <button key={m.id} onClick={() => handleModeSwitch(m.id as LearningMode)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-all ${
-                mode === m.id ? "bg-[#F5A623] text-black" : "bg-[#0A0A0F] text-slate-400"
+                mode === m.id ? "bg-saffron text-black" : "bg-[#0A0A0F] text-slate-400"
               }`}>
               <m.icon size={18} />
               <span className="font-medium">{m.name}</span>
@@ -184,7 +184,7 @@ function TutorMode({ topic, studentId, onGenerateCards }: { topic: string, stude
       <div className="flex-1 overflow-y-auto space-y-4 mb-4">
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.type === "user" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] rounded-2xl p-4 ${m.type === "user" ? "bg-[#F5A623] text-black" : "bg-[#18181F] text-white"}`}>
+            <div className={`max-w-[80%] rounded-2xl p-4 ${m.type === "user" ? "bg-saffron text-black" : "bg-[#18181F] text-white"}`}>
               {m.content}
             </div>
           </div>
@@ -255,7 +255,7 @@ function FlashcardsMode({ topic, flashcards, onGenerateQuiz }: { topic: string, 
             <p className="text-slate-500 mb-2">SAVOL</p>
             <h3 className="text-xl font-bold text-center">{card.front}</h3>
           </div>
-          <div className="absolute inset-0 bg-[#F5A623] text-black rounded-2xl flex flex-col items-center justify-center p-8" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
+          <div className="absolute inset-0 bg-saffron text-black rounded-2xl flex flex-col items-center justify-center p-8" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
             <p className="text-black/60 mb-2">JAVOB</p>
             <h3 className="text-xl font-bold text-center">{card.back}</h3>
           </div>

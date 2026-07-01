@@ -12,7 +12,7 @@ const SCENARIO_DATA = {
   id: "history-1",
   subject: "Tarix",
   title: "Amir Temur Qarorlari",
-  bgGradient: "from-amber-900/40 to-[#0A0A0F]",
+  bgGradient: "from-saffron/20 to-[#0A0A0F]",
   nodes: {
     "start": {
       character: "Amir Temur",
@@ -101,7 +101,7 @@ export default function ScenarioGamePage() {
           <ArrowLeft size={20} /> Qaytish
         </Link>
         <div className="flex items-center gap-4 font-bold">
-          <span className="flex items-center gap-1 text-[#0D9373] bg-[#0D9373]/10 px-3 py-1 rounded-full border border-[#0D9373]/20">
+          <span className="flex items-center gap-1 text-jade bg-jade/10 px-3 py-1 rounded-full border border-jade/20">
             <Zap size={16} fill="currentColor" /> {xpEarned} XP
           </span>
         </div>
@@ -131,9 +131,9 @@ export default function ScenarioGamePage() {
             <motion.div 
               key="consequence"
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
-              className={`p-6 rounded-2xl border-2 mb-6 ${node.isSuccess ? 'bg-[#0D9373]/10 border-[#0D9373]/30' : 'bg-[#E84855]/10 border-[#E84855]/30'}`}
+              className={`p-6 rounded-2xl border-2 mb-6 ${node.isSuccess ? 'bg-jade/10 border-jade/30' : 'bg-coral/10 border-coral/30'}`}
             >
-              <h3 className={`font-bold uppercase tracking-wider text-sm mb-2 ${node.isSuccess ? 'text-[#0D9373]' : 'text-[#E84855]'}`}>
+              <h3 className={`font-bold uppercase tracking-wider text-sm mb-2 ${node.isSuccess ? 'text-jade' : 'text-coral'}`}>
                 {node.isSuccess ? "To'g'ri qaror!" : "Xato tanlov"}
               </h3>
               <p className="text-lg leading-relaxed">{displayedText}</p>
@@ -152,7 +152,7 @@ export default function ScenarioGamePage() {
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
               className="text-center p-8 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-xl"
             >
-              <h2 className="text-4xl font-display font-bold mb-4 text-[#F5A623]">{node.character}</h2>
+              <h2 className="text-4xl font-display font-bold mb-4 text-saffron">{node.character}</h2>
               <p className="text-xl mb-8">{displayedText}</p>
               <Link href="/student/dashboard">
                 <Button variant="premium" size="lg">Bosh sahifaga qaytish</Button>
@@ -165,14 +165,14 @@ export default function ScenarioGamePage() {
               className="bg-[#18181F]/90 backdrop-blur-xl border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative"
             >
               {/* Character Name Tag */}
-              <div className="absolute -top-4 left-8 bg-[#F5A623] text-black font-bold px-4 py-1 rounded-full text-sm shadow-lg">
+              <div className="absolute -top-4 left-8 bg-saffron text-black font-bold px-4 py-1 rounded-full text-sm shadow-lg">
                 {node.character}
               </div>
 
               <div className="min-h-[100px] mb-8 mt-2">
                 <p className="text-xl md:text-2xl leading-relaxed font-body">
                   {displayedText}
-                  {isTyping && <span className="inline-block w-2 h-5 bg-[#F5A623] ml-1 animate-pulse" />}
+                  {isTyping && <span className="inline-block w-2 h-5 bg-saffron ml-1 animate-pulse" />}
                 </p>
               </div>
 
@@ -183,10 +183,10 @@ export default function ScenarioGamePage() {
                     key={idx}
                     onClick={() => handleChoice(choice)}
                     disabled={isTyping}
-                    className="w-full text-left p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-[#F5A623]/50 transition-all font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed group flex items-center justify-between"
+                    className="w-full text-left p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-saffron/50 transition-all font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed group flex items-center justify-between"
                   >
                     <span>{choice.text}</span>
-                    <ChevronRight size={20} className="text-white/20 group-hover:text-[#F5A623] transition-colors" />
+                    <ChevronRight size={20} className="text-white/20 group-hover:text-saffron transition-colors" />
                   </button>
                 ))}
               </div>

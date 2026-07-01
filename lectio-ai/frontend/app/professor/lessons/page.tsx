@@ -13,8 +13,8 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { lessonsAPI, sessionsAPI } from "@/lib/api";
 
 const STATUSES = {
-  active: { label: "Faol", color: "#0D9373", bg: "rgba(13,147,115,0.15)" },
-  preparing: { label: "Tayyorlanmoqda", color: "#F5A623", bg: "rgba(245,166,35,0.15)" },
+  active: { label: "Faol", color: "var(--jade)", bg: "rgba(13,147,115,0.15)" },
+  preparing: { label: "Tayyorlanmoqda", color: "var(--saffron)", bg: "rgba(245,166,35,0.15)" },
   completed: { label: "Tugatilgan", color: "#64748b", bg: "rgba(100,116,139,0.15)" },
 };
 
@@ -107,7 +107,7 @@ export default function ProfessorLessonsPage() {
   if (loading) {
     return (
       <div className="min-h-full flex items-center justify-center">
-        <Loader2 className="animate-spin text-[#F5A623]" size={32} />
+        <Loader2 className="animate-spin text-saffron" size={32} />
       </div>
     );
   }
@@ -124,7 +124,7 @@ export default function ProfessorLessonsPage() {
         </div>
         <button
           onClick={() => router.push("/professor/create-lesson")}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F5A623] text-black font-bold hover:bg-[#f7b955] transition shadow-lg shadow-[#F5A623]/20"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-saffron text-black font-bold hover:brightness-105 transition shadow-lg shadow-saffron/20"
         >
           <Plus size={16} /> Yangi Dars
         </button>
@@ -138,7 +138,7 @@ export default function ProfessorLessonsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Darslarni qidirish..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#F5A623] transition text-sm"
+            className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-saffron transition text-sm"
           />
         </div>
         <div className="flex gap-2">
@@ -146,7 +146,7 @@ export default function ProfessorLessonsPage() {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${filter === f ? "bg-[#F5A623] text-black" : "bg-black/[0.04] dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-black/8 dark:hover:bg-white/10"}`}
+              className={`px-4 py-2 rounded-xl text-sm font-bold transition ${filter === f ? "bg-saffron text-black" : "bg-black/[0.04] dark:bg-white/5 text-slate-500 dark:text-slate-400 hover:bg-black/8 dark:hover:bg-white/10"}`}
             >
               {f === "all" ? "Barchasi" : STATUSES[f as keyof typeof STATUSES]?.label || f}
             </button>
@@ -161,7 +161,7 @@ export default function ProfessorLessonsPage() {
           <h3 className="text-xl font-bold mb-2">{search ? "Dars topilmadi" : "Hali darslar yo'q"}</h3>
           <p className="text-slate-500 dark:text-slate-400 mb-6">{search ? `"${search}" bo'yicha natija yo'q` : "Birinchi darsni yarating"}</p>
           <button onClick={() => router.push("/professor/create-lesson")}
-            className="px-6 py-3 rounded-xl bg-[#F5A623] text-black font-bold hover:bg-[#f7b955] transition">
+            className="px-6 py-3 rounded-xl bg-saffron text-black font-bold hover:brightness-105 transition">
             ✨ Dars Yaratish
           </button>
         </div>
@@ -184,8 +184,8 @@ export default function ProfessorLessonsPage() {
             >
               {/* Top row */}
               <div className="flex items-start justify-between mb-4">
-                <div className="w-11 h-11 rounded-xl bg-[#F5A623]/15 flex items-center justify-center shrink-0">
-                  <BookOpen size={20} className="text-[#F5A623]" />
+                <div className="w-11 h-11 rounded-xl bg-saffron/15 flex items-center justify-center shrink-0">
+                  <BookOpen size={20} className="text-saffron" />
                 </div>
                 <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: st.bg, color: st.color }}>
                   {st.label}
@@ -216,7 +216,7 @@ export default function ProfessorLessonsPage() {
                     <span>Progress</span><span>{lesson.progress || 0}%</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-black/8 dark:bg-white/10 overflow-hidden">
-                    <div className="h-full rounded-full bg-[#F5A623] transition-all" style={{ width: `${lesson.progress || 0}%` }} />
+                    <div className="h-full rounded-full bg-saffron transition-all" style={{ width: `${lesson.progress || 0}%` }} />
                   </div>
                 </div>
               )}
@@ -226,14 +226,14 @@ export default function ProfessorLessonsPage() {
                 <button
                   onClick={() => handleStart(lesson)}
                   disabled={isStarting}
-                  className="flex-1 py-2.5 rounded-xl bg-[#0D9373]/20 border border-[#0D9373]/30 text-[#0D9373] font-bold text-sm hover:bg-[#0D9373]/30 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  className="flex-1 py-2.5 rounded-xl bg-jade/20 border border-jade/30 text-jade font-bold text-sm hover:bg-jade/30 transition flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {isStarting ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
                   Boshlash
                 </button>
                 <button
                   onClick={() => router.push("/professor/quiz")}
-                  className="flex-1 py-2.5 rounded-xl bg-[#F5A623]/15 border border-[#F5A623]/25 text-[#F5A623] font-bold text-sm hover:bg-[#F5A623]/25 transition flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 rounded-xl bg-saffron/15 border border-saffron/25 text-saffron font-bold text-sm hover:bg-saffron/25 transition flex items-center justify-center gap-1.5"
                 >
                   <Radio size={14} /> Quiz
                 </button>
@@ -290,11 +290,11 @@ export default function ProfessorLessonsPage() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                      <p className="text-xl font-bold text-[#F5A623]">{selected.students || 0}</p>
+                      <p className="text-xl font-bold text-saffron">{selected.students || 0}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Talaba</p>
                     </div>
                     <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-center">
-                      <p className="text-xl font-bold text-[#1B4FD8]">{selected.duration_minutes || selected.duration || 45}</p>
+                      <p className="text-xl font-bold text-lapis">{selected.duration_minutes || selected.duration || 45}</p>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Daqiqa</p>
                     </div>
                   </div>
@@ -302,8 +302,8 @@ export default function ProfessorLessonsPage() {
 
                 {/* WOW Fact */}
                 {(selected.wow_fact || selected.presentation_data?.wow_fact) && (
-                  <div className="p-4 rounded-xl bg-[#F5A623]/10 border border-[#F5A623]/20">
-                    <p className="text-xs text-[#F5A623] font-bold uppercase tracking-wider mb-1">🤯 WOW Fakt</p>
+                  <div className="p-4 rounded-xl bg-saffron/10 border border-saffron/20">
+                    <p className="text-xs text-saffron font-bold uppercase tracking-wider mb-1">🤯 WOW Fakt</p>
                     <p className="text-sm text-slate-200">{selected.wow_fact || selected.presentation_data?.wow_fact}</p>
                   </div>
                 )}
@@ -334,28 +334,28 @@ export default function ProfessorLessonsPage() {
                       Bekor qilish
                     </button>
                     <button onClick={() => handleDelete(selected.id)}
-                      className="flex-1 py-3 rounded-xl bg-[#E84855] text-white font-bold text-sm hover:bg-red-600 transition">
+                      className="flex-1 py-3 rounded-xl bg-coral text-white font-bold text-sm hover:brightness-105 transition">
                       Ha, o&apos;chirish
                     </button>
                   </div>
                 ) : (
                   <>
                     <button onClick={() => handleStart(selected)} disabled={startingId === selected.id}
-                      className="w-full py-3 rounded-xl bg-[#0D9373] text-white font-bold flex items-center justify-center gap-2 hover:bg-[#0ba882] transition disabled:opacity-50">
+                      className="w-full py-3 rounded-xl bg-jade text-white font-bold flex items-center justify-center gap-2 hover:brightness-105 transition disabled:opacity-50">
                       {startingId === selected.id ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                       Jonli Darsni Boshlash
                     </button>
                     <div className="flex gap-2">
                       <button onClick={() => router.push("/professor/quiz")}
-                        className="flex-1 py-2.5 rounded-xl bg-[#F5A623]/15 border border-[#F5A623]/25 text-[#F5A623] font-bold text-sm hover:bg-[#F5A623]/25 transition flex items-center justify-center gap-1.5">
+                        className="flex-1 py-2.5 rounded-xl bg-saffron/15 border border-saffron/25 text-saffron font-bold text-sm hover:bg-saffron/25 transition flex items-center justify-center gap-1.5">
                         <Radio size={14} /> Quiz
                       </button>
                       <button onClick={() => router.push("/professor/analytics")}
-                        className="flex-1 py-2.5 rounded-xl bg-[#1B4FD8]/15 border border-[#1B4FD8]/25 text-[#6B8FFF] font-bold text-sm hover:bg-[#1B4FD8]/25 transition flex items-center justify-center gap-1.5">
+                        className="flex-1 py-2.5 rounded-xl bg-lapis/15 border border-lapis/25 text-[#6B8FFF] font-bold text-sm hover:bg-lapis/25 transition flex items-center justify-center gap-1.5">
                         <BarChart2 size={14} /> Tahlil
                       </button>
                       <button onClick={() => setDeletingId(selected.id)}
-                        className="py-2.5 px-3 rounded-xl bg-[#E84855]/10 border border-[#E84855]/20 text-[#E84855] font-bold text-sm hover:bg-[#E84855]/20 transition">
+                        className="py-2.5 px-3 rounded-xl bg-coral/10 border border-coral/20 text-coral font-bold text-sm hover:bg-coral/20 transition">
                         <Trash2 size={14} />
                       </button>
                     </div>

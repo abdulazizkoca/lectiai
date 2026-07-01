@@ -256,36 +256,39 @@ export default function MaterialsPage() {
             setActiveTab("overview");
             setSlideIdx(0);
 
-            // Tarixga qo'shish
-            const entry = {
-              id: materialId,
-              topic: selectedTopic,
-              file: fileName,
-              date: new Date().toISOString(),
-              stats: {
-                slides: lessonData.slides?.length || 0,
-                quiz: lessonData.quiz?.length || 0,
-                flashcards: lessonData.flashcards?.length || 0,
-              },
-              result: lessonData,
-            };
-            const h = JSON.parse(localStorage.getItem("lectio_mat_history") || "[]");
-            const updated = [entry, ...h.filter((x: any) => x.id !== materialId)].slice(0, 15);
-            localStorage.setItem("lectio_mat_history", JSON.stringify(updated));
-            setHistory(updated);
+            // Tarixga va darslar ro'yxatiga qo'shish — localStorage xatosi asosiy oqimni to'xtatmasin
+            try {
+              const entry = {
+                id: materialId,
+                topic: selectedTopic,
+                file: fileName,
+                date: new Date().toISOString(),
+                stats: {
+                  slides: lessonData.slides?.length || 0,
+                  quiz: lessonData.quiz?.length || 0,
+                  flashcards: lessonData.flashcards?.length || 0,
+                },
+                result: lessonData,
+              };
+              const h = JSON.parse(localStorage.getItem("lectio_mat_history") || "[]");
+              const updated = [entry, ...h.filter((x: any) => x.id !== materialId)].slice(0, 15);
+              localStorage.setItem("lectio_mat_history", JSON.stringify(updated));
+              setHistory(updated);
 
-            // localStorage darslar ro'yxatiga qo'shish
-            const lessons = JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]");
-            const lEntry = {
-              id: lessonData.lesson_id || Date.now(),
-              title: lessonData.title || selectedTopic,
-              topic: lessonData.subject || "Umumiy",
-              status: "preparing",
-              createdAt: new Date().toISOString(),
-              wow_fact: lessonData.wow_facts?.[0] || "",
-              presentation_data: lessonData,
-            };
-            localStorage.setItem("lectio_professor_lessons", JSON.stringify([lEntry, ...lessons]));
+              const lessons = JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]");
+              const lEntry = {
+                id: lessonData.lesson_id || Date.now(),
+                title: lessonData.title || selectedTopic,
+                topic: lessonData.subject || "Umumiy",
+                status: "preparing",
+                createdAt: new Date().toISOString(),
+                wow_fact: lessonData.wow_facts?.[0] || "",
+                presentation_data: lessonData,
+              };
+              localStorage.setItem("lectio_professor_lessons", JSON.stringify([lEntry, ...lessons]));
+            } catch {
+              // localStorage unavailable or malformed — lesson result is still valid
+            }
 
             addToast({
               title: "🎉 Dars tayyor!",
@@ -355,8 +358,8 @@ export default function MaterialsPage() {
             {/* Header */}
             <div className="flex items-center justify-between gap-3 mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#0D9373]/20 flex items-center justify-center">
-                  <FileText size={20} className="text-[#0D9373]" />
+                <div className="w-10 h-10 rounded-xl bg-jade/20 flex items-center justify-center">
+                  <FileText size={20} className="text-jade" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold">Metodichka Yuklash</h1>
@@ -377,7 +380,7 @@ export default function MaterialsPage() {
               <div className="lg:col-span-2 space-y-4">
                 <motion.div
                   animate={{ scale: dragActive ? 1.02 : 1 }}
-                  className={`rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all ${dragActive ? "border-[#0D9373] bg-[#0D9373]/10 shadow-lg shadow-[#0D9373]/10" : "border-black/15 dark:border-white/15 hover:border-black/25 dark:hover:border-white/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
+                  className={`rounded-2xl border-2 border-dashed p-10 text-center cursor-pointer transition-all ${dragActive ? "border-jade bg-jade/10 shadow-lg shadow-jade/10" : "border-black/15 dark:border-white/15 hover:border-black/25 dark:hover:border-white/30 hover:bg-black/[0.02] dark:hover:bg-white/[0.02]"}`}
                   onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
                   onDragLeave={() => setDragActive(false)}
                   onDrop={handleDrop}
@@ -390,7 +393,7 @@ export default function MaterialsPage() {
                   </h3>
                   <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">Word (.docx), PDF, PowerPoint (.pptx), TXT — maksimum 50 MB</p>
 
-                  <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-[#0D9373] to-[#0ba882] text-white font-bold cursor-pointer hover:shadow-lg hover:shadow-[#0D9373]/20 transition">
+                  <label className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-jade to-[#0ba882] text-white font-bold cursor-pointer hover:shadow-lg hover:shadow-jade/20 transition">
                     <Upload size={16} /> Fayl tanlash
                     <input type="file" accept=".pdf,.docx,.pptx,.txt"
                       onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f); e.target.value = ""; }}
@@ -428,8 +431,8 @@ export default function MaterialsPage() {
                 </div>
 
                 {/* What AI creates */}
-                <div className="rounded-2xl border border-[#0D9373]/20 bg-[#0D9373]/5 p-5">
-                  <p className="text-xs font-bold text-[#0D9373] uppercase tracking-wider mb-3">AI nima yaratadi?</p>
+                <div className="rounded-2xl border border-jade/20 bg-jade/5 p-5">
+                  <p className="text-xs font-bold text-jade uppercase tracking-wider mb-3">AI nima yaratadi?</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {[
                       { icon: "📊", l: "Prezentatsiya slaydlar" },
@@ -470,7 +473,7 @@ export default function MaterialsPage() {
                             className="w-full flex items-center gap-3 p-3 rounded-xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] hover:bg-black/[0.04] dark:hover:bg-white/[0.07] transition text-left group">
                             <span className="text-xl shrink-0">{m.icon}</span>
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold truncate group-hover:text-[#F5A623] transition">{h.topic}</p>
+                              <p className="text-sm font-bold truncate group-hover:text-saffron transition">{h.topic}</p>
                               <p className="text-xs text-slate-500 truncate">{h.file}</p>
                               {h.stats && (
                                 <div className="flex gap-2 mt-1">
@@ -480,7 +483,7 @@ export default function MaterialsPage() {
                                 </div>
                               )}
                             </div>
-                            <ChevronRight size={14} className="text-slate-600 shrink-0 group-hover:text-[#F5A623] transition" />
+                            <ChevronRight size={14} className="text-slate-600 shrink-0 group-hover:text-saffron transition" />
                           </button>
                         );
                       })}
@@ -489,10 +492,10 @@ export default function MaterialsPage() {
                 </div>
 
                 {/* Maslahat */}
-                <div className="rounded-2xl border border-[#F5A623]/20 bg-[#F5A623]/5 p-4">
+                <div className="rounded-2xl border border-saffron/20 bg-saffron/5 p-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <Lightbulb size={14} className="text-[#F5A623]" />
-                    <p className="text-xs font-bold text-[#F5A623]">Maslahat</p>
+                    <Lightbulb size={14} className="text-saffron" />
+                    <p className="text-xs font-bold text-saffron">Maslahat</p>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     Eng yaxshi natija uchun raqamlangan (1. 2. 3.) yoki sarlavhali hujjat yuklang. Gemini matndan mavzularni avtomatik ajratadi.
@@ -545,12 +548,12 @@ export default function MaterialsPage() {
                   <motion.div
                     animate={{ width: `${progress}%` }}
                     transition={{ ease: "easeOut", duration: 0.5 }}
-                    className="h-full rounded-full bg-gradient-to-r from-[#0D9373] via-[#1B4FD8] to-[#F5A623]"
+                    className="h-full rounded-full bg-gradient-to-r from-jade via-lapis to-saffron"
                   />
                 </div>
                 <div className="flex justify-between mt-2 text-sm">
                   <span className="text-slate-400 text-xs">{progressMsg || "Iltimos kuting..."}</span>
-                  <span className="font-bold text-[#F5A623] font-mono">{progress}%</span>
+                  <span className="font-bold text-saffron font-mono">{progress}%</span>
                 </div>
               </div>
 
@@ -562,18 +565,18 @@ export default function MaterialsPage() {
                   return (
                     <motion.div key={i}
                       initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08 }}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${active ? "bg-[#F5A623]/10 border border-[#F5A623]/20" : done ? "opacity-50" : "opacity-25"}`}>
+                      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${active ? "bg-saffron/10 border border-saffron/20" : done ? "opacity-50" : "opacity-25"}`}>
                       <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0">
                         {done
-                          ? <CheckCircle2 size={16} className="text-[#0D9373]" />
+                          ? <CheckCircle2 size={16} className="text-jade" />
                           : active
-                            ? <Loader2 size={16} className="text-[#F5A623] animate-spin" />
+                            ? <Loader2 size={16} className="text-saffron animate-spin" />
                             : <div className="w-4 h-4 rounded-full border-2 border-slate-600" />}
                       </div>
-                      <span className={`text-sm font-medium ${active ? "text-[#F5A623]" : done ? "text-[#0D9373] line-through opacity-60" : "text-slate-500"}`}>
+                      <span className={`text-sm font-medium ${active ? "text-saffron" : done ? "text-jade line-through opacity-60" : "text-slate-500"}`}>
                         {s.label}
                       </span>
-                      {active && <Sparkles size={12} className="text-[#F5A623] ml-auto animate-pulse" />}
+                      {active && <Sparkles size={12} className="text-saffron ml-auto animate-pulse" />}
                     </motion.div>
                   );
                 })}
@@ -601,7 +604,7 @@ export default function MaterialsPage() {
               </button>
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <CheckCircle2 size={18} className="text-[#0D9373]" />
+                  <CheckCircle2 size={18} className="text-jade" />
                   <h2 className="text-xl font-bold">{topics.length} ta mavzu topildi!</h2>
                 </div>
                 <p className="text-slate-400 text-sm ml-6">{fileName} · {fileSize}</p>
@@ -617,23 +620,23 @@ export default function MaterialsPage() {
                   {topics.map((topic, i) => (
                     <motion.label key={i}
                       initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.025 }}
-                      className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${selectedTopic === topic ? "border-[#0D9373] bg-[#0D9373]/10" : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.05]"}`}>
+                      className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${selectedTopic === topic ? "border-jade bg-jade/10" : "border-white/10 bg-white/[0.02] hover:border-white/25 hover:bg-white/[0.05]"}`}>
                       <input type="radio" name="topic" value={topic} checked={selectedTopic === topic}
                         onChange={() => setSelectedTopic(topic)} className="hidden" />
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${selectedTopic === topic ? "border-[#0D9373] bg-[#0D9373]" : "border-white/30"}`}>
+                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition ${selectedTopic === topic ? "border-jade bg-jade" : "border-white/30"}`}>
                         {selectedTopic === topic && <div className="w-2 h-2 rounded-full bg-white" />}
                       </div>
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         <span className="text-xs font-bold text-slate-500 shrink-0 w-5">{i + 1}</span>
                         <span className={`text-sm font-medium truncate ${selectedTopic === topic ? "text-white font-bold" : "text-slate-300"}`}>{topic}</span>
                       </div>
-                      {selectedTopic === topic && <ChevronRight size={14} className="text-[#0D9373] shrink-0" />}
+                      {selectedTopic === topic && <ChevronRight size={14} className="text-jade shrink-0" />}
                     </motion.label>
                   ))}
                 </div>
 
                 <button onClick={handleGenerateLesson} disabled={!selectedTopic}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#0D9373] to-[#1B4FD8] text-white font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#0D9373]/20 transition">
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-jade to-lapis text-white font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-jade/20 transition">
                   <Sparkles size={20} />
                   {selectedTopic
                     ? `"${selectedTopic.length > 38 ? selectedTopic.slice(0, 38) + "..." : selectedTopic}" → Dars yaratish`
@@ -668,13 +671,13 @@ export default function MaterialsPage() {
 
                 {selectedTopic && (
                   <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }}
-                    className="rounded-2xl border border-[#0D9373]/30 bg-[#0D9373]/8 p-4">
-                    <p className="text-xs font-bold text-[#0D9373] uppercase tracking-wider mb-1">Tanlangan mavzu</p>
+                    className="rounded-2xl border border-jade/30 bg-jade/5 p-4">
+                    <p className="text-xs font-bold text-jade uppercase tracking-wider mb-1">Tanlangan mavzu</p>
                     <p className="text-sm text-white font-bold leading-snug">{selectedTopic}</p>
                   </motion.div>
                 )}
 
-                <div className="rounded-2xl border border-[#7B2FBE]/20 bg-[#7B2FBE]/5 p-3 flex items-start gap-2">
+                <div className="rounded-2xl border border-amethyst/20 bg-amethyst/5 p-3 flex items-start gap-2">
                   <div className="w-5 h-5 rounded flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-500 text-white text-[10px] font-bold shrink-0 mt-0.5">G</div>
                   <p className="text-xs text-slate-400 leading-relaxed">Gemini 1.5 Pro matndan chuqur tahlil qilib, O&apos;zbek tilida to&apos;liq dars paketi yaratadi.</p>
                 </div>
@@ -693,14 +696,14 @@ export default function MaterialsPage() {
             <div className="flex items-start justify-between gap-4 mb-5">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <CheckCircle2 size={20} className="text-[#0D9373]" />
+                  <CheckCircle2 size={20} className="text-jade" />
                   <h2 className="text-2xl font-bold">
                     {result.title || selectedTopic}
                   </h2>
                 </div>
                 <p className="text-slate-400 text-sm ml-7">
                   {result.subject || "Umumiy fan"} · {result.level || "Bakalavr"}
-                  {result.lesson_id && <span className="ml-2 text-xs text-[#0D9373] font-bold">✓ DB ga saqlandi (ID: {result.lesson_id})</span>}
+                  {result.lesson_id && <span className="ml-2 text-xs text-jade font-bold">✓ DB ga saqlandi (ID: {result.lesson_id})</span>}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0 flex-wrap">
@@ -709,7 +712,7 @@ export default function MaterialsPage() {
                   <RefreshCw size={13} /> Yangi fayl
                 </button>
                 <button onClick={() => router.push("/professor/lessons")}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0D9373]/20 border border-[#0D9373]/30 text-[#0D9373] hover:bg-[#0D9373]/30 text-sm font-bold transition">
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-jade/20 border border-jade/30 text-jade hover:bg-jade/30 text-sm font-bold transition">
                   <BookOpen size={13} /> Darslarim
                 </button>
               </div>
@@ -737,7 +740,7 @@ export default function MaterialsPage() {
             <div className="flex gap-1 p-1 rounded-xl bg-white/5 border border-white/10 mb-5 overflow-x-auto">
               {RESULT_TABS.map((tab) => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition flex-shrink-0 ${activeTab === tab.id ? "bg-[#0D9373] text-white" : "text-slate-400 hover:text-white"}`}>
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition flex-shrink-0 ${activeTab === tab.id ? "bg-jade text-white" : "text-slate-400 hover:text-white"}`}>
                   {tab.icon} {tab.label}
                   {tab.count !== undefined && tab.count > 0 && (
                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${activeTab === tab.id ? "bg-white/20" : "bg-white/10"}`}>{tab.count}</span>
@@ -758,19 +761,19 @@ export default function MaterialsPage() {
                     <motion.div key="ov" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
                       {/* Summary */}
                       {result.summary && (
-                        <div className="rounded-2xl border border-[#0D9373]/25 bg-[#0D9373]/5 p-5">
-                          <p className="text-xs font-bold text-[#0D9373] uppercase tracking-wider mb-2">📋 Qisqacha sharh</p>
+                        <div className="rounded-2xl border border-jade/25 bg-jade/5 p-5">
+                          <p className="text-xs font-bold text-jade uppercase tracking-wider mb-2">📋 Qisqacha sharh</p>
                           <p className="text-sm text-slate-200 leading-relaxed">{result.summary}</p>
                         </div>
                       )}
                       {/* WOW Facts */}
                       {result.wow_facts?.length > 0 && (
-                        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/5 p-5">
-                          <p className="text-xs font-bold text-amber-400 uppercase tracking-wider mb-3">⚡ Qiziqarli faktlar</p>
+                        <div className="rounded-2xl border border-saffron/25 bg-saffron/5 p-5">
+                          <p className="text-xs font-bold text-saffron uppercase tracking-wider mb-3">⚡ Qiziqarli faktlar</p>
                           <div className="space-y-2">
                             {result.wow_facts.map((f: string, i: number) => (
-                              <div key={i} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200 p-2.5 rounded-xl bg-black/[0.04] dark:bg-white/5">
-                                <span className="text-amber-400 shrink-0 mt-0.5">🤯</span> {f}
+                              <div key={i} className="flex items-start gap-2 text-sm p-2.5 rounded-xl bg-black/[0.04] dark:bg-white/5" style={{ color: "var(--foreground)" }}>
+                                <span className="text-saffron shrink-0 mt-0.5">🤯</span> {f}
                               </div>
                             ))}
                           </div>
@@ -782,8 +785,8 @@ export default function MaterialsPage() {
                           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Dars bo&apos;limlari</p>
                           <div className="space-y-2">
                             {result.main_topics.map((t: any, i: number) => (
-                              <div key={i} className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border-l-4 border-l-[#F5A623] border border-black/5 dark:border-white/5">
-                                <p className="font-bold text-[#F5A623] mb-1">{t.title}</p>
+                              <div key={i} className="p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border-l-4 border-l-saffron border border-black/5 dark:border-white/5">
+                                <p className="font-bold text-saffron mb-1">{t.title}</p>
                                 {t.subtopics?.length > 0 && <p className="text-xs text-slate-400 mb-1">{t.subtopics.slice(0, 3).join(" · ")}</p>}
                                 {t.key_concepts?.length > 0 && <p className="text-xs text-slate-500">🔑 {t.key_concepts.slice(0, 3).join(", ")}</p>}
                               </div>
@@ -814,12 +817,12 @@ export default function MaterialsPage() {
                             </div>
                             <AnimatePresence mode="wait">
                               <motion.div key={slideIdx} initial={{ opacity: 0, x: 15 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -15 }} className="p-6">
-                                <p className="text-xs text-[#F5A623] uppercase tracking-widest font-bold mb-2">SLAYD {currentSlide?.slide_number || slideIdx + 1}</p>
+                                <p className="text-xs text-saffron uppercase tracking-widest font-bold mb-2">SLAYD {currentSlide?.slide_number || slideIdx + 1}</p>
                                 <h2 className="text-xl font-bold mb-3">{currentSlide?.title}</h2>
                                 <p className="text-slate-300 text-sm leading-relaxed">{currentSlide?.content}</p>
                                 {currentSlide?.notes && (
-                                  <div className="mt-4 p-3 rounded-xl bg-[#F5A623]/10 border border-[#F5A623]/20">
-                                    <p className="text-xs text-[#F5A623] font-bold mb-0.5">📝 Professor eslatmasi</p>
+                                  <div className="mt-4 p-3 rounded-xl bg-saffron/10 border border-saffron/20">
+                                    <p className="text-xs text-saffron font-bold mb-0.5">📝 Professor eslatmasi</p>
                                     <p className="text-xs text-slate-300">{currentSlide.notes}</p>
                                   </div>
                                 )}
@@ -835,7 +838,7 @@ export default function MaterialsPage() {
                           <div className="flex gap-2 overflow-x-auto pb-1">
                             {slides.map((_: any, i: number) => (
                               <button key={i} onClick={() => setSlideIdx(i)}
-                                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition ${i === slideIdx ? "bg-[#F5A623] text-black" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
+                                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition ${i === slideIdx ? "bg-saffron text-black" : "bg-white/5 text-slate-400 hover:bg-white/10"}`}>
                                 {i + 1}
                               </button>
                             ))}
@@ -856,7 +859,7 @@ export default function MaterialsPage() {
                         return (
                           <div key={i} className="rounded-2xl border border-black/8 dark:border-white/10 bg-black/[0.02] dark:bg-white/[0.03] p-5">
                             <div className="flex items-start gap-3 mb-4">
-                              <span className="w-8 h-8 rounded-xl bg-[#F5A623]/20 flex items-center justify-center text-sm font-bold text-[#F5A623] shrink-0 mt-0.5">{i + 1}</span>
+                              <span className="w-8 h-8 rounded-xl bg-saffron/20 flex items-center justify-center text-sm font-bold text-saffron shrink-0 mt-0.5">{i + 1}</span>
                               <p className="font-bold leading-relaxed">{q.question}</p>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
@@ -865,19 +868,19 @@ export default function MaterialsPage() {
                                 const isCorrect = correctLetter === letter || correctLetter === opt.replace(/^[A-E][).\s]\s*/, "").trim();
                                 const cleanOpt = opt.replace(/^[A-E][).\s]\s*/, "").trim() || opt;
                                 return (
-                                  <div key={j} className={`flex items-center gap-2.5 p-3 rounded-xl text-sm transition ${isCorrect ? "bg-[#0D9373]/15 border border-[#0D9373]/30" : "bg-white/5 border border-white/5"}`}>
+                                  <div key={j} className={`flex items-center gap-2.5 p-3 rounded-xl text-sm transition ${isCorrect ? "bg-jade/15 border border-jade/30" : "bg-white/5 border border-white/5"}`}>
                                     <span className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0"
                                       style={{ background: isCorrect ? "#0D9373" : OPTION_COLORS[j] || "#475569" }}>
                                       {letter}
                                     </span>
-                                    <span className={isCorrect ? "text-[#0D9373] font-bold" : "text-slate-300"}>{cleanOpt}</span>
-                                    {isCorrect && <CheckCircle2 size={12} className="text-[#0D9373] ml-auto shrink-0" />}
+                                    <span className={isCorrect ? "text-jade font-bold" : "text-slate-300"}>{cleanOpt}</span>
+                                    {isCorrect && <CheckCircle2 size={12} className="text-jade ml-auto shrink-0" />}
                                   </div>
                                 );
                               })}
                             </div>
                             {q.explanation && (
-                              <div className="p-3 rounded-xl bg-[#1B4FD8]/10 border border-[#1B4FD8]/20 text-sm text-slate-700 dark:text-slate-300">
+                              <div className="p-3 rounded-xl bg-lapis/10 border border-lapis/20 text-sm text-slate-700 dark:text-slate-300">
                                 💡 <strong className="text-[#6B8FFF]">Izoh:</strong> {q.explanation}
                               </div>
                             )}
@@ -902,11 +905,11 @@ export default function MaterialsPage() {
                             <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.04 }}
                               className="rounded-2xl border border-white/10 overflow-hidden group cursor-default">
                               <div className="p-4 border-b border-white/5 bg-white/[0.03]">
-                                <p className="text-xs text-[#F5A623] font-bold uppercase tracking-wider mb-1.5">❓ Savol</p>
+                                <p className="text-xs text-saffron font-bold uppercase tracking-wider mb-1.5">❓ Savol</p>
                                 <p className="font-bold text-sm leading-relaxed">{f.front || f.question}</p>
                               </div>
-                              <div className="p-4 bg-[#0D9373]/5">
-                                <p className="text-xs text-[#0D9373] font-bold uppercase tracking-wider mb-1.5">✅ Javob</p>
+                              <div className="p-4 bg-jade/5">
+                                <p className="text-xs text-jade font-bold uppercase tracking-wider mb-1.5">✅ Javob</p>
                                 <p className="text-sm text-slate-200 leading-relaxed">{f.back || f.answer}</p>
                               </div>
                             </motion.div>
@@ -926,9 +929,9 @@ export default function MaterialsPage() {
                           {glossary.map((g: any, i: number) => (
                             <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.03 }}
                               className="flex gap-4 p-4 rounded-xl bg-black/[0.03] dark:bg-white/5 border border-black/8 dark:border-white/10 hover:border-black/15 dark:hover:border-white/20 transition">
-                              <span className="w-8 h-8 rounded-xl bg-[#7B2FBE]/20 flex items-center justify-center text-xs font-bold text-[#A78BFA] shrink-0 mt-0.5">{i + 1}</span>
+                              <span className="w-8 h-8 rounded-xl bg-amethyst/20 flex items-center justify-center text-xs font-bold text-[#A78BFA] shrink-0 mt-0.5">{i + 1}</span>
                               <div>
-                                <p className="font-bold text-[#F5A623] mb-0.5">{g.term}</p>
+                                <p className="font-bold text-saffron mb-0.5">{g.term}</p>
                                 <p className="text-sm text-slate-300 leading-relaxed">{g.definition}</p>
                               </div>
                             </motion.div>
@@ -949,7 +952,7 @@ export default function MaterialsPage() {
                           <div className="flex flex-wrap gap-2">
                             {examTopics.map((t: string, i: number) => (
                               <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#E84855]/10 border border-[#E84855]/25 text-[#E84855] text-sm font-bold">
+                                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-coral/10 border border-coral/25 text-coral text-sm font-bold">
                                 <Target size={12} /> {t}
                               </motion.div>
                             ))}
@@ -961,7 +964,7 @@ export default function MaterialsPage() {
                                 {result.practice_questions.map((pq: any, i: number) => (
                                   <div key={i} className="p-4 rounded-xl bg-white/5 border border-white/10">
                                     <p className="font-bold text-sm mb-2">❓ {pq.question}</p>
-                                    <p className="text-sm text-slate-300 border-l-2 border-[#0D9373] pl-3">✅ {pq.answer}</p>
+                                    <p className="text-sm text-slate-300 border-l-2 border-jade pl-3">✅ {pq.answer}</p>
                                   </div>
                                 ))}
                               </div>
@@ -977,15 +980,15 @@ export default function MaterialsPage() {
               {/* Actions sidebar */}
               <div className="space-y-3">
                 <button onClick={() => router.push("/professor/live")}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-[#E84855] to-[#f06470] text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg transition text-sm">
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-coral to-[#f06470] text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg transition text-sm">
                   <Play size={14} /> Jonli Dars Boshlash
                 </button>
                 <button onClick={() => router.push("/professor/quiz")}
-                  className="w-full py-3.5 rounded-xl bg-[#F5A623]/15 border border-[#F5A623]/25 text-[#F5A623] font-bold flex items-center justify-center gap-2 hover:bg-[#F5A623]/25 transition text-sm">
+                  className="w-full py-3.5 rounded-xl bg-saffron/15 border border-saffron/25 text-saffron font-bold flex items-center justify-center gap-2 hover:bg-saffron/25 transition text-sm">
                   <Radio size={14} /> Quiz Boshlash
                 </button>
                 <button onClick={() => router.push("/professor/create-lesson")}
-                  className="w-full py-3.5 rounded-xl bg-[#7B2FBE]/15 border border-[#7B2FBE]/25 text-[#A78BFA] font-bold flex items-center justify-center gap-2 hover:bg-[#7B2FBE]/25 transition text-sm">
+                  className="w-full py-3.5 rounded-xl bg-amethyst/15 border border-amethyst/25 text-[#A78BFA] font-bold flex items-center justify-center gap-2 hover:bg-amethyst/25 transition text-sm">
                   <Sparkles size={14} /> AI Dars Yaratish
                 </button>
                 <button onClick={reset}
@@ -1042,18 +1045,18 @@ export default function MaterialsPage() {
         ══════════════════════════════════════════════════════ */}
         {stage === "error" && (
           <motion.div key="error" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="max-w-lg mx-auto">
-            <div className="rounded-2xl border border-[#E84855]/25 bg-[#E84855]/5 p-8 text-center">
-              <AlertCircle size={48} className="text-[#E84855] mx-auto mb-4" />
+            <div className="rounded-2xl border border-coral/25 bg-coral/5 p-8 text-center">
+              <AlertCircle size={48} className="text-coral mx-auto mb-4" />
               {errorMsg === "auth_required" || errorMsg?.includes("Token") || errorMsg?.includes("token") ? (
                 <>
-                  <h2 className="text-xl font-bold mb-2 text-[#F5A623]">Kirish talab qilinadi</h2>
+                  <h2 className="text-xl font-bold mb-2 text-saffron">Kirish talab qilinadi</h2>
                   <p className="text-slate-300 text-sm mb-2 leading-relaxed bg-white/5 rounded-xl p-3">
                     Materiallar sahifasidan foydalanish uchun tizimga kirishingiz kerak. Demo rejimida bu funksiya ishlamaydi.
                   </p>
                   <p className="text-slate-500 text-xs mb-6">Professor akkauntingiz bilan kirganingizdan so&apos;ng fayl yuklashingiz mumkin.</p>
                   <div className="flex gap-3">
                     <Link href="/login"
-                      className="flex-1 py-3 rounded-xl bg-[#F5A623] text-black font-bold hover:bg-amber-400 transition flex items-center justify-center gap-2">
+                      className="flex-1 py-3 rounded-xl bg-saffron text-black font-bold hover:brightness-105 transition flex items-center justify-center gap-2">
                       Tizimga kirish
                     </Link>
                     <Link href="/professor/dashboard"
@@ -1064,14 +1067,14 @@ export default function MaterialsPage() {
                 </>
               ) : (
                 <>
-                  <h2 className="text-xl font-bold mb-2 text-[#E84855]">Xatolik yuz berdi</h2>
+                  <h2 className="text-xl font-bold mb-2 text-coral">Xatolik yuz berdi</h2>
                   <p className="text-slate-300 text-sm mb-2 leading-relaxed bg-white/5 rounded-xl p-3 font-mono text-left">
                     {errorMsg || "Noma'lum xatolik yuz berdi"}
                   </p>
                   <p className="text-slate-500 text-xs mb-6">Backend ishlayaptimi? GEMINI_API_KEY sozlanganmi?</p>
                   <div className="flex gap-3">
                     <button onClick={reset}
-                      className="flex-1 py-3 rounded-xl bg-[#E84855] text-white font-bold hover:bg-red-600 transition flex items-center justify-center gap-2">
+                      className="flex-1 py-3 rounded-xl bg-coral text-white font-bold hover:brightness-105 transition flex items-center justify-center gap-2">
                       <RefreshCw size={14} /> Qayta urinish
                     </button>
                     <Link href="/professor/dashboard"

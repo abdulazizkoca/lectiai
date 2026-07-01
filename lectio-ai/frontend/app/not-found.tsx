@@ -34,7 +34,7 @@ export default function NotFoundPage() {
         className="absolute top-6 left-6 flex items-center gap-2"
       >
         <Logo size={32} />
-        <span className="font-bold text-white/80 text-lg">Lectio <span className="text-[#F5A623]">AI</span></span>
+        <span className="font-bold text-white/80 text-lg">Lectio <span className="text-saffron">AI</span></span>
       </motion.div>
 
       <motion.div

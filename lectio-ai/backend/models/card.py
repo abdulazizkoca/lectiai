@@ -5,7 +5,11 @@ from datetime import datetime, timezone
 
 
 class Card(Base):
-    """Spaced Repetition uchun karta — SM-2 algoritmi"""
+    """
+    Spaced Repetition kartasi — SM-2 algoritmi (ESKI model, `cards` jadvali).
+    Yangi learning chain kartalari uchun FlashCard (flash_cards jadvali) ishlatiladi.
+    Texnik qarz: ikki model birlashtirilishi kerak.
+    """
     __tablename__ = "cards"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -16,8 +20,8 @@ class Card(Base):
     repetitions = Column(Integer, default=0)
     next_review = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
-    student_id = Column(Integer, ForeignKey("users.id"))
-    lesson_id = Column(Integer, ForeignKey("lessons.id"))
+    student_id = Column(Integer, ForeignKey("users.id"), index=True)
+    lesson_id = Column(Integer, ForeignKey("lessons.id"), index=True)
 
     student = relationship("User", back_populates="cards")
     lesson = relationship("Lesson", back_populates="cards")

@@ -1,11 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { AlertCircle, RefreshCw, Home } from "lucide-react";
-import { Button } from "@/components/ui/Button";
-import Logo from "@/components/Logo";
 
-export default function Error({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -13,50 +10,32 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error("Route Error Caught:", error);
+    console.error("Uncaught error:", error);
   }, [error]);
 
-  const dict = {
-    uz: { title: "Xatolik yuz berdi", msg: "Ushbu bo'limni yuklashda muammo yuzaga keldi. Iltimos, qayta urinib ko'ring.", btn: "Qayta urinish", home: "Bosh sahifa" },
-    ru: { title: "Произошла ошибка", msg: "Возникла проблема при загрузке этого раздела. Пожалуйста, попробуйте еще раз.", btn: "Повторить", home: "Главная" },
-    en: { title: "An error occurred", msg: "There was a problem loading this section. Please try again.", btn: "Try again", home: "Go home" }
-  };
-  
-  // Use a safe fallback if context isn't available (error boundary)
-  const langKey = typeof window !== 'undefined' ? (localStorage.getItem("lectio-language") as "uz" | "ru" | "en") || "uz" : "uz";
-  const t = dict[langKey] || dict.uz;
-
   return (
-    <div className="flex items-center justify-center min-h-[60vh] p-4">
-      <div className="bg-[#18181F] p-8 rounded-3xl border border-slate-800 max-w-md w-full text-center shadow-2xl">
-        {/* Logo */}
-        <div className="flex justify-center mb-4">
-          <Logo size={44} />
+    <div className="min-h-screen flex items-center justify-center bg-[#0A0A0F] text-white p-8">
+      <div className="text-center max-w-md">
+        <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-3xl mx-auto mb-6">
+          ⚠️
         </div>
-        <div className="w-16 h-16 bg-[#E84855]/10 text-[#E84855] rounded-full flex items-center justify-center mx-auto mb-6">
-          <AlertCircle size={32} />
-        </div>
-        <h2 className="text-2xl font-display font-bold mb-2">{t.title}</h2>
-        <p className="text-slate-400 mb-8 text-sm">
-          {t.msg}
+        <h1 className="text-2xl font-bold mb-3">Xatolik yuz berdi</h1>
+        <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+          Ilovada kutilmagan xatolik yuz berdi. Sahifani yangilash yoki qayta urinish orqali davom etishingiz mumkin.
         </p>
-        <div className="flex flex-col gap-3">
-          <Button 
-            variant="primary" 
-            className="w-full" 
-            leftIcon={<RefreshCw size={18} />}
-            onClick={() => reset()}
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={reset}
+            className="px-6 py-2.5 rounded-xl bg-saffron text-black font-bold text-sm hover:brightness-105 transition"
           >
-            {t.btn}
-          </Button>
-          <Button
-            variant="ghost"
-            className="w-full"
-            leftIcon={<Home size={18} />}
-            onClick={() => window.location.href = '/'}
+            Qayta urinish
+          </button>
+          <button
+            onClick={() => (window.location.href = "/")}
+            className="px-6 py-2.5 rounded-xl border border-white/15 text-sm font-bold hover:bg-white/5 transition"
           >
-            {t.home}
-          </Button>
+            Bosh sahifaga
+          </button>
         </div>
       </div>
     </div>

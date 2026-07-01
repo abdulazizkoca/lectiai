@@ -149,7 +149,7 @@ export default function ProfessorStudentsPage() {
                   <div>
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">{selectedStudent.name}</h2>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">{selectedStudent.email}</p>
-                    <p className="text-[#F5A623] font-bold text-sm mt-1">🔥 {selectedStudent.streak} {t("students.streak_days")}</p>
+                    <p className="text-saffron font-bold text-sm mt-1">🔥 {selectedStudent.streak} {t("students.streak_days")}</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -173,7 +173,7 @@ export default function ProfessorStudentsPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-slate-500 dark:text-slate-400 text-sm">{t("students.stat_total")}</p><p className="text-2xl font-bold text-slate-900 dark:text-white">124</p></div><Users className="text-[#F5A623]" size={24} /></div></Card>
+        <Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-slate-500 dark:text-slate-400 text-sm">{t("students.stat_total")}</p><p className="text-2xl font-bold text-slate-900 dark:text-white">124</p></div><Users className="text-saffron" size={24} /></div></Card>
         <Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-slate-500 dark:text-slate-400 text-sm">{t("students.stat_active")}</p><p className="text-2xl font-bold text-slate-900 dark:text-white">98</p></div><TrendingUp className="text-green-600" size={24} /></div></Card>
         <Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-slate-500 dark:text-slate-400 text-sm">{t("students.stat_progress")}</p><p className="text-2xl font-bold text-slate-900 dark:text-white">73%</p></div><Award className="text-blue-600" size={24} /></div></Card>
         <Card className="p-4"><div className="flex items-center justify-between"><div><p className="text-slate-500 dark:text-slate-400 text-sm">{t("students.stat_streak")}</p><p className="text-2xl font-bold text-slate-900 dark:text-white">8</p></div><Calendar className="text-purple-600" size={24} /></div></Card>
@@ -186,7 +186,7 @@ export default function ProfessorStudentsPage() {
         </div>
         <div className="flex gap-2">
           {["all", "active", "inactive"].map((filter) => (
-            <button key={filter} onClick={() => setSelectedFilter(filter)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedFilter === filter ? "bg-[#F5A623] text-black" : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/20"}`}>
+            <button key={filter} onClick={() => setSelectedFilter(filter)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${selectedFilter === filter ? "bg-saffron text-black" : "bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-white/20"}`}>
               {filter === "all" && t("students.filter_all")}
               {filter === "active" && t("students.filter_active")}
               {filter === "inactive" && t("students.filter_inactive")}
@@ -226,7 +226,7 @@ export default function ProfessorStudentsPage() {
                     <div className="space-y-1">
                       <span className="text-slate-600 dark:text-slate-400 text-sm">{student.progress}%</span>
                       <div className="w-full bg-slate-200 dark:bg-white/10 rounded-full h-2">
-                        <div className="bg-[#F5A623] h-2 rounded-full transition-all duration-300" style={{ width: `${student.progress}%` }} />
+                        <div className="bg-saffron h-2 rounded-full transition-all duration-300" style={{ width: `${student.progress}%` }} />
                       </div>
                     </div>
                   </td>

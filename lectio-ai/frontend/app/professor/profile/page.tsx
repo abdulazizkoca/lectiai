@@ -17,7 +17,7 @@ export default function ProfessorProfilePage() {
       {/* Profile Card */}
       <Card className="p-6 mb-6">
         <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
-          <Avatar initials="JD" size="xl" status="online" className="border-4 border-[#F5A623]" />
+          <Avatar initials="JD" size="xl" status="online" className="border-4 border-saffron" />
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-1">
               <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Prof. John Doe</h2>
@@ -38,10 +38,10 @@ export default function ProfessorProfilePage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: "Jami darslar", value: "24", icon: <BookOpen size={18} />, color: "text-[#F5A623]" },
-          { label: "Talabalar", value: "124", icon: <Users size={18} />, color: "text-[#0D9373]" },
-          { label: "O'rtacha baho", value: "4.8★", icon: <Star size={18} />, color: "text-[#1B4FD8]" },
-          { label: "Faollik", value: "92%", icon: <TrendingUp size={18} />, color: "text-[#7B2FBE]" },
+          { label: "Jami darslar", value: "24", icon: <BookOpen size={18} />, color: "text-saffron" },
+          { label: "Talabalar", value: "124", icon: <Users size={18} />, color: "text-jade" },
+          { label: "O'rtacha baho", value: "4.8★", icon: <Star size={18} />, color: "text-lapis" },
+          { label: "Faollik", value: "92%", icon: <TrendingUp size={18} />, color: "text-amethyst" },
         ].map((stat, i) => (
           <Card key={i} className="p-4 text-center">
             <div className={`flex justify-center mb-2 ${stat.color}`}>{stat.icon}</div>
@@ -54,7 +54,7 @@ export default function ProfessorProfilePage() {
       {/* Achievements */}
       <Card className="p-6">
         <h3 className="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-          <Award size={18} className="text-[#F5A623]" />
+          <Award size={18} className="text-saffron" />
           Yutuqlar
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

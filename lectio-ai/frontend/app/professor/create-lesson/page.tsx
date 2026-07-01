@@ -85,18 +85,24 @@ export default function CreateLesson() {
           generated = data.presentation_data || data;
           lessonId = data.id;
           setSavedId(lessonId);
-        } catch {}
+        } catch {
+          addToast({ title: "⚠️ AI ulana olmadi", description: "Demo rejimda yaratilmoqda", type: "warning" });
+        }
       }
 
-      // Fallback: generate mock data
+      // Fallback: generate demo data when API is unavailable
       if (!generated || (!generated.slides?.length && !generated.quiz?.length)) {
         generated = generateMockLesson(title.trim(), topic.trim(), duration, level);
       }
 
-      // Save to localStorage
-      const saved = JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]");
-      const entry = { id: lessonId || Date.now(), title: title.trim(), topic: topic.trim(), duration, status: "preparing", createdAt: new Date().toISOString(), presentation_data: generated, wow_fact: generated.wow_fact };
-      localStorage.setItem("lectio_professor_lessons", JSON.stringify([entry, ...saved]));
+      // Save to localStorage — failure here should not block lesson display
+      try {
+        const saved = JSON.parse(localStorage.getItem("lectio_professor_lessons") || "[]");
+        const entry = { id: lessonId || Date.now(), title: title.trim(), topic: topic.trim(), duration, status: "preparing", createdAt: new Date().toISOString(), presentation_data: generated, wow_fact: generated.wow_fact };
+        localStorage.setItem("lectio_professor_lessons", JSON.stringify([entry, ...saved]));
+      } catch {
+        // localStorage unavailable — lesson still shows in current session
+      }
 
       clearInterval(stepInterval);
       setGenStep(GEN_STEPS.length - 1);
@@ -132,8 +138,8 @@ export default function CreateLesson() {
           <motion.div key="form" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="max-w-3xl mx-auto">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-[#F5A623]/20 flex items-center justify-center">
-                <Sparkles size={20} className="text-[#F5A623]" />
+              <div className="w-10 h-10 rounded-xl bg-saffron/20 flex items-center justify-center">
+                <Sparkles size={20} className="text-saffron" />
               </div>
               <div>
                 <h1 className="text-2xl font-bold">AI bilan Dars Yaratish</h1>
@@ -151,7 +157,7 @@ export default function CreateLesson() {
                   </label>
                   <input value={title} onChange={(e) => setTitle(e.target.value)}
                     placeholder="Masalan: Algoritmlar va ma'lumotlar tuzilmasi"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F5A623] transition font-bold text-lg"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-saffron transition font-bold text-lg"
                   />
                 </div>
 
@@ -162,7 +168,7 @@ export default function CreateLesson() {
                   </label>
                   <textarea value={topic} onChange={(e) => setTopic(e.target.value)} rows={3}
                     placeholder="Masalan: Binary search algoritmining O(log n) murakkabligi va amaliy qo'llanilishi"
-                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-[#F5A623] transition resize-none text-sm leading-relaxed"
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-white placeholder-slate-500 focus:outline-none focus:border-saffron transition resize-none text-sm leading-relaxed"
                   />
                   <p className="text-xs text-slate-500 mt-2">💡 Aniq yozsangiz AI aniqroq kontent yaratadi</p>
                 </div>
@@ -173,7 +179,7 @@ export default function CreateLesson() {
                   <div className="flex flex-wrap gap-2">
                     {SUBJECTS.map((s) => (
                       <button key={s} onClick={() => setSubject(subject === s ? "" : s)}
-                        className={`px-3 py-1.5 rounded-xl text-sm font-bold transition ${subject === s ? "bg-[#F5A623] text-black" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
+                        className={`px-3 py-1.5 rounded-xl text-sm font-bold transition ${subject === s ? "bg-saffron text-black" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
                         {s}
                       </button>
                     ))}
@@ -191,7 +197,7 @@ export default function CreateLesson() {
                   <div className="flex flex-wrap gap-2">
                     {DURATIONS.map((d) => (
                       <button key={d} onClick={() => setDuration(d)}
-                        className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-bold transition ${duration === d ? "bg-[#F5A623] text-black" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
+                        className={`flex-1 min-w-0 py-2.5 rounded-xl text-sm font-bold transition ${duration === d ? "bg-saffron text-black" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
                         {d}
                       </button>
                     ))}
@@ -205,7 +211,7 @@ export default function CreateLesson() {
                   <div className="grid grid-cols-2 gap-2">
                     {LEVELS.map((l) => (
                       <button key={l.value} onClick={() => setLevel(l.value)}
-                        className={`py-2 rounded-xl text-xs font-bold transition ${level === l.value ? "bg-[#1B4FD8] text-white" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
+                        className={`py-2 rounded-xl text-xs font-bold transition ${level === l.value ? "bg-lapis text-white" : "bg-white/5 text-slate-400 border border-white/10 hover:border-white/25"}`}>
                         {l.label}
                       </button>
                     ))}
@@ -213,8 +219,8 @@ export default function CreateLesson() {
                 </div>
 
                 {/* What AI creates */}
-                <div className="rounded-2xl border border-[#0D9373]/25 bg-[#0D9373]/5 p-4">
-                  <p className="text-xs font-bold text-[#0D9373] uppercase tracking-wider mb-3">AI nima yaratadi:</p>
+                <div className="rounded-2xl border border-jade/25 bg-jade/5 p-4">
+                  <p className="text-xs font-bold text-jade uppercase tracking-wider mb-3">AI nima yaratadi:</p>
                   <div className="space-y-2">
                     {[
                       { icon: "📊", label: "Prezentatsiya slaydlar" },
@@ -231,7 +237,7 @@ export default function CreateLesson() {
                 </div>
 
                 <button onClick={handleCreate} disabled={!title.trim() || !topic.trim() || loading}
-                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#F5A623] to-[#f7b955] text-black font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-[#F5A623]/20 transition">
+                  className="w-full py-4 rounded-2xl bg-gradient-to-r from-saffron to-[#f7b955] text-black font-bold text-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:shadow-lg hover:shadow-saffron/20 transition">
                   <Sparkles size={20} /> AI bilan Yaratish
                 </button>
               </div>
@@ -244,17 +250,17 @@ export default function CreateLesson() {
           <motion.div key="generating" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
             className="max-w-lg mx-auto flex flex-col items-center justify-center min-h-96">
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-              className="w-20 h-20 rounded-full border-4 border-[#F5A623]/20 border-t-[#F5A623] mb-8" />
+              className="w-20 h-20 rounded-full border-4 border-saffron/20 border-t-saffron mb-8" />
             <h2 className="text-2xl font-bold mb-2 text-center">AI dars yaratmoqda</h2>
             <p className="text-slate-400 mb-8 text-center">&quot;{topic}&quot;</p>
             <div className="w-full space-y-3">
               {GEN_STEPS.map((s, i) => (
                 <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: i <= genStep ? 1 : 0.3, x: 0 }} transition={{ delay: i * 0.1 }}
-                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${i === genStep ? "bg-[#F5A623]/10 border border-[#F5A623]/20" : i < genStep ? "bg-[#0D9373]/5" : "bg-white/[0.02]"}`}>
+                  className={`flex items-center gap-3 p-3 rounded-xl transition-all ${i === genStep ? "bg-saffron/10 border border-saffron/20" : i < genStep ? "bg-jade/5" : "bg-white/[0.02]"}`}>
                   <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-base shrink-0 ${i === genStep ? "animate-bounce" : ""}`}>
                     {i < genStep ? "✅" : s.icon}
                   </div>
-                  <span className={`text-sm font-medium ${i === genStep ? "text-[#F5A623]" : i < genStep ? "text-[#0D9373] line-through opacity-70" : "text-slate-500"}`}>
+                  <span className={`text-sm font-medium ${i === genStep ? "text-saffron" : i < genStep ? "text-jade line-through opacity-70" : "text-slate-500"}`}>
                     {s.label}
                   </span>
                   {i === genStep && <Loader2 size={14} className="text-[#F5A623] animate-spin ml-auto" />}
@@ -311,12 +317,12 @@ export default function CreateLesson() {
                   <div className="lg:col-span-2 space-y-4">
                     {/* WOW Fact */}
                     {result.wow_fact && (
-                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                      <div className="rounded-2xl border border-saffron/30 bg-saffron/5 p-5">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="text-xl">🤯</span>
-                          <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">WOW Fakt</span>
+                          <span className="text-xs font-bold text-saffron uppercase tracking-wider">WOW Fakt</span>
                         </div>
-                        <p className="text-slate-200 leading-relaxed">{result.wow_fact}</p>
+                        <p className="leading-relaxed" style={{ color: "var(--foreground)" }}>{result.wow_fact}</p>
                       </div>
                     )}
                     {/* Summary */}
